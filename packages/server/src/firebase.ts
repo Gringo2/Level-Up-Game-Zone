@@ -1,5 +1,5 @@
-import * as admin from 'firebase-admin';
-import * as dotenv from 'dotenv';
+import * as dotenv from "dotenv";
+import * as admin from "firebase-admin";
 
 dotenv.config();
 
@@ -11,9 +11,9 @@ dotenv.config();
 // OR pass the credential directly as shown below if it's easier during dev.
 
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert('./serviceAccountKey.json')
-  });
+	admin.initializeApp({
+		credential: admin.credential.cert("./serviceAccountKey.json"),
+	});
 }
 
 export const db = admin.firestore();

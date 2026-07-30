@@ -1,82 +1,82 @@
-export type Role = 'admin' | 'manager' | 'staff';
+export type Role = "admin" | "manager" | "staff";
 
 export interface AppUser {
-  uid: string;
-  email: string;
-  displayName: string;
-  role: Role;
+	uid: string;
+	email: string;
+	displayName: string;
+	role: Role;
 }
 
 export interface GameRate {
-  id: string;
-  game_name: string;
-  price_per_unit: number;
-  unit_type: 'Hour' | 'Game';
-  isActive: boolean;
+	id: string;
+	game_name: string;
+	price_per_unit: number;
+	unit_type: "Hour" | "Game";
+	isActive: boolean;
 }
 
 export interface GameSalesLog {
-  id: string;
-  game_id: string;
-  game_name: string;
-  quantity_sold: number;
-  rate_applied: number;
-  calculated_total: number;
-  user_id: string;
-  date: string;
+	id: string;
+	game_id: string;
+	game_name: string;
+	quantity_sold: number;
+	rate_applied: number;
+	calculated_total: number;
+	user_id: string;
+	date: string;
 }
 
 export interface KenoLog {
-  id: string;
-  sales: number;
-  payouts: number;
-  net_profit: number;
-  user_id: string;
-  date: string;
-  verified?: boolean;
+	id: string;
+	sales: number;
+	payouts: number;
+	net_profit: number;
+	user_id: string;
+	date: string;
+	verified?: boolean;
 }
 
 export interface Credit {
-  id: string;
-  employee_name: string;
-  amount: number;
-  status: 'Pending' | 'Resolved' | 'Deducted';
-  user_id: string;
-  date: string;
-  resolved_date?: string;
+	id: string;
+	employee_name: string;
+	amount: number;
+	status: "Pending" | "Resolved" | "Deducted";
+	user_id: string;
+	date: string;
+	resolved_date?: string;
 }
 
 export interface Expense {
-  id: string;
-  description: string;
-  amount: number;
-  category?: string;
-  user_id: string;
-  date: string;
-  verified?: boolean;
+	id: string;
+	description: string;
+	amount: number;
+	category?: string;
+	user_id: string;
+	date: string;
+	verified?: boolean;
 }
 
 export interface Shift {
-  id: string;
-  manager_id: string;
-  manager_name: string;
-  start_time: string;
-  end_time?: string;
-  opening_float: number;
-  actual_cash_counted?: number;
-  expected_cash_calculated?: number;
-  variance?: number;
-  reason_for_shortage?: string;
-  status: 'OPEN' | 'CLOSED';
+	id: string;
+	manager_id: string;
+	manager_name: string;
+	start_time: string;
+	end_time?: string;
+	opening_float: number;
+	actual_cash_counted?: number;
+	expected_cash_calculated?: number;
+	variance?: number;
+	reason_for_shortage?: string;
+	status: "OPEN" | "CLOSED";
 }
 
 export interface AuditLog {
-  id: string;
-  table_affected: string;
-  record_id: string;
-  old_value: any;
-  new_value: any;
-  reason_for_change: string;
-  user_id: string;
-  timestamp: string;
+	id: string;
+	table_affected: string;
+	record_id: string;
+	old_value: unknown;
+	new_value: unknown;
+	reason_for_change: string;
+	user_id: string;
+	timestamp: string;
 }

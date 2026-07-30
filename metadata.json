@@ -1,5 +1,5 @@
 {
-  "name": "Game Zone Manager",
-  "description": "A management and reconciliation system for a Game Zone (Pool & PS4) and Keno, including tracking credits and expenses.",
-  "requestFramePermissions": []
+	"name": "Game Zone Manager",
+	"description": "A management and reconciliation system for a Game Zone (Pool & PS4) and Keno, including tracking credits and expenses.",
+	"requestFramePermissions": []
 }

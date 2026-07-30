@@ -1,0 +1,11 @@
+echo "🏃 Running lint-staged (Biome checks)..."
+
+echo "🏃 Running lint-staged (Biome checks)..."
+npx lint-staged
+
+echo "🛡️ Running Type Checks..."
+npx tsc -b packages/client
+npx tsc -b packages/server
+
+echo "🔍 Running Knip..."
+npx knip

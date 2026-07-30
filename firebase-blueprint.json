@@ -1,107 +1,115 @@
 {
-  "entities": {
-    "User": {
-      "title": "User",
-      "description": "A user of the system (admin, manager, or staff).",
-      "type": "object",
-      "properties": {
-        "uid": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "displayName": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "manager", "staff"] }
-      },
-      "required": ["uid", "email", "role"]
-    },
-    "GameRate": {
-      "title": "Game Rate",
-      "description": "Pricing configuration for a game.",
-      "type": "object",
-      "properties": {
-        "game_name": { "type": "string" },
-        "price_per_unit": { "type": "number" },
-        "unit_type": { "type": "string", "enum": ["Hour", "Game"] },
-        "isActive": { "type": "boolean" }
-      },
-      "required": ["game_name", "price_per_unit", "unit_type", "isActive"]
-    },
-    "GameSalesLog": {
-      "title": "Game Sales Log",
-      "description": "A log of game time/games played.",
-      "type": "object",
-      "properties": {
-        "game_id": { "type": "string" },
-        "game_name": { "type": "string" },
-        "quantity_sold": { "type": "number" },
-        "rate_applied": { "type": "number" },
-        "calculated_total": { "type": "number" },
-        "user_id": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" }
-      },
-      "required": ["game_id", "game_name", "quantity_sold", "rate_applied", "calculated_total", "user_id", "date"]
-    },
-    "KenoLog": {
-      "title": "Keno Log",
-      "description": "A log of Keno sales and payouts.",
-      "type": "object",
-      "properties": {
-        "sales": { "type": "number" },
-        "payouts": { "type": "number" },
-        "net_profit": { "type": "number" },
-        "user_id": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" }
-      },
-      "required": ["sales", "payouts", "net_profit", "user_id", "date"]
-    },
-    "Credit": {
-      "title": "Credit (IOU)",
-      "description": "A log of employee IOUs.",
-      "type": "object",
-      "properties": {
-        "employee_name": { "type": "string" },
-        "amount": { "type": "number" },
-        "status": { "type": "string", "enum": ["Pending", "Deducted"] },
-        "user_id": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" }
-      },
-      "required": ["employee_name", "amount", "status", "user_id", "date"]
-    },
-    "Expense": {
-      "title": "Expense",
-      "description": "A log of daily expenses.",
-      "type": "object",
-      "properties": {
-        "description": { "type": "string" },
-        "amount": { "type": "number" },
-        "user_id": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" }
-      },
-      "required": ["description", "amount", "user_id", "date"]
-    }
-  },
-  "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/entities/User" },
-      "description": "User profiles and roles."
-    },
-    "/game_rates/{rateId}": {
-      "schema": { "$ref": "#/entities/GameRate" },
-      "description": "Game pricing configurations."
-    },
-    "/game_sales_logs/{logId}": {
-      "schema": { "$ref": "#/entities/GameSalesLog" },
-      "description": "Logs of game sales."
-    },
-    "/keno_logs/{logId}": {
-      "schema": { "$ref": "#/entities/KenoLog" },
-      "description": "Logs of Keno sales."
-    },
-    "/credits/{creditId}": {
-      "schema": { "$ref": "#/entities/Credit" },
-      "description": "Logs of employee credits (IOUs)."
-    },
-    "/expenses/{expenseId}": {
-      "schema": { "$ref": "#/entities/Expense" },
-      "description": "Logs of daily expenses."
-    }
-  }
+	"entities": {
+		"User": {
+			"title": "User",
+			"description": "A user of the system (admin, manager, or staff).",
+			"type": "object",
+			"properties": {
+				"uid": { "type": "string" },
+				"email": { "type": "string", "format": "email" },
+				"displayName": { "type": "string" },
+				"role": { "type": "string", "enum": ["admin", "manager", "staff"] }
+			},
+			"required": ["uid", "email", "role"]
+		},
+		"GameRate": {
+			"title": "Game Rate",
+			"description": "Pricing configuration for a game.",
+			"type": "object",
+			"properties": {
+				"game_name": { "type": "string" },
+				"price_per_unit": { "type": "number" },
+				"unit_type": { "type": "string", "enum": ["Hour", "Game"] },
+				"isActive": { "type": "boolean" }
+			},
+			"required": ["game_name", "price_per_unit", "unit_type", "isActive"]
+		},
+		"GameSalesLog": {
+			"title": "Game Sales Log",
+			"description": "A log of game time/games played.",
+			"type": "object",
+			"properties": {
+				"game_id": { "type": "string" },
+				"game_name": { "type": "string" },
+				"quantity_sold": { "type": "number" },
+				"rate_applied": { "type": "number" },
+				"calculated_total": { "type": "number" },
+				"user_id": { "type": "string" },
+				"date": { "type": "string", "format": "date-time" }
+			},
+			"required": [
+				"game_id",
+				"game_name",
+				"quantity_sold",
+				"rate_applied",
+				"calculated_total",
+				"user_id",
+				"date"
+			]
+		},
+		"KenoLog": {
+			"title": "Keno Log",
+			"description": "A log of Keno sales and payouts.",
+			"type": "object",
+			"properties": {
+				"sales": { "type": "number" },
+				"payouts": { "type": "number" },
+				"net_profit": { "type": "number" },
+				"user_id": { "type": "string" },
+				"date": { "type": "string", "format": "date-time" }
+			},
+			"required": ["sales", "payouts", "net_profit", "user_id", "date"]
+		},
+		"Credit": {
+			"title": "Credit (IOU)",
+			"description": "A log of employee IOUs.",
+			"type": "object",
+			"properties": {
+				"employee_name": { "type": "string" },
+				"amount": { "type": "number" },
+				"status": { "type": "string", "enum": ["Pending", "Deducted"] },
+				"user_id": { "type": "string" },
+				"date": { "type": "string", "format": "date-time" }
+			},
+			"required": ["employee_name", "amount", "status", "user_id", "date"]
+		},
+		"Expense": {
+			"title": "Expense",
+			"description": "A log of daily expenses.",
+			"type": "object",
+			"properties": {
+				"description": { "type": "string" },
+				"amount": { "type": "number" },
+				"user_id": { "type": "string" },
+				"date": { "type": "string", "format": "date-time" }
+			},
+			"required": ["description", "amount", "user_id", "date"]
+		}
+	},
+	"firestore": {
+		"/users/{userId}": {
+			"schema": { "$ref": "#/entities/User" },
+			"description": "User profiles and roles."
+		},
+		"/game_rates/{rateId}": {
+			"schema": { "$ref": "#/entities/GameRate" },
+			"description": "Game pricing configurations."
+		},
+		"/game_sales_logs/{logId}": {
+			"schema": { "$ref": "#/entities/GameSalesLog" },
+			"description": "Logs of game sales."
+		},
+		"/keno_logs/{logId}": {
+			"schema": { "$ref": "#/entities/KenoLog" },
+			"description": "Logs of Keno sales."
+		},
+		"/credits/{creditId}": {
+			"schema": { "$ref": "#/entities/Credit" },
+			"description": "Logs of employee credits (IOUs)."
+		},
+		"/expenses/{expenseId}": {
+			"schema": { "$ref": "#/entities/Expense" },
+			"description": "Logs of daily expenses."
+		}
+	}
 }

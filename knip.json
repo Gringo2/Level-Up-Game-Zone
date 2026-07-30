@@ -1,0 +1,6 @@
+{
+	"ignoreDependencies": ["@level-up/shared", "semgrep", "autoprefixer", "vite"],
+	"ignoreBinaries": ["semgrep"],
+	"ignoreExportsUsedInFile": true,
+	"ignore": ["packages/client/src/components/ui/**"]
+}
