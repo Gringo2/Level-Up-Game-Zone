@@ -1,11 +1,4 @@
-import {
-	addDoc,
-	collection,
-	doc,
-	onSnapshot,
-	query,
-	updateDoc,
-} from "firebase/firestore";
+import { collection, onSnapshot, query } from "firebase/firestore";
 import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -38,19 +31,33 @@ export function UserManagement() {
 		newRole: "admin" | "manager" | "staff",
 	) => {
 		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
 			const oldRole = user.role;
-			await updateDoc(doc(db, "users", user.uid), { role: newRole });
-			await addDoc(collection(db, "audit_logs"), {
-				table_affected: "users",
-				record_id: user.uid,
-				old_value: { ...user, role: oldRole },
-				new_value: { ...user, role: newRole },
-				reason_for_change: `Role updated from ${oldRole} to ${newRole}`,
-				user_id: auth.currentUser?.uid,
-				timestamp: new Date().toISOString(),
-			});
+			const response = await fetch(
+				`http://localhost:4000/api/users/${user.uid}/role`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						role: newRole,
+						editReason: `Role updated from ${oldRole} to ${newRole}`,
+					}),
+				},
+			);
+
+			if (!response.ok)
+				throw new Error(
+					(await response.json()).error || "Failed to update role",
+				);
+
 			toast.success("Role updated successfully!");
-		} catch (_err) {
+		} catch (err: unknown) {
+			console.error(err);
 			toast.error("Failed to update role.");
 		}
 	};

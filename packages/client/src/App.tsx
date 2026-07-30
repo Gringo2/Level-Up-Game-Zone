@@ -2,16 +2,12 @@ import { endOfDay, format, startOfDay } from "date-fns";
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 import {
-	addDoc,
 	collection,
-	deleteDoc,
 	doc,
 	getDoc,
 	onSnapshot,
 	orderBy,
 	query,
-	setDoc,
-	updateDoc,
 	where,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
@@ -154,11 +150,14 @@ function Login() {
 				// Create new user as staff by default. Admin must upgrade them.
 				// If it's the first user (bezueyob3@gmail.com), they are admin.
 				const role = user.email === "bezueyob3@gmail.com" ? "admin" : "staff";
-				await setDoc(userRef, {
-					uid: user.uid,
-					email: user.email,
-					displayName: user.displayName || "",
-					role: role,
+				const token = await user.getIdToken();
+				await fetch("http://localhost:4000/api/users", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ role }),
 				});
 			}
 			// biome-ignore lint/suspicious/noExplicitAny: API error response
@@ -201,17 +200,30 @@ function Layout({ children }: { children: React.ReactNode }) {
 		e.preventDefault();
 		if (!openingFloat || !user) return;
 		try {
-			await addDoc(collection(db, "shifts"), {
-				manager_id: user.uid,
-				manager_name: user.displayName || user.email,
-				start_time: new Date().toISOString(),
-				opening_float: parseFloat(openingFloat),
-				status: "OPEN",
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch("http://localhost:4000/api/shifts", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					floatAmount: openingFloat,
+					managerName: user.displayName || user.email,
+				}),
 			});
+			if (!response.ok)
+				throw new Error(
+					(await response.json()).error || "Failed to start shift",
+				);
+
 			setOpeningFloat("");
 			toast.success("Shift started!");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.CREATE, "shifts");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to start shift");
 		}
 	};
 
@@ -768,22 +780,26 @@ function GameSales() {
 			return;
 		}
 		try {
-			const oldDoc = logs.find((l) => l.id === id);
-			await deleteDoc(doc(db, "game_sales_logs", id));
-			await addDoc(collection(db, "audit_logs"), {
-				table_affected: "game_sales_logs",
-				record_id: id,
-				old_value: oldDoc,
-				new_value: null,
-				reason_for_change: deleteReason,
-				user_id: user.uid,
-				timestamp: new Date().toISOString(),
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`http://localhost:4000/api/sales/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ deleteReason }),
 			});
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to delete");
+
 			toast.success("Log deleted successfully!");
 			setDeletingId(null);
 			setDeleteReason("");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.DELETE, `game_sales_logs/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to delete sale");
 		}
 	};
 
@@ -793,51 +809,62 @@ function GameSales() {
 
 		setLoading(true);
 		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const oldDoc = logs.find((l) => l.id === editingId);
-				const newValues = {
-					game_id: selectedRate.id,
-					game_name: selectedRate.game_name,
-					quantity_sold: parseFloat(quantity),
-					rate_applied: selectedRate.price_per_unit,
-					calculated_total: calculatedTotal,
-				};
-				await updateDoc(doc(db, "game_sales_logs", editingId), newValues);
-				await addDoc(collection(db, "audit_logs"), {
-					table_affected: "game_sales_logs",
-					record_id: editingId,
-					old_value: oldDoc,
-					new_value: newValues,
-					reason_for_change: editReason,
-					user_id: user.uid,
-					timestamp: new Date().toISOString(),
-				});
+				const response = await fetch(
+					`http://localhost:4000/api/sales/${editingId}`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({
+							game_id: selectedRate.id,
+							game_name: selectedRate.game_name,
+							quantity_sold: quantity,
+							rate_applied: selectedRate.price_per_unit,
+							calculated_total: calculatedTotal,
+							editReason,
+						}),
+					},
+				);
+				if (!response.ok)
+					throw new Error((await response.json()).error || "Failed to update");
 				toast.success("Game sale updated successfully!");
 				cancelEdit();
 			} else {
-				await addDoc(collection(db, "game_sales_logs"), {
-					game_id: selectedRate.id,
-					game_name: selectedRate.game_name,
-					quantity_sold: parseFloat(quantity),
-					rate_applied: selectedRate.price_per_unit,
-					calculated_total: calculatedTotal,
-					user_id: user.uid,
-					date: new Date().toISOString(),
+				const response = await fetch(`http://localhost:4000/api/sales`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						game_id: selectedRate.id,
+						game_name: selectedRate.game_name,
+						quantity_sold: quantity,
+						rate_applied: selectedRate.price_per_unit,
+						calculated_total: calculatedTotal,
+					}),
 				});
+				if (!response.ok)
+					throw new Error(
+						(await response.json()).error || "Failed to log sale",
+					);
 				setQuantity("");
 				toast.success("Game sale logged successfully!");
 			}
-		} catch (err) {
-			handleFirestoreError(
-				err,
-				editingId ? OperationType.UPDATE : OperationType.CREATE,
-				"game_sales_logs",
-			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to save sale");
 		} finally {
 			setLoading(false);
 		}
@@ -861,21 +888,38 @@ function GameSales() {
 						className="bg-white whitespace-nowrap"
 						onClick={async () => {
 							try {
-								await addDoc(collection(db, "game_rates"), {
-									game_name: "PS4",
-									price_per_unit: 5,
-									unit_type: "Hour",
-									isActive: true,
+								const token = await auth.currentUser?.getIdToken();
+								if (!token) return;
+
+								await fetch("http://localhost:4000/api/rates", {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+										Authorization: `Bearer ${token}`,
+									},
+									body: JSON.stringify({
+										game_name: "PS4",
+										price_per_unit: 5,
+										unit_type: "Hour",
+										isActive: true,
+									}),
 								});
-								await addDoc(collection(db, "game_rates"), {
-									game_name: "Pool",
-									price_per_unit: 2,
-									unit_type: "Game",
-									isActive: true,
+								await fetch("http://localhost:4000/api/rates", {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+										Authorization: `Bearer ${token}`,
+									},
+									body: JSON.stringify({
+										game_name: "Pool",
+										price_per_unit: 2,
+										unit_type: "Game",
+										isActive: true,
+									}),
 								});
-								toast.success("Default games added successfully!");
+								toast.success("Default games configured!");
 							} catch (_err) {
-								toast.error("Failed to add default games.");
+								toast.error("Failed to configure games");
 							}
 						}}
 					>
@@ -1135,31 +1179,51 @@ function Keno() {
 			return;
 		}
 		try {
-			const oldDoc = logs.find((l) => l.id === id);
-			await deleteDoc(doc(db, "keno_logs", id));
-			await addDoc(collection(db, "audit_logs"), {
-				table_affected: "keno_logs",
-				record_id: id,
-				old_value: oldDoc,
-				new_value: null,
-				reason_for_change: deleteReason,
-				user_id: user.uid,
-				timestamp: new Date().toISOString(),
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`http://localhost:4000/api/keno/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ deleteReason }),
 			});
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to delete");
+
 			toast.success("Keno log deleted successfully!");
 			setDeletingId(null);
 			setDeleteReason("");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.DELETE, `keno_logs/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to delete keno log");
 		}
 	};
 
 	const handleVerify = async (id: string) => {
 		try {
-			await updateDoc(doc(db, "keno_logs", id), { verified: true });
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(
+				`http://localhost:4000/api/keno/${id}/verify`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to verify");
+
 			toast.success("Log verified!");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.UPDATE, `keno_logs/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to verify keno log");
 		}
 	};
 
@@ -1169,49 +1233,59 @@ function Keno() {
 
 		setLoading(true);
 		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const oldDoc = logs.find((l) => l.id === editingId);
-				const newValues = {
-					sales: parseFloat(sales),
-					payouts: parseFloat(payouts),
-					net_profit: netProfit,
-				};
-				await updateDoc(doc(db, "keno_logs", editingId), newValues);
-				await addDoc(collection(db, "audit_logs"), {
-					table_affected: "keno_logs",
-					record_id: editingId,
-					old_value: oldDoc,
-					new_value: newValues,
-					reason_for_change: editReason,
-					user_id: user.uid,
-					timestamp: new Date().toISOString(),
-				});
+				const response = await fetch(
+					`http://localhost:4000/api/keno/${editingId}`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({
+							sales: sales,
+							payouts: payouts,
+							net_profit: netProfit,
+							editReason,
+						}),
+					},
+				);
+				if (!response.ok)
+					throw new Error((await response.json()).error || "Failed to update");
 				toast.success("Keno log updated successfully!");
 				cancelEdit();
 			} else {
-				await addDoc(collection(db, "keno_logs"), {
-					sales: parseFloat(sales),
-					payouts: parseFloat(payouts),
-					net_profit: netProfit,
-					user_id: user.uid,
-					date: new Date().toISOString(),
-					verified: user.role === "manager" || user.role === "admin",
+				const response = await fetch(`http://localhost:4000/api/keno`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						sales: sales,
+						payouts: payouts,
+						net_profit: netProfit,
+					}),
 				});
+				if (!response.ok)
+					throw new Error(
+						(await response.json()).error || "Failed to log keno",
+					);
 				setSales("");
 				setPayouts("");
 				toast.success("Keno logged successfully!");
 			}
-		} catch (err) {
-			handleFirestoreError(
-				err,
-				editingId ? OperationType.UPDATE : OperationType.CREATE,
-				"keno_logs",
-			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to save keno log");
 		} finally {
 			setLoading(false);
 		}
@@ -1449,24 +1523,29 @@ function Credits() {
 		resolution: "Resolved" | "Deducted",
 	) => {
 		try {
-			const oldDoc = credits.find((c) => c.id === id);
-			const newValues = {
-				status: resolution,
-				resolved_date: new Date().toISOString(),
-			};
-			await updateDoc(doc(db, "credits", id), newValues);
-			await addDoc(collection(db, "audit_logs"), {
-				table_affected: "credits",
-				record_id: id,
-				old_value: oldDoc,
-				new_value: { ...oldDoc, ...newValues },
-				reason_for_change: `Status updated to ${resolution}`,
-				user_id: user?.uid || "unknown",
-				timestamp: new Date().toISOString(),
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`http://localhost:4000/api/credits/${id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					status: resolution,
+					editReason: `Status updated to ${resolution}`,
+				}),
 			});
+			if (!response.ok)
+				throw new Error(
+					(await response.json()).error || "Failed to update status",
+				);
+
 			toast.success(`Credit marked as ${resolution}`);
-		} catch (err) {
-			handleFirestoreError(err, OperationType.UPDATE, `credits/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(`Failed to mark credit as ${resolution}`);
 		}
 	};
 
@@ -1490,22 +1569,26 @@ function Credits() {
 			return;
 		}
 		try {
-			const oldDoc = credits.find((c) => c.id === id);
-			await deleteDoc(doc(db, "credits", id));
-			await addDoc(collection(db, "audit_logs"), {
-				table_affected: "credits",
-				record_id: id,
-				old_value: oldDoc,
-				new_value: null,
-				reason_for_change: deleteReason,
-				user_id: user.uid,
-				timestamp: new Date().toISOString(),
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`http://localhost:4000/api/credits/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ deleteReason }),
 			});
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to delete");
+
 			toast.success("Credit deleted successfully!");
 			setDeletingId(null);
 			setDeleteReason("");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.DELETE, `credits/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to delete credit");
 		}
 	};
 
@@ -1515,47 +1598,57 @@ function Credits() {
 
 		setLoading(true);
 		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const oldDoc = credits.find((c) => c.id === editingId);
-				const newValues = {
-					employee_name: employeeName,
-					amount: parseFloat(amount),
-				};
-				await updateDoc(doc(db, "credits", editingId), newValues);
-				await addDoc(collection(db, "audit_logs"), {
-					table_affected: "credits",
-					record_id: editingId,
-					old_value: oldDoc,
-					new_value: { ...oldDoc, ...newValues },
-					reason_for_change: editReason,
-					user_id: user.uid,
-					timestamp: new Date().toISOString(),
-				});
+				const response = await fetch(
+					`http://localhost:4000/api/credits/${editingId}`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({
+							employee_name: employeeName,
+							amount: amount,
+							editReason,
+						}),
+					},
+				);
+				if (!response.ok)
+					throw new Error((await response.json()).error || "Failed to update");
 				toast.success("Credit updated successfully!");
 				cancelEdit();
 			} else {
-				await addDoc(collection(db, "credits"), {
-					employee_name: employeeName,
-					amount: parseFloat(amount),
-					status: "Pending",
-					user_id: user.uid,
-					date: new Date().toISOString(),
+				const response = await fetch("http://localhost:4000/api/credits", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						employee_name: employeeName,
+						amount: amount,
+					}),
 				});
+				if (!response.ok)
+					throw new Error(
+						(await response.json()).error || "Failed to log credit",
+					);
 				setEmployeeName("");
 				setAmount("");
 				toast.success("Credit logged successfully!");
 			}
-		} catch (err) {
-			handleFirestoreError(
-				err,
-				editingId ? OperationType.UPDATE : OperationType.CREATE,
-				"credits",
-			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to save credit");
 		} finally {
 			setLoading(false);
 		}
@@ -1821,31 +1914,51 @@ function Expenses() {
 			return;
 		}
 		try {
-			const oldDoc = expenses.find((e) => e.id === id);
-			await deleteDoc(doc(db, "expenses", id));
-			await addDoc(collection(db, "audit_logs"), {
-				table_affected: "expenses",
-				record_id: id,
-				old_value: oldDoc,
-				new_value: null,
-				reason_for_change: deleteReason,
-				user_id: user.uid,
-				timestamp: new Date().toISOString(),
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`http://localhost:4000/api/expenses/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ deleteReason }),
 			});
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to delete");
+
 			toast.success("Expense deleted successfully!");
 			setDeletingId(null);
 			setDeleteReason("");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.DELETE, `expenses/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to delete expense");
 		}
 	};
 
 	const handleVerify = async (id: string) => {
 		try {
-			await updateDoc(doc(db, "expenses", id), { verified: true });
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(
+				`http://localhost:4000/api/expenses/${id}/verify`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to verify");
+
 			toast.success("Expense verified!");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.UPDATE, `expenses/${id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to verify expense");
 		}
 	};
 
@@ -1855,50 +1968,60 @@ function Expenses() {
 
 		setLoading(true);
 		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const oldDoc = expenses.find((ex) => ex.id === editingId);
-				const newValues = {
-					description: description,
-					amount: parseFloat(amount),
-					category: category,
-				};
-				await updateDoc(doc(db, "expenses", editingId), newValues);
-				await addDoc(collection(db, "audit_logs"), {
-					table_affected: "expenses",
-					record_id: editingId,
-					old_value: oldDoc,
-					new_value: { ...oldDoc, ...newValues },
-					reason_for_change: editReason,
-					user_id: user.uid,
-					timestamp: new Date().toISOString(),
-				});
+				const response = await fetch(
+					`http://localhost:4000/api/expenses/${editingId}`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+							Authorization: `Bearer ${token}`,
+						},
+						body: JSON.stringify({
+							description: description,
+							amount: amount,
+							category: category,
+							editReason,
+						}),
+					},
+				);
+				if (!response.ok)
+					throw new Error((await response.json()).error || "Failed to update");
 				toast.success("Expense updated successfully!");
 				cancelEdit();
 			} else {
-				await addDoc(collection(db, "expenses"), {
-					description: description,
-					amount: parseFloat(amount),
-					category: category,
-					user_id: user.uid,
-					date: new Date().toISOString(),
-					verified: user.role === "manager" || user.role === "admin",
+				const response = await fetch(`http://localhost:4000/api/expenses`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						description: description,
+						amount: amount,
+						category: category,
+					}),
 				});
+				if (!response.ok)
+					throw new Error(
+						(await response.json()).error || "Failed to log expense",
+					);
 				setDescription("");
 				setAmount("");
 				setCategory("Misc");
 				toast.success("Expense logged successfully!");
 			}
-		} catch (err) {
-			handleFirestoreError(
-				err,
-				editingId ? OperationType.UPDATE : OperationType.CREATE,
-				"expenses",
-			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to save expense");
 		} finally {
 			setLoading(false);
 		}
@@ -2246,18 +2369,32 @@ function Admin() {
 
 		setLoading(true);
 		try {
-			await addDoc(collection(db, "game_rates"), {
-				game_name: gameName,
-				price_per_unit: parseFloat(price),
-				unit_type: unitType,
-				isActive: true,
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch("http://localhost:4000/api/rates", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					game_name: gameName,
+					price_per_unit: price,
+					unit_type: unitType,
+					isActive: true,
+				}),
 			});
+			if (!response.ok)
+				throw new Error((await response.json()).error || "Failed to add rate");
+
 			setGameName("");
 			setPrice("");
 			setUnitType("Hour");
 			toast.success("Game rate added successfully!");
-		} catch (err) {
-			handleFirestoreError(err, OperationType.CREATE, "game_rates");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to add game rate");
 		} finally {
 			setLoading(false);
 		}
@@ -2265,12 +2402,32 @@ function Admin() {
 
 	const toggleRateStatus = async (rate: GameRate) => {
 		try {
-			await updateDoc(doc(db, "game_rates", rate.id), {
-				isActive: !rate.isActive,
-			});
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(
+				`http://localhost:4000/api/rates/${rate.id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({
+						isActive: !rate.isActive,
+						editReason: `Toggled active status to ${!rate.isActive}`,
+					}),
+				},
+			);
+			if (!response.ok)
+				throw new Error(
+					(await response.json()).error || "Failed to update rate",
+				);
+
 			toast.success(`Rate ${rate.isActive ? "deactivated" : "activated"}`);
-		} catch (err) {
-			handleFirestoreError(err, OperationType.UPDATE, `game_rates/${rate.id}`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error("Failed to update rate status");
 		}
 	};
 

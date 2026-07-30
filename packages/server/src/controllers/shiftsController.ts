@@ -1,8 +1,53 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
+import type { AuthRequest } from "../middleware/auth.js";
 
-export const closeShift = async (req: Request, res: Response) => {
+export const startShift = async (req: AuthRequest, res: Response) => {
+	const user = req.user;
+	if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+	const { floatAmount, managerName } = req.body;
+
+	if (floatAmount === undefined || floatAmount === null) {
+		return res.status(400).json({ error: "floatAmount is required" });
+	}
+
+	try {
+		const newDocRef = db.collection("shifts").doc();
+		const auditRef = db.collection("audit_logs").doc();
+
+		const data = {
+			manager_id: user.uid,
+			manager_name: managerName || user.email || "Unknown",
+			start_time: new Date().toISOString(),
+			opening_float: parseFloat(floatAmount),
+			status: "OPEN",
+		};
+
+		await db.runTransaction(async (transaction) => {
+			transaction.set(newDocRef, data);
+			transaction.set(auditRef, {
+				table_affected: "shifts",
+				record_id: newDocRef.id,
+				old_value: null,
+				new_value: data,
+				reason_for_change: "Started shift",
+				user_id: user.uid,
+				timestamp: new Date().toISOString(),
+			});
+		});
+
+		return res.status(201).json({ id: newDocRef.id, ...data });
+	} catch (error: unknown) {
+		console.error("Error starting shift:", error);
+		return res
+			.status(500)
+			.json({ error: (error as Error).message || "Internal server error" });
+	}
+};
+
+export const closeShift = async (req: AuthRequest, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { actualCashCounted, shortageReason } = req.body;

@@ -1,0 +1,95 @@
+import type { Response } from "express";
+import { db } from "../firebase.js";
+import type { AuthRequest } from "../middleware/auth.js";
+
+export const createRate = async (req: AuthRequest, res: Response) => {
+	const user = req.user;
+	if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+	const { game_name, price_per_unit, unit_type, isActive } = req.body;
+
+	try {
+		const newDocRef = db.collection("game_rates").doc();
+		const auditRef = db.collection("audit_logs").doc();
+
+		const data = {
+			game_name,
+			price_per_unit: parseFloat(price_per_unit),
+			unit_type,
+			isActive: isActive ?? true,
+		};
+
+		await db.runTransaction(async (transaction) => {
+			transaction.set(newDocRef, data);
+			transaction.set(auditRef, {
+				table_affected: "game_rates",
+				record_id: newDocRef.id,
+				old_value: null,
+				new_value: data,
+				reason_for_change: "Created game rate",
+				user_id: user.uid,
+				timestamp: new Date().toISOString(),
+			});
+		});
+
+		return res.status(201).json({ id: newDocRef.id, ...data });
+	} catch (error: unknown) {
+		console.error("Error creating rate:", error);
+		return res
+			.status(500)
+			.json({ error: (error as Error).message || "Internal server error" });
+	}
+};
+
+export const updateRate = async (req: AuthRequest, res: Response) => {
+	const user = req.user;
+	if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+	const { id } = req.params;
+	const { game_name, price_per_unit, unit_type, isActive, editReason } =
+		req.body;
+
+	if (!editReason) {
+		return res.status(400).json({ error: "Edit reason is required" });
+	}
+
+	try {
+		const docRef = db.collection("game_rates").doc(id);
+		const auditRef = db.collection("audit_logs").doc();
+
+		await db.runTransaction(async (transaction) => {
+			const docSnap = await transaction.get(docRef);
+			if (!docSnap.exists) {
+				throw new Error("Rate not found");
+			}
+
+			const oldDoc = { id: docSnap.id, ...docSnap.data() };
+
+			const newValues: Record<string, string | number | boolean> = {};
+			if (game_name !== undefined) newValues.game_name = game_name;
+			if (price_per_unit !== undefined)
+				newValues.price_per_unit = parseFloat(price_per_unit);
+			if (unit_type !== undefined) newValues.unit_type = unit_type;
+			if (isActive !== undefined) newValues.isActive = isActive;
+
+			transaction.update(docRef, newValues);
+
+			transaction.set(auditRef, {
+				table_affected: "game_rates",
+				record_id: id,
+				old_value: oldDoc,
+				new_value: { ...oldDoc, ...newValues },
+				reason_for_change: editReason,
+				user_id: user.uid,
+				timestamp: new Date().toISOString(),
+			});
+		});
+
+		return res.status(200).json({ message: "Updated successfully" });
+	} catch (error: unknown) {
+		console.error("Error updating rate:", error);
+		return res
+			.status(500)
+			.json({ error: (error as Error).message || "Internal server error" });
+	}
+};

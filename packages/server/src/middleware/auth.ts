@@ -1,5 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
+import type { DecodedIdToken } from "firebase-admin/auth";
 import { auth } from "../firebase.js";
+
+export interface AuthRequest extends Request {
+	user?: DecodedIdToken;
+}
 
 export const requireAuth = async (
 	req: Request,
