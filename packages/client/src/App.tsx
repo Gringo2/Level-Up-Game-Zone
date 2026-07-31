@@ -139,27 +139,7 @@ function Login() {
 
 	const handleLogin = async () => {
 		try {
-			const result = await signInWithPopup(auth, googleProvider);
-			const user = result.user;
-
-			// Check if user exists in db
-			const userRef = doc(db, "users", user.uid);
-			const userSnap = await getDoc(userRef);
-
-			if (!userSnap.exists()) {
-				// Create new user as staff by default. Admin must upgrade them.
-				// If it's the first user (bezueyob3@gmail.com), they are admin.
-				const role = user.email === "bezueyob3@gmail.com" ? "admin" : "staff";
-				const token = await user.getIdToken();
-				await fetch("http://localhost:4000/api/users", {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ role }),
-				});
-			}
+			await signInWithPopup(auth, googleProvider);
 			// biome-ignore lint/suspicious/noExplicitAny: API error response
 		} catch (err: any) {
 			setError(err.message);
@@ -3288,16 +3268,25 @@ export default function App() {
 					if (userDoc.exists()) {
 						setUser(userDoc.data() as AppUser);
 					} else {
-						// Wait a moment for the creation to finish if they just signed up
-						setTimeout(async () => {
-							const retryDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-							if (retryDoc.exists()) {
-								setUser(retryDoc.data() as AppUser);
-							} else {
-								setUser(null);
-								signOut(auth);
-							}
-						}, 1000);
+						const role =
+							firebaseUser.email === "bezueyob3@gmail.com" ? "admin" : "staff";
+						const token = await firebaseUser.getIdToken();
+						const response = await fetch("http://localhost:4000/api/users", {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `Bearer ${token}`,
+							},
+							body: JSON.stringify({ role }),
+						});
+
+						if (response.ok) {
+							const newUser = await response.json();
+							setUser(newUser as AppUser);
+						} else {
+							setUser(null);
+							signOut(auth);
+						}
 					}
 				} catch (error) {
 					console.error("Error fetching user role:", error);

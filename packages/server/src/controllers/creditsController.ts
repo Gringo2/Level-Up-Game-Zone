@@ -70,7 +70,10 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 			if (employee_name !== undefined) newValues.employee_name = employee_name;
 			if (amount !== undefined) newValues.amount = parseFloat(amount);
 			if (reason !== undefined) newValues.reason = reason;
-			if (status !== undefined) newValues.status = status;
+			if (status !== undefined) {
+				newValues.status = status;
+				newValues.resolved_date = new Date().toISOString();
+			}
 
 			transaction.update(docRef, newValues);
 

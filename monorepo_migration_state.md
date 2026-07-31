@@ -1,5 +1,5 @@
 # Monorepo Migration State & Session Checkpoint
-**Last Updated**: 2026-07-30
+**Last Updated**: 2026-07-31
 
 ## 1. Project Objective
 Transition the `Level-Up-Game-Zone` monorepo from a fragile, client-heavy Firebase application to a secure, "Thin Client" architecture. All data mutations, role verifications, and financial operations must be routed through a transactional Express.js backend to enforce strict Zero-Trust security and maintain an immutable `audit_logs` ledger.
@@ -31,21 +31,22 @@ Created Express routes and controllers to handle all business logic securely via
 
 ---
 
-## 3. Outstanding Action Items (Next Session)
+## 3. Resolved Action Items (Phase 2.5)
 
-During the final correctness review, two minor architectural gaps were identified that need to be resolved in the next session to achieve 100% feature parity with the legacy app:
+During the final correctness review, two minor architectural gaps were identified and successfully patched:
 
-### Action Item 1: Credits `resolved_date` Bug
+### Action Item 1: Credits `resolved_date` Bug (✅ FIXED)
 *   **Location**: `packages/server/src/controllers/creditsController.ts` (`updateCredit`)
-*   **Issue**: When the React client marks a credit as "Resolved" or "Deducted" via `PUT /api/credits/:id`, the backend currently updates the `status` but fails to append a `resolved_date` timestamp.
-*   **Fix**: Update the `newValues` object construction to dynamically inject `resolved_date: new Date().toISOString()` whenever `status` is explicitly defined in the payload.
+*   **Fix**: Updated the `newValues` object construction to dynamically inject `resolved_date: new Date().toISOString()` whenever `status` is explicitly defined in the payload.
 
-### Action Item 2: User Registration State Bug
+### Action Item 2: User Registration State Bug (✅ FIXED)
 *   **Location**: `packages/client/src/App.tsx` (`onAuthStateChanged` hook)
-*   **Issue**: When a brand new user authenticates via Google for the first time, the client triggers `POST /api/users` to create their database profile. However, it fails to invoke the React `setUser()` state setter upon completion, meaning the user remains virtually "logged out" until they manually refresh the page.
-*   **Fix**: Chain a `setUser` call containing the newly created user data immediately after the successful `fetch` call resolves.
+*   **Fix**: Moved the `POST /api/users` request inside the `onAuthStateChanged` hook so that `setUser()` is chained immediately upon successfully creating the user profile, eliminating the "virtually logged out" state issue.
 
 ---
 
-## 4. Next Phase: Firestore Lockdown (Phase 3)
-Once the action items above are patched, the final step in the migration is to update the Firebase Security Rules (`firestore.rules`). We must strictly deny all `write` access from the web client, ensuring the Express backend (via the Admin SDK) is the sole authority capable of mutating the database.
+## 4. Firestore Lockdown (Phase 3) - (100% Implemented)
+Successfully updated the Firebase Security Rules (`firestore.rules`). 
+- All client-side `write`, `create`, `update`, and `delete` operations have been strictly set to `allow write: if false;`.
+- All legacy data domain validators have been removed. 
+- The Express backend (via the Admin SDK) is now the sole authority capable of mutating the database, successfully achieving a Zero-Trust Thin Client architecture!
