@@ -1,0 +1,120 @@
+import { format } from "date-fns";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "../components/ui/card";
+import { db } from "../firebase";
+import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+
+export function AuditLogs() {
+	// biome-ignore lint/suspicious/noExplicitAny: Firestore documents
+	const [logs, setLogs] = useState<any[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		const q = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"));
+		const unsub = onSnapshot(
+			q,
+			(snap) => {
+				setLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+				setLoading(false);
+			},
+			(err) => {
+				handleFirestoreError(err, OperationType.LIST, "audit_logs");
+				setLoading(false);
+			},
+		);
+		return () => unsub();
+	}, []);
+
+	if (loading)
+		return (
+			<div className="p-8 text-center">
+				<Loader2 className="animate-spin mx-auto" />
+			</div>
+		);
+
+	return (
+		<div className="space-y-6 max-w-5xl mx-auto">
+			<h2 className="text-2xl font-bold tracking-tight">Activity Log</h2>
+			<Card>
+				<CardHeader>
+					<CardTitle>Recent Activity</CardTitle>
+					<CardDescription>
+						Track changes and deletions across the system.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm text-left">
+							<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
+								<tr>
+									<th className="px-4 py-3 font-medium">Time</th>
+									<th className="px-4 py-3 font-medium">User</th>
+									<th className="px-4 py-3 font-medium">Action</th>
+									<th className="px-4 py-3 font-medium">Table</th>
+									<th className="px-4 py-3 font-medium">Reason</th>
+									<th className="px-4 py-3 font-medium">Details</th>
+								</tr>
+							</thead>
+							<tbody className="divide-y">
+								{logs.length === 0 ? (
+									<tr>
+										<td
+											colSpan={6}
+											className="px-4 py-8 text-center text-zinc-500"
+										>
+											No activity logs found.
+										</td>
+									</tr>
+								) : (
+									logs.map((log) => (
+										<tr key={log.id} className="hover:bg-zinc-50">
+											<td className="px-4 py-3 whitespace-nowrap text-zinc-500">
+												{format(new Date(log.timestamp), "MMM d, yyyy h:mm a")}
+											</td>
+											<td className="px-4 py-3 font-medium">
+												{log.user_email}
+											</td>
+											<td className="px-4 py-3">
+												<span
+													className={`px-2 py-1 rounded-full text-xs font-medium ${
+														log.action === "UPDATE"
+															? "bg-blue-100 text-blue-800"
+															: log.action === "DELETE"
+																? "bg-red-100 text-red-800"
+																: "bg-zinc-100 text-zinc-800"
+													}`}
+												>
+													{log.action}
+												</span>
+											</td>
+											<td className="px-4 py-3 capitalize">
+												{log.table_affected.replace("_", " ")}
+											</td>
+											<td className="px-4 py-3 text-zinc-600">{log.reason}</td>
+											<td
+												className="px-4 py-3 text-xs text-zinc-500 max-w-xs truncate"
+												title={JSON.stringify(log.old_data)}
+											>
+												{log.action === "UPDATE"
+													? "View changes"
+													: "View deleted data"}
+											</td>
+										</tr>
+									))
+								)}
+							</tbody>
+						</table>
+					</div>
+				</CardContent>
+			</Card>
+		</div>
+	);
+}

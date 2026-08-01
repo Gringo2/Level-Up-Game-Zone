@@ -1,0 +1,12 @@
+id: forbid-client-side-firestore-mutations
+message: "Zero-Trust Violation: The client must act as a Thin Client. Direct Firestore mutations are forbidden."
+severity: error
+language: TypeScript
+rule:
+  any:
+    - pattern: addDoc($$$ARGS)
+    - pattern: setDoc($$$ARGS)
+    - pattern: updateDoc($$$ARGS)
+    - pattern: deleteDoc($$$ARGS)
+    - pattern: runTransaction($$$ARGS)
+    - pattern: writeBatch($$$ARGS)

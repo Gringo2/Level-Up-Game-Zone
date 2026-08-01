@@ -1,0 +1,132 @@
+{
+	"wake-protocol": {
+		"PreAgentResponse": [
+			{
+				"matcher": "*",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/wake_summary.sh",
+						"timeout": 10
+					}
+				]
+			}
+		]
+	},
+	"mission-gate": {
+		"PreToolUse": [
+			{
+				"matcher": "write_to_file",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/mission_gate.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/mission_gate.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "multi_replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/mission_gate.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	},
+	"pre-edit-backup": {
+		"PreToolUse": [
+			{
+				"matcher": "write_to_file",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/pre_edit_backup.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/pre_edit_backup.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "multi_replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/pre_edit_backup.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	},
+	"guard-run-command": {
+		"PreToolUse": [
+			{
+				"matcher": "run_command",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/guard_run_command.sh \"{{tool.args.CommandLine}}\"",
+						"timeout": 10
+					}
+				]
+			}
+		]
+	},
+	"post-edit-verify": {
+		"PostToolUse": [
+			{
+				"matcher": "write_to_file",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/post_edit_verify.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 15
+					}
+				]
+			},
+			{
+				"matcher": "replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/post_edit_verify.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 15
+					}
+				]
+			},
+			{
+				"matcher": "multi_replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/post_edit_verify.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 15
+					}
+				]
+			}
+		]
+	}
+}

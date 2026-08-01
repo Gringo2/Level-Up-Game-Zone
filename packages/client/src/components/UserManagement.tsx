@@ -36,7 +36,7 @@ export function UserManagement() {
 
 			const oldRole = user.role;
 			const response = await fetch(
-				`http://localhost:4000/api/users/${user.uid}/role`,
+				`http://${window.location.hostname}:4000/api/users/${user.uid}/role`,
 				{
 					method: "PUT",
 					headers: {
