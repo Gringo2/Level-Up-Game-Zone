@@ -89,13 +89,15 @@ describe("Shifts Controller - Negative Tests", () => {
 							}),
 						}),
 					}),
-				} as unknown;
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
 			}
 			return {
 				where: () => ({
 					get: vi.fn().mockResolvedValue({ docs: [] }), // No sales, expected cash = 100
 				}),
-			} as unknown;
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+			} as any;
 		});
 
 		// Actual cash is 50, variance is -50, > $2.00 threshold

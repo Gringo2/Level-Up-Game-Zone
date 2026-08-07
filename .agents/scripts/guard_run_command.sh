@@ -8,7 +8,17 @@
 COMMAND="$1"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-# Fast-exit: only guard commands that touch source directories
+# --- Phase 6: Context Window Guard (ACP-003) ---
+# Block commands known to produce massive stdout unless they are piped or redirected
+if echo "$COMMAND" | grep -qE "(^cat .*(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|\.log$)|git log|npm (ls|list)|depcruise )"; then
+  if ! echo "$COMMAND" | grep -qE "(\| head|\| grep|\| tail|>|>>)"; then
+    echo "🚫 CONTEXT GUARD BLOCK: This command generates massive output that will flood the context window."
+    echo "   Use the 'view_file' tool instead, or bound the output (e.g., '| head -n 50')."
+    exit 1
+  fi
+fi
+
+# Fast-exit: only guard destructive commands that touch source directories
 if ! echo "$COMMAND" | grep -qE "(packages/|apps/)"; then
   exit 0
 fi

@@ -13,6 +13,15 @@ fi
 
 MISSION_FILE="$REPO_ROOT/governance/MISSION.md"
 
+# --- Phase 6: Anti-Littering Protocol Gate (ACP-003) ---
+if [[ -n "$RELATIVE_PATH" ]] && [[ ! "$RELATIVE_PATH" == */* ]]; then
+  if [[ ! "$RELATIVE_PATH" =~ ^(package\.json|biome\.json|knip\.json|tsconfig\.json|sgconfig\.yml|README\.md|\.gitignore|\.dependency-cruiser\.js)$ ]]; then
+    echo "🚫 ANTI-LITTERING PROTOCOL BLOCKED: Unowned file [$RELATIVE_PATH] in repository root."
+    echo "   Rule 23 forbids persistent scratchpads. Use .agents/.scratch/ for temporary work."
+    exit 1
+  fi
+fi
+
 # 1. Self-Protecting Guardrail Rail: Protect infrastructure from unauthorized edits
 IS_INFRA=0
 if [[ -n "$RELATIVE_PATH" ]]; then

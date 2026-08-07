@@ -1,25 +1,15 @@
-# Phase 5 Functional Testing Tasks
+# Phase 6 Agentic Behavior Gating
 *Status: ACTIVE*
 
-## Phase A: Backend Unit & Negative Testing
-- [x] 1. Install required test dependencies in `packages/server` (e.g., `vitest`, `supertest`).
-- [x] 2. Create `packages/server/src/__tests__/usersController.test.ts` to validate role assignment logic.
-- [x] 3. Create `packages/server/src/__tests__/shiftsController.test.ts` to validate shift opening and closure logic.
-- [x] 4. Enforce Test-Negative validation (ensure API rejects unauthorized/malformed requests with 401/400).
+## Phase A: Context & Looping Guards
+- [x] 1. Update `guard_run_command.sh` to block high-volume output commands.
+- [x] 2. Update `post_edit_verify.sh` to track failures and enforce a 3-strike Exhaustion Protocol.
 
-## Phase B: Frontend Context Testing
-- [x] 5. Install `jsdom` and `@testing-library/react` in `packages/client`.
-- [x] 6. Create `packages/client/src/__tests__/contexts/AuthContext.test.tsx`.
-- [x] 7. Create `packages/client/src/__tests__/contexts/ShiftContext.test.tsx` (mocking Firebase and fetch).
-- [x] 8. Verify `AuthContext` accurately fails closed (logs user out) when backend token verification fails.
+## Phase B: Ghost File & Hallucination Gates
+- [x] 3. Update `mission_gate.sh` to implement the Anti-Littering Protocol.
+- [x] 4. Create `lock_gate.sh` to programmatically invoke `lock_mission.sh`.
+- [x] 5. Update `hooks.json` to bind `lock_gate.sh` to `MISSION.md` writes.
 
-## Phase C: Playwright E2E Flows
-- [x] 9. Update `tests/e2e/playwright.config.ts` to target local dynamic dev servers.
-- [x] 10. Implement `tests/e2e/auth.spec.ts` to test RBAC routing isolation.
-- [x] 11. Implement `tests/e2e/shift_cycle.spec.ts` (Login -> Open Shift -> Enter Variance -> Close Shift).
-- [x] 12. Eliminate tautological `baseline.spec.ts`.
-
-## Phase D: Finalization
-- [x] 13. Execute full monorepo test suite (`npm run test --workspaces`).
-- [x] 14. Verify architecture invariants via `AVP-001`.
-- [x] 15. Lock Mission Phase 5.
+## Phase C: Finalization
+- [x] 6. Verify all hooks via active shell probes.
+- [x] 7. Lock Mission Phase 6.

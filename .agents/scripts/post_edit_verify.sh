@@ -11,6 +11,44 @@ PACKAGE_DIR=$(echo "$RELATIVE_PATH" | cut -d'/' -f1-2)
 WORKSPACE_NAME=$(node -p "require('$REPO_ROOT/$PACKAGE_DIR/package.json').name" 2>/dev/null)
 BASENAME=$(basename "$TARGET_FILE")
 
+# --- Phase 6: Exhaustion Enforcement (ACP-003) ---
+mkdir -p "$REPO_ROOT/.agents/.scratch"
+FAIL_FILE="$REPO_ROOT/.agents/.scratch/${BASENAME}_failures"
+RCA_FILE="$REPO_ROOT/.agents/.scratch/RCA.md"
+
+# Check if currently locked due to exhaustion
+if [ -f "$FAIL_FILE" ]; then
+  count=$(cat "$FAIL_FILE")
+  if [ "$count" -ge 3 ]; then
+    if [ ! -f "$RCA_FILE" ]; then
+      echo "🚫 EXHAUSTION PROTOCOL ACTIVE: This file has failed verification 3 times."
+      echo "   You must create an RCA document at .agents/.scratch/RCA.md before you can edit it again."
+      exit 1
+    else
+      echo "✅ RCA Document found. Exhaustion lock lifted for this attempt."
+      rm -f "$FAIL_FILE" "$RCA_FILE"
+    fi
+  fi
+fi
+
+# Track failures on exit
+function exhaustion_trap {
+  local EXIT_CODE=$?
+  if [ $EXIT_CODE -ne 0 ]; then
+    local count=0
+    [ -f "$FAIL_FILE" ] && count=$(cat "$FAIL_FILE")
+    count=$((count + 1))
+    echo "$count" > "$FAIL_FILE"
+    if [ "$count" -ge 3 ]; then
+      echo "🚨 EXHAUSTION TRIGGERED: Verification failed 3 times. RCA document now required."
+    fi
+  else
+    rm -f "$FAIL_FILE"
+  fi
+}
+trap exhaustion_trap EXIT
+# ------------------------------------------------
+
 echo "🔍 POST-EDIT VERIFICATION: Calculating 100% Blast Radius for [$RELATIVE_PATH]..."
 
 # Handle non-existent or newly created files cleanly

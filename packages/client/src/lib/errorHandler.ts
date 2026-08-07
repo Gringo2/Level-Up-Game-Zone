@@ -2,12 +2,7 @@ import { toast } from "sonner";
 import { auth } from "../firebase";
 
 export enum OperationType {
-	CREATE = "create",
-	UPDATE = "update",
-	DELETE = "delete",
 	LIST = "list",
-	GET = "get",
-	WRITE = "write",
 }
 
 export function handleFirestoreError(

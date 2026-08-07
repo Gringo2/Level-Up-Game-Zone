@@ -19,7 +19,6 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@ast-grep/cli": "^0.45.0",
 		"@biomejs/biome": "2.5.6",
 		"@playwright/test": "^1.62.1",
 		"dependency-cruiser": "^18.1.0",

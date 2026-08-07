@@ -128,5 +128,29 @@
 				]
 			}
 		]
+	},
+	"mission-lock": {
+		"PostToolUse": [
+			{
+				"matcher": "write_to_file",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/lock_gate.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 30
+					}
+				]
+			},
+			{
+				"matcher": "replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/lock_gate.sh \"{{tool.args.TargetFile}}\"",
+						"timeout": 30
+					}
+				]
+			}
+		]
 	}
 }
