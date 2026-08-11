@@ -1,8 +1,8 @@
 import type { Credit } from "@level-up/shared";
 import { format } from "date-fns";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
 	Card,
 	CardContent,
@@ -10,30 +10,52 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
-import { db } from "../firebase";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+import { auth } from "../firebase";
 
 export function SalaryReport() {
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const q = query(
-			collection(db, "credits"),
-			where("status", "==", "Deducted"),
-		);
-		const unsub = onSnapshot(
-			q,
-			(snap) => {
-				setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit));
-				setLoading(false);
-			},
-			(err) => {
-				handleFirestoreError(err, OperationType.LIST, "credits");
-				setLoading(false);
-			},
-		);
-		return () => unsub();
+		let mounted = true;
+
+		const loadSalaryDeductions = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/credits`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch deductions",
+					);
+				}
+
+				const data = (await response.json()) as Credit[];
+				if (mounted) {
+					setCredits(data.filter((credit) => credit.status === "Deducted"));
+					setLoading(false);
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load salary deductions");
+					setLoading(false);
+				}
+			}
+		};
+
+		void loadSalaryDeductions();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	const groupedByEmployee = credits.reduce(

@@ -1,6 +1,5 @@
 import type { GameRate, GameSalesLog } from "@level-up/shared";
 import { format } from "date-fns";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -17,9 +16,8 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
 
 export function GameSales() {
 	const { user } = useAuth();
@@ -35,47 +33,65 @@ export function GameSales() {
 	const [deleteReason, setDeleteReason] = useState("");
 
 	useEffect(() => {
-		const qRates = query(
-			collection(db, "game_rates"),
-			where("isActive", "==", true),
-		);
-		const unsubRates = onSnapshot(
-			qRates,
-			(snap) => {
-				setRates(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameRate));
-				setLoadingRates(false);
-			},
-			(err) => {
-				handleFirestoreError(err, OperationType.LIST, "game_rates");
-				setLoadingRates(false);
-			},
-		);
+		let mounted = true;
 
-		const start = getShopStartOfDay().toISOString();
-		const end = getShopEndOfDay().toISOString();
-		const qLogs = query(
-			collection(db, "game_sales_logs"),
-			where("date", ">=", start),
-			where("date", "<=", end),
-		);
-		const unsubLogs = onSnapshot(
-			qLogs,
-			(snap) => {
-				const fetchedLogs = snap.docs.map(
-					(d) => ({ id: d.id, ...d.data() }) as GameSalesLog,
+		const loadSalesData = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) {
+					throw new Error("Not authenticated");
+				}
+
+				const [ratesResponse, salesResponse] = await Promise.all([
+					fetch(`http://${window.location.hostname}:4000/api/rates`, {
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}),
+					fetch(`http://${window.location.hostname}:4000/api/sales`, {
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}),
+				]);
+
+				if (!ratesResponse.ok) {
+					throw new Error("Failed to fetch rates");
+				}
+				if (!salesResponse.ok) {
+					throw new Error("Failed to fetch sales logs");
+				}
+
+				const fetchedRates = (await ratesResponse.json()) as GameRate[];
+				const fetchedSales = (await salesResponse.json()) as GameSalesLog[];
+				const start = getShopStartOfDay().toISOString();
+				const end = getShopEndOfDay().toISOString();
+				const dailySales = fetchedSales.filter(
+					(log) => log.date >= start && log.date <= end,
 				);
-				// Sort client-side to avoid needing a composite index for this simple view
-				fetchedLogs.sort(
-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+
+				if (!mounted) return;
+
+				setRates(fetchedRates.filter((rate) => rate.isActive));
+				setLogs(
+					dailySales.sort(
+						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+					),
 				);
-				setLogs(fetchedLogs);
-			},
-			(err) => handleFirestoreError(err, OperationType.LIST, "game_sales_logs"),
-		);
+				setLoadingRates(false);
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load sales data");
+					setLoadingRates(false);
+				}
+			}
+		};
+
+		void loadSalesData();
 
 		return () => {
-			unsubRates();
-			unsubLogs();
+			mounted = false;
 		};
 	}, []);
 

@@ -40,7 +40,12 @@ describe("ShiftContext - Negative Tests", () => {
 	it("should gracefully handle firestore errors and stop loading", async () => {
 		// Mock an active user so ShiftContext attempts to fetch
 		vi.mocked(useAuth).mockReturnValue({
-			user: { uid: "123", role: "manager" } as unknown,
+			user: {
+				uid: "123",
+				email: "manager@example.com",
+				displayName: "Manager",
+				role: "manager",
+			},
 			loading: false,
 		});
 

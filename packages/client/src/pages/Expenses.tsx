@@ -1,6 +1,5 @@
 import type { Expense } from "@level-up/shared";
 import { format } from "date-fns";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -17,9 +16,8 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
 
 export function Expenses() {
 	const { user } = useAuth();
@@ -34,27 +32,53 @@ export function Expenses() {
 	const [deleteReason, setDeleteReason] = useState("");
 
 	useEffect(() => {
-		const start = getShopStartOfDay().toISOString();
-		const end = getShopEndOfDay().toISOString();
-		const q = query(
-			collection(db, "expenses"),
-			where("date", ">=", start),
-			where("date", "<=", end),
-		);
-		const unsub = onSnapshot(
-			q,
-			(snap) => {
-				const fetched = snap.docs.map(
-					(d) => ({ id: d.id, ...d.data() }) as Expense,
+		let mounted = true;
+
+		const loadExpenses = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/expenses`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
 				);
-				fetched.sort(
-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-				);
-				setExpenses(fetched);
-			},
-			(err) => handleFirestoreError(err, OperationType.LIST, "expenses"),
-		);
-		return () => unsub();
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch expenses",
+					);
+				}
+
+				const dayStart = getShopStartOfDay().toISOString();
+				const dayEnd = getShopEndOfDay().toISOString();
+				const data = (await response.json()) as Expense[];
+				const fetched = data
+					.filter(
+						(expense) => expense.date >= dayStart && expense.date <= dayEnd,
+					)
+					.sort(
+						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+					);
+
+				if (mounted) {
+					setExpenses(fetched);
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load expenses");
+				}
+			}
+		};
+
+		void loadExpenses();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	const handleEdit = (expense: Expense) => {

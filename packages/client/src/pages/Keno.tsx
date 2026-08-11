@@ -1,6 +1,5 @@
 import type { KenoLog } from "@level-up/shared";
 import { format } from "date-fns";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -17,9 +16,8 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
 
 export function Keno() {
 	const { user } = useAuth();
@@ -33,28 +31,51 @@ export function Keno() {
 	const [deleteReason, setDeleteReason] = useState("");
 
 	useEffect(() => {
-		const start = getShopStartOfDay().toISOString();
-		const end = getShopEndOfDay().toISOString();
-		const qLogs = query(
-			collection(db, "keno_logs"),
-			where("date", ">=", start),
-			where("date", "<=", end),
-		);
-		const unsubLogs = onSnapshot(
-			qLogs,
-			(snap) => {
-				const fetchedLogs = snap.docs.map(
-					(d) => ({ id: d.id, ...d.data() }) as KenoLog,
-				);
-				fetchedLogs.sort(
-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-				);
-				setLogs(fetchedLogs);
-			},
-			(err) => handleFirestoreError(err, OperationType.LIST, "keno_logs"),
-		);
+		let mounted = true;
 
-		return () => unsubLogs();
+		const loadKenoLogs = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/keno`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch keno logs",
+					);
+				}
+
+				const dayStart = getShopStartOfDay().toISOString();
+				const dayEnd = getShopEndOfDay().toISOString();
+				const data = (await response.json()) as KenoLog[];
+				const fetchedLogs = data
+					.filter((log) => log.date >= dayStart && log.date <= dayEnd)
+					.sort(
+						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+					);
+
+				if (mounted) {
+					setLogs(fetchedLogs);
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load keno logs");
+				}
+			}
+		};
+
+		void loadKenoLogs();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	const netProfit = parseFloat(sales || "0") - parseFloat(payouts || "0");

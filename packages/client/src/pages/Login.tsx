@@ -1,4 +1,4 @@
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect } from "firebase/auth";
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import {
@@ -18,6 +18,14 @@ export function Login() {
 			await signInWithPopup(auth, googleProvider);
 			// biome-ignore lint/suspicious/noExplicitAny: API error response
 		} catch (err: any) {
+			if (err?.code === "auth/popup-blocked") {
+				try {
+					await signInWithRedirect(auth, googleProvider);
+				} catch (redirectError: any) {
+					setError(redirectError.message);
+				}
+				return;
+			}
 			setError(err.message);
 		}
 	};

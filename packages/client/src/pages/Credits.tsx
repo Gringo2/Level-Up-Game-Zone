@@ -1,6 +1,5 @@
 import type { Credit } from "@level-up/shared";
 import { format } from "date-fns";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -17,8 +16,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth, db } from "../firebase";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+import { auth } from "../firebase";
 
 export function Credits() {
 	const { user } = useAuth();
@@ -32,15 +30,47 @@ export function Credits() {
 	const [deleteReason, setDeleteReason] = useState("");
 
 	useEffect(() => {
-		const q = query(collection(db, "credits"), orderBy("date", "desc"));
-		const unsub = onSnapshot(
-			q,
-			(snap) => {
-				setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit));
-			},
-			(err) => handleFirestoreError(err, OperationType.LIST, "credits"),
-		);
-		return () => unsub();
+		let mounted = true;
+
+		const loadCredits = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/credits`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch credits",
+					);
+				}
+
+				const data = (await response.json()) as Credit[];
+				if (mounted) {
+					setCredits(
+						data.sort(
+							(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+						),
+					);
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load credits");
+				}
+			}
+		};
+
+		void loadCredits();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	const handleResolve = async (

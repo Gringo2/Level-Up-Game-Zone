@@ -7,7 +7,6 @@ import type {
 } from "@level-up/shared";
 import { format } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -16,7 +15,9 @@ import {
 	PieChart,
 	Tooltip as RechartsTooltip,
 	ResponsiveContainer,
+	type TooltipValueType,
 } from "recharts";
+import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import {
 	Card,
@@ -27,7 +28,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
-import { db } from "../firebase";
+import { auth } from "../firebase";
 import { SHOP_TIMEZONE } from "../lib/dateUtils";
 
 export function Reports() {
@@ -51,9 +52,9 @@ export function Reports() {
 
 	useEffect(() => {
 		if (!user) return;
+		let mounted = true;
 		setLoading(true);
 
-		// Parse the dates assuming they are in the shop's timezone (UTC+3 for Addis Ababa)
 		const startIso = new Date(
 			`${appliedStartDate}T00:00:00+03:00`,
 		).toISOString();
@@ -61,60 +62,101 @@ export function Reports() {
 			`${appliedEndDate}T23:59:59.999+03:00`,
 		).toISOString();
 
-		const qShifts = query(
-			collection(db, "shifts"),
-			where("start_time", ">=", startIso),
-			where("start_time", "<=", endIso),
-		);
-		const unsubShifts = onSnapshot(qShifts, (snap) =>
-			setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Shift)),
-		);
+		const loadReports = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
 
-		const qGames = query(
-			collection(db, "game_sales_logs"),
-			where("date", ">=", startIso),
-			where("date", "<=", endIso),
-		);
-		const unsubGames = onSnapshot(qGames, (snap) =>
-			setGameSales(
-				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameSalesLog),
-			),
-		);
+				const [
+					shiftsResponse,
+					salesResponse,
+					kenoResponse,
+					creditsResponse,
+					expensesResponse,
+				] = await Promise.all([
+					fetch(`http://${window.location.hostname}:4000/api/shifts`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+					fetch(`http://${window.location.hostname}:4000/api/sales`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+					fetch(`http://${window.location.hostname}:4000/api/keno`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+					fetch(`http://${window.location.hostname}:4000/api/credits`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+					fetch(`http://${window.location.hostname}:4000/api/expenses`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+				]);
 
-		const qKeno = query(
-			collection(db, "keno_logs"),
-			where("date", ">=", startIso),
-			where("date", "<=", endIso),
-		);
-		const unsubKeno = onSnapshot(qKeno, (snap) =>
-			setKenoLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as KenoLog)),
-		);
+				if (!shiftsResponse.ok) {
+					throw new Error("Failed to fetch shifts");
+				}
+				if (!salesResponse.ok) {
+					throw new Error("Failed to fetch sales logs");
+				}
+				if (!kenoResponse.ok) {
+					throw new Error("Failed to fetch keno logs");
+				}
+				if (!creditsResponse.ok) {
+					throw new Error("Failed to fetch credits");
+				}
+				if (!expensesResponse.ok) {
+					throw new Error("Failed to fetch expenses");
+				}
 
-		const qCredits = query(
-			collection(db, "credits"),
-			where("date", ">=", startIso),
-			where("date", "<=", endIso),
-		);
-		const unsubCredits = onSnapshot(qCredits, (snap) =>
-			setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit)),
-		);
+				const [shiftsData, salesData, kenoData, creditsData, expensesData] =
+					await Promise.all([
+						shiftsResponse.json(),
+						salesResponse.json(),
+						kenoResponse.json(),
+						creditsResponse.json(),
+						expensesResponse.json(),
+					]);
 
-		const qExpenses = query(
-			collection(db, "expenses"),
-			where("date", ">=", startIso),
-			where("date", "<=", endIso),
-		);
-		const unsubExpenses = onSnapshot(qExpenses, (snap) => {
-			setExpenses(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Expense));
-			setLoading(false);
-		});
+				if (!mounted) return;
 
+				setShifts(
+					(shiftsData as Shift[]).filter(
+						(shift) =>
+							shift.start_time >= startIso && shift.start_time <= endIso,
+					),
+				);
+				setGameSales(
+					(salesData as GameSalesLog[]).filter(
+						(log) => log.date >= startIso && log.date <= endIso,
+					),
+				);
+				setKenoLogs(
+					(kenoData as KenoLog[]).filter(
+						(log) => log.date >= startIso && log.date <= endIso,
+					),
+				);
+				setCredits(
+					(creditsData as Credit[]).filter(
+						(log) => log.date >= startIso && log.date <= endIso,
+					),
+				);
+				setExpenses(
+					(expensesData as Expense[]).filter(
+						(log) => log.date >= startIso && log.date <= endIso,
+					),
+				);
+				setLoading(false);
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load reports data");
+					setLoading(false);
+				}
+			}
+		};
+
+		void loadReports();
 		return () => {
-			unsubShifts();
-			unsubGames();
-			unsubKeno();
-			unsubCredits();
-			unsubExpenses();
+			mounted = false;
 		};
 	}, [appliedStartDate, appliedEndDate, user]);
 
@@ -316,7 +358,9 @@ export function Reports() {
 													))}
 												</Pie>
 												<RechartsTooltip
-													formatter={(value: number) => `$${value.toFixed(2)}`}
+													formatter={(value: TooltipValueType | undefined) =>
+														`$${Number(value ?? 0).toFixed(2)}`
+													}
 												/>
 											</PieChart>
 										</ResponsiveContainer>
@@ -372,7 +416,9 @@ export function Reports() {
 													))}
 												</Pie>
 												<RechartsTooltip
-													formatter={(value: number) => `$${value.toFixed(2)}`}
+													formatter={(value: TooltipValueType | undefined) =>
+														`$${Number(value ?? 0).toFixed(2)}`
+													}
 												/>
 											</PieChart>
 										</ResponsiveContainer>

@@ -1,6 +1,5 @@
 import type { Credit, Expense, GameSalesLog, KenoLog } from "@level-up/shared";
 import { format } from "date-fns";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { Coins, CreditCard, Gamepad2, Loader2, Receipt } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -16,7 +15,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useShift } from "../contexts/ShiftContext";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { getShopStartOfDay } from "../lib/dateUtils";
 
 export function Dashboard() {
@@ -32,49 +31,86 @@ export function Dashboard() {
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 
 	useEffect(() => {
-		const start = activeShift
-			? activeShift.start_time
-			: getShopStartOfDay().toISOString();
+		let mounted = true;
 
-		const qGames = query(
-			collection(db, "game_sales_logs"),
-			where("date", ">=", start),
-		);
-		const unsubGames = onSnapshot(qGames, (snap) =>
-			setGameSales(
-				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameSalesLog),
-			),
-		);
+		const loadDashboardData = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
 
-		const qKeno = query(
-			collection(db, "keno_logs"),
-			where("date", ">=", start),
-		);
-		const unsubKeno = onSnapshot(qKeno, (snap) =>
-			setKenoLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as KenoLog)),
-		);
+				const start = activeShift
+					? activeShift.start_time
+					: getShopStartOfDay().toISOString();
 
-		const qCredits = query(
-			collection(db, "credits"),
-			where("date", ">=", start),
-		);
-		const unsubCredits = onSnapshot(qCredits, (snap) =>
-			setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit)),
-		);
+				const [gamesResponse, kenoResponse, creditsResponse, expensesResponse] =
+					await Promise.all([
+						fetch(`http://${window.location.hostname}:4000/api/sales`, {
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}),
+						fetch(`http://${window.location.hostname}:4000/api/keno`, {
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}),
+						fetch(`http://${window.location.hostname}:4000/api/credits`, {
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}),
+						fetch(`http://${window.location.hostname}:4000/api/expenses`, {
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
+						}),
+					]);
 
-		const qExpenses = query(
-			collection(db, "expenses"),
-			where("date", ">=", start),
-		);
-		const unsubExpenses = onSnapshot(qExpenses, (snap) =>
-			setExpenses(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Expense)),
-		);
+				if (!gamesResponse.ok) {
+					throw new Error("Failed to fetch sales logs");
+				}
+				if (!kenoResponse.ok) {
+					throw new Error("Failed to fetch keno logs");
+				}
+				if (!creditsResponse.ok) {
+					throw new Error("Failed to fetch credits");
+				}
+				if (!expensesResponse.ok) {
+					throw new Error("Failed to fetch expenses");
+				}
+
+				const [gamesData, kenoData, creditsData, expensesData] =
+					await Promise.all([
+						gamesResponse.json(),
+						kenoResponse.json(),
+						creditsResponse.json(),
+						expensesResponse.json(),
+					]);
+
+				if (!mounted) return;
+
+				setGameSales(
+					(gamesData as GameSalesLog[]).filter((log) => log.date >= start),
+				);
+				setKenoLogs((kenoData as KenoLog[]).filter((log) => log.date >= start));
+				setCredits(
+					(creditsData as Credit[]).filter((log) => log.date >= start),
+				);
+				setExpenses(
+					(expensesData as Expense[]).filter((log) => log.date >= start),
+				);
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load dashboard data");
+				}
+			}
+		};
+
+		void loadDashboardData();
 
 		return () => {
-			unsubGames();
-			unsubKeno();
-			unsubCredits();
-			unsubExpenses();
+			mounted = false;
 		};
 	}, [activeShift]);
 

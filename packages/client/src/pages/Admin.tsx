@@ -1,5 +1,4 @@
 import type { GameRate } from "@level-up/shared";
-import { collection, onSnapshot, query } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -15,8 +14,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { auth, db } from "../firebase";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+import { auth } from "../firebase";
 
 export function Admin() {
 	const [rates, setRates] = useState<GameRate[]>([]);
@@ -26,15 +24,41 @@ export function Admin() {
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
-		const q = query(collection(db, "game_rates"));
-		const unsub = onSnapshot(
-			q,
-			(snap) => {
-				setRates(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameRate));
-			},
-			(err) => handleFirestoreError(err, OperationType.LIST, "game_rates"),
-		);
-		return () => unsub();
+		let mounted = true;
+
+		const loadRates = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/rates`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch rates",
+					);
+				}
+
+				const data = (await response.json()) as GameRate[];
+				if (mounted) {
+					setRates(data);
+				}
+			} catch (err) {
+				console.error(err);
+				toast.error("Failed to load rates");
+			}
+		};
+
+		void loadRates();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	const handleAddRate = async (e: React.FormEvent) => {

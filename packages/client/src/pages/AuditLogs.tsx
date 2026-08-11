@@ -1,7 +1,7 @@
 import { format } from "date-fns";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import {
 	Card,
 	CardContent,
@@ -9,8 +9,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
-import { db } from "../firebase";
-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+import { auth } from "../firebase";
 
 export function AuditLogs() {
 	// biome-ignore lint/suspicious/noExplicitAny: Firestore documents
@@ -18,19 +17,45 @@ export function AuditLogs() {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const q = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"));
-		const unsub = onSnapshot(
-			q,
-			(snap) => {
-				setLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-				setLoading(false);
-			},
-			(err) => {
-				handleFirestoreError(err, OperationType.LIST, "audit_logs");
-				setLoading(false);
-			},
-		);
-		return () => unsub();
+		let mounted = true;
+
+		const loadLogs = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/audit-logs`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch audit logs",
+					);
+				}
+
+				const data = await response.json();
+				if (mounted) {
+					setLogs(data);
+					setLoading(false);
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load audit logs");
+					setLoading(false);
+				}
+			}
+		};
+
+		void loadLogs();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	if (loading)

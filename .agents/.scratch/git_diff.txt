@@ -1,0 +1,1250 @@
+diff --git a/README.md b/README.md
+index eff4c27..9c48614 100644
+--- a/README.md
++++ b/README.md
+@@ -1,20 +1,72 @@
+-<div align="center">
+-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+-</div>
++# Level-Up Game Zone
+ 
+-# Run and deploy your AI Studio app
++Level-Up Game Zone is a TypeScript monorepo for managing game sales, keno, store credits, expenses, users, and shifts.
+ 
+-This contains everything you need to run your app locally.
++## Prerequisites
+ 
+-View your app in AI Studio: https://ai.studio/apps/5349dc4e-5429-4d31-84a3-65347d2421ef
++- Node.js and npm
++- A Firebase project configured for the application
++- A Firebase Admin service-account key for the server
+ 
+-## Run Locally
++## Setup
+ 
+-**Prerequisites:**  Node.js
++Install all workspace dependencies from the repository root:
+ 
++```bash
++npm install
++```
+ 
+-1. Install dependencies:
+-   `npm install`
+-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+-3. Run the app:
+-   `npm run dev`
++Save the Firebase Admin service-account JSON file as:
++
++```text
++packages/server/serviceAccountKey.json
++```
++
++This file is gitignored and must not be committed. The client Firebase configuration is stored in `packages/client/firebase-applet-config.json`.
++
++## Serve The Full Project
++
++Start both the Express API and the Vite client from the repository root:
++
++```bash
++npm run dev
++```
++
++Open the client at [http://localhost:3000](http://localhost:3000). The API runs at [http://localhost:4000](http://localhost:4000), and its health check is available at [http://localhost:4000/api/health](http://localhost:4000/api/health).
++
++The combined command is equivalent to running these in separate terminals:
++
++```bash
++npm run dev:server
++npm run dev:client
++```
++
++## Build And Run
++
++Build each workspace:
++
++```bash
++npm run build:server
++npm run build:client
++```
++
++After building, run the compiled server with:
++
++```bash
++npm run start --workspace=@level-up/server
++```
++
++To preview the production client build:
++
++```bash
++npm run preview --workspace=@level-up/client
++```
++
++## Verification
++
++Run the client typecheck and repository tests:
++
++```bash
++npx tsc -p packages/client/tsconfig.json --noEmit
++npx vitest run
++```
+diff --git a/package-lock.json b/package-lock.json
+index 00fbbb9..c7dd9e1 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -11,6 +11,8 @@
+ 			"devDependencies": {
+ 				"@biomejs/biome": "2.5.6",
+ 				"@playwright/test": "^1.62.1",
++				"@types/react": "^19.2.18",
++				"@types/react-dom": "^19.2.4",
+ 				"dependency-cruiser": "^18.1.0",
+ 				"husky": "^9.1.7",
+ 				"knip": "^6.29.0",
+@@ -2915,6 +2917,26 @@
+ 			"dev": true,
+ 			"license": "MIT"
+ 		},
++		"node_modules/@types/react": {
++			"version": "19.2.18",
++			"resolved": "https://registry.npmjs.org/@types/react/-/react-19.2.18.tgz",
++			"integrity": "sha512-AnzbBERsrLKtk2XSfTbYRLjQPdy116Sty4q+T+Bp3IC4l6jNBvreVPAHmpq9qhXQM7CXZPjLVmGMw9sy+hxQ3w==",
++			"devOptional": true,
++			"license": "MIT",
++			"dependencies": {
++				"csstype": "^3.2.2"
++			}
++		},
++		"node_modules/@types/react-dom": {
++			"version": "19.2.4",
++			"resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.2.4.tgz",
++			"integrity": "sha512-Bsc+QHgp+P/F02XDzNCY9jnZNCUuLki36KT7VKrTXXLdHf+vHMNZnW1rVu5DNW/rCK+fya3DATySbLM4yhtKUw==",
++			"dev": true,
++			"license": "MIT",
++			"peerDependencies": {
++				"@types/react": "^19.2.0"
++			}
++		},
+ 		"node_modules/@types/request": {
+ 			"version": "2.48.13",
+ 			"resolved": "https://registry.npmjs.org/@types/request/-/request-2.48.13.tgz",
+@@ -3765,6 +3787,13 @@
+ 			"dev": true,
+ 			"license": "MIT"
+ 		},
++		"node_modules/csstype": {
++			"version": "3.2.3",
++			"resolved": "https://registry.npmjs.org/csstype/-/csstype-3.2.3.tgz",
++			"integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==",
++			"devOptional": true,
++			"license": "MIT"
++		},
+ 		"node_modules/d3-array": {
+ 			"version": "3.2.4",
+ 			"resolved": "https://registry.npmjs.org/d3-array/-/d3-array-3.2.4.tgz",
+diff --git a/package.json b/package.json
+index 8e2ee18..a37c438 100644
+--- a/package.json
++++ b/package.json
+@@ -21,6 +21,8 @@
+ 	"devDependencies": {
+ 		"@biomejs/biome": "2.5.6",
+ 		"@playwright/test": "^1.62.1",
++		"@types/react": "^19.2.18",
++		"@types/react-dom": "^19.2.4",
+ 		"dependency-cruiser": "^18.1.0",
+ 		"husky": "^9.1.7",
+ 		"knip": "^6.29.0",
+diff --git a/packages/client/src/__tests__/contexts/ShiftContext.test.tsx b/packages/client/src/__tests__/contexts/ShiftContext.test.tsx
+index a5770b8..275e9b3 100644
+--- a/packages/client/src/__tests__/contexts/ShiftContext.test.tsx
++++ b/packages/client/src/__tests__/contexts/ShiftContext.test.tsx
+@@ -40,7 +40,12 @@ describe("ShiftContext - Negative Tests", () => {
+ 	it("should gracefully handle firestore errors and stop loading", async () => {
+ 		// Mock an active user so ShiftContext attempts to fetch
+ 		vi.mocked(useAuth).mockReturnValue({
+-			user: { uid: "123", role: "manager" } as unknown,
++			user: {
++				uid: "123",
++				email: "manager@example.com",
++				displayName: "Manager",
++				role: "manager",
++			},
+ 			loading: false,
+ 		});
+ 
+diff --git a/packages/client/src/pages/Admin.tsx b/packages/client/src/pages/Admin.tsx
+index ee70bd9..2b8ef67 100644
+--- a/packages/client/src/pages/Admin.tsx
++++ b/packages/client/src/pages/Admin.tsx
+@@ -1,5 +1,4 @@
+ import type { GameRate } from "@level-up/shared";
+-import { collection, onSnapshot, query } from "firebase/firestore";
+ import { Loader2 } from "lucide-react";
+ import type React from "react";
+ import { useEffect, useState } from "react";
+@@ -15,8 +14,7 @@ import {
+ } from "../components/ui/card";
+ import { Input } from "../components/ui/input";
+ import { Label } from "../components/ui/label";
+-import { auth, db } from "../firebase";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
++import { auth } from "../firebase";
+ 
+ export function Admin() {
+ 	const [rates, setRates] = useState<GameRate[]>([]);
+@@ -26,15 +24,39 @@ export function Admin() {
+ 	const [loading, setLoading] = useState(false);
+ 
+ 	useEffect(() => {
+-		const q = query(collection(db, "game_rates"));
+-		const unsub = onSnapshot(
+-			q,
+-			(snap) => {
+-				setRates(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameRate));
+-			},
+-			(err) => handleFirestoreError(err, OperationType.LIST, "game_rates"),
+-		);
+-		return () => unsub();
++		let mounted = true;
++
++		const loadRates = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const response = await fetch(
++					`http://${window.location.hostname}:4000/api/rates`,
++					{
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					},
++				);
++				if (!response.ok) {
++					throw new Error((await response.json()).error || "Failed to fetch rates");
++				}
++
++				const data = (await response.json()) as GameRate[];
++				if (mounted) {
++					setRates(data);
++				}
++			} catch (err) {
++				console.error(err);
++				toast.error("Failed to load rates");
++			}
++		};
++
++		void loadRates();
++		return () => {
++			mounted = false;
++		};
+ 	}, []);
+ 
+ 	const handleAddRate = async (e: React.FormEvent) => {
+diff --git a/packages/client/src/pages/AuditLogs.tsx b/packages/client/src/pages/AuditLogs.tsx
+index a71b49d..ba6ba1c 100644
+--- a/packages/client/src/pages/AuditLogs.tsx
++++ b/packages/client/src/pages/AuditLogs.tsx
+@@ -1,7 +1,7 @@
+ import { format } from "date-fns";
+-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+ import { Loader2 } from "lucide-react";
+ import { useEffect, useState } from "react";
++import { toast } from "sonner";
+ import {
+ 	Card,
+ 	CardContent,
+@@ -9,8 +9,7 @@ import {
+ 	CardHeader,
+ 	CardTitle,
+ } from "../components/ui/card";
+-import { db } from "../firebase";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
++import { auth } from "../firebase";
+ 
+ export function AuditLogs() {
+ 	// biome-ignore lint/suspicious/noExplicitAny: Firestore documents
+@@ -18,19 +17,45 @@ export function AuditLogs() {
+ 	const [loading, setLoading] = useState(true);
+ 
+ 	useEffect(() => {
+-		const q = query(collection(db, "audit_logs"), orderBy("timestamp", "desc"));
+-		const unsub = onSnapshot(
+-			q,
+-			(snap) => {
+-				setLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+-				setLoading(false);
+-			},
+-			(err) => {
+-				handleFirestoreError(err, OperationType.LIST, "audit_logs");
+-				setLoading(false);
+-			},
+-		);
+-		return () => unsub();
++		let mounted = true;
++
++		const loadLogs = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const response = await fetch(
++					`http://${window.location.hostname}:4000/api/audit-logs`,
++					{
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					},
++				);
++				if (!response.ok) {
++					throw new Error(
++						(await response.json()).error || "Failed to fetch audit logs",
++					);
++				}
++
++				const data = await response.json();
++				if (mounted) {
++					setLogs(data);
++					setLoading(false);
++				}
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load audit logs");
++					setLoading(false);
++				}
++			}
++		};
++
++		void loadLogs();
++		return () => {
++			mounted = false;
++		};
+ 	}, []);
+ 
+ 	if (loading)
+diff --git a/packages/client/src/pages/Credits.tsx b/packages/client/src/pages/Credits.tsx
+index 3e82247..23fc614 100644
+--- a/packages/client/src/pages/Credits.tsx
++++ b/packages/client/src/pages/Credits.tsx
+@@ -1,6 +1,5 @@
+ import type { Credit } from "@level-up/shared";
+ import { format } from "date-fns";
+-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+ import { Edit2, Loader2, Trash2 } from "lucide-react";
+ import type React from "react";
+ import { useEffect, useState } from "react";
+@@ -17,8 +16,7 @@ import {
+ import { Input } from "../components/ui/input";
+ import { Label } from "../components/ui/label";
+ import { useAuth } from "../contexts/AuthContext";
+-import { auth, db } from "../firebase";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
++import { auth } from "../firebase";
+ 
+ export function Credits() {
+ 	const { user } = useAuth();
+@@ -32,15 +30,45 @@ export function Credits() {
+ 	const [deleteReason, setDeleteReason] = useState("");
+ 
+ 	useEffect(() => {
+-		const q = query(collection(db, "credits"), orderBy("date", "desc"));
+-		const unsub = onSnapshot(
+-			q,
+-			(snap) => {
+-				setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit));
+-			},
+-			(err) => handleFirestoreError(err, OperationType.LIST, "credits"),
+-		);
+-		return () => unsub();
++		let mounted = true;
++
++		const loadCredits = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const response = await fetch(
++					`http://${window.location.hostname}:4000/api/credits`,
++					{
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					},
++				);
++				if (!response.ok) {
++					throw new Error((await response.json()).error || "Failed to fetch credits");
++				}
++
++				const data = (await response.json()) as Credit[];
++				if (mounted) {
++					setCredits(
++						data.sort(
++							(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++						),
++					);
++				}
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load credits");
++				}
++			}
++		};
++
++		void loadCredits();
++		return () => {
++			mounted = false;
++		};
+ 	}, []);
+ 
+ 	const handleResolve = async (
+diff --git a/packages/client/src/pages/Dashboard.tsx b/packages/client/src/pages/Dashboard.tsx
+index 96c8c2f..45b2859 100644
+--- a/packages/client/src/pages/Dashboard.tsx
++++ b/packages/client/src/pages/Dashboard.tsx
+@@ -1,6 +1,5 @@
+ import type { Credit, Expense, GameSalesLog, KenoLog } from "@level-up/shared";
+ import { format } from "date-fns";
+-import { collection, onSnapshot, query, where } from "firebase/firestore";
+ import { Coins, CreditCard, Gamepad2, Loader2, Receipt } from "lucide-react";
+ import type React from "react";
+ import { useEffect, useState } from "react";
+@@ -16,7 +15,7 @@ import {
+ import { Input } from "../components/ui/input";
+ import { Label } from "../components/ui/label";
+ import { useShift } from "../contexts/ShiftContext";
+-import { auth, db } from "../firebase";
++import { auth } from "../firebase";
+ import { getShopStartOfDay } from "../lib/dateUtils";
+ 
+ export function Dashboard() {
+@@ -32,49 +31,82 @@ export function Dashboard() {
+ 	const [expenses, setExpenses] = useState<Expense[]>([]);
+ 
+ 	useEffect(() => {
+-		const start = activeShift
+-			? activeShift.start_time
+-			: getShopStartOfDay().toISOString();
++		let mounted = true;
+ 
+-		const qGames = query(
+-			collection(db, "game_sales_logs"),
+-			where("date", ">=", start),
+-		);
+-		const unsubGames = onSnapshot(qGames, (snap) =>
+-			setGameSales(
+-				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameSalesLog),
+-			),
+-		);
++		const loadDashboardData = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
+ 
+-		const qKeno = query(
+-			collection(db, "keno_logs"),
+-			where("date", ">=", start),
+-		);
+-		const unsubKeno = onSnapshot(qKeno, (snap) =>
+-			setKenoLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as KenoLog)),
+-		);
++				const start = activeShift
++					? activeShift.start_time
++					: getShopStartOfDay().toISOString();
+ 
+-		const qCredits = query(
+-			collection(db, "credits"),
+-			where("date", ">=", start),
+-		);
+-		const unsubCredits = onSnapshot(qCredits, (snap) =>
+-			setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit)),
+-		);
++				const [gamesResponse, kenoResponse, creditsResponse, expensesResponse] =
++					await Promise.all([
++						fetch(`http://${window.location.hostname}:4000/api/sales`, {
++							headers: {
++								Authorization: `Bearer ${token}`,
++							},
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/keno`, {
++							headers: {
++								Authorization: `Bearer ${token}`,
++							},
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/credits`, {
++							headers: {
++								Authorization: `Bearer ${token}`,
++							},
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/expenses`, {
++							headers: {
++								Authorization: `Bearer ${token}`,
++							},
++						}),
++					]);
+ 
+-		const qExpenses = query(
+-			collection(db, "expenses"),
+-			where("date", ">=", start),
+-		);
+-		const unsubExpenses = onSnapshot(qExpenses, (snap) =>
+-			setExpenses(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Expense)),
+-		);
++				if (!gamesResponse.ok) {
++					throw new Error("Failed to fetch sales logs");
++				}
++				if (!kenoResponse.ok) {
++					throw new Error("Failed to fetch keno logs");
++				}
++				if (!creditsResponse.ok) {
++					throw new Error("Failed to fetch credits");
++				}
++				if (!expensesResponse.ok) {
++					throw new Error("Failed to fetch expenses");
++				}
++
++				const [gamesData, kenoData, creditsData, expensesData] =
++					await Promise.all([
++						gamesResponse.json(),
++						kenoResponse.json(),
++						creditsResponse.json(),
++						expensesResponse.json(),
++					]);
++
++				if (!mounted) return;
++
++				setGameSales(
++					(gamesData as GameSalesLog[]).filter((log) => log.date >= start),
++				);
++				setKenoLogs((kenoData as KenoLog[]).filter((log) => log.date >= start));
++				setCredits((creditsData as Credit[]).filter((log) => log.date >= start));
++				setExpenses((expensesData as Expense[]).filter((log) => log.date >= start));
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load dashboard data");
++				}
++			}
++		};
++
++		void loadDashboardData();
+ 
+ 		return () => {
+-			unsubGames();
+-			unsubKeno();
+-			unsubCredits();
+-			unsubExpenses();
++			mounted = false;
+ 		};
+ 	}, [activeShift]);
+ 
+diff --git a/packages/client/src/pages/Expenses.tsx b/packages/client/src/pages/Expenses.tsx
+index 5d8ae14..750b370 100644
+--- a/packages/client/src/pages/Expenses.tsx
++++ b/packages/client/src/pages/Expenses.tsx
+@@ -1,6 +1,5 @@
+ import type { Expense } from "@level-up/shared";
+ import { format } from "date-fns";
+-import { collection, onSnapshot, query, where } from "firebase/firestore";
+ import { Edit2, Loader2, Trash2 } from "lucide-react";
+ import type React from "react";
+ import { useEffect, useState } from "react";
+@@ -17,9 +16,8 @@ import {
+ import { Input } from "../components/ui/input";
+ import { Label } from "../components/ui/label";
+ import { useAuth } from "../contexts/AuthContext";
+-import { auth, db } from "../firebase";
++import { auth } from "../firebase";
+ import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+ 
+ export function Expenses() {
+ 	const { user } = useAuth();
+@@ -34,27 +32,51 @@ export function Expenses() {
+ 	const [deleteReason, setDeleteReason] = useState("");
+ 
+ 	useEffect(() => {
+-		const start = getShopStartOfDay().toISOString();
+-		const end = getShopEndOfDay().toISOString();
+-		const q = query(
+-			collection(db, "expenses"),
+-			where("date", ">=", start),
+-			where("date", "<=", end),
+-		);
+-		const unsub = onSnapshot(
+-			q,
+-			(snap) => {
+-				const fetched = snap.docs.map(
+-					(d) => ({ id: d.id, ...d.data() }) as Expense,
+-				);
+-				fetched.sort(
+-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++		let mounted = true;
++
++		const loadExpenses = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const response = await fetch(
++					`http://${window.location.hostname}:4000/api/expenses`,
++					{
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					},
+ 				);
+-				setExpenses(fetched);
+-			},
+-			(err) => handleFirestoreError(err, OperationType.LIST, "expenses"),
+-		);
+-		return () => unsub();
++				if (!response.ok) {
++					throw new Error(
++						(await response.json()).error || "Failed to fetch expenses",
++					);
++				}
++
++				const dayStart = getShopStartOfDay().toISOString();
++				const dayEnd = getShopEndOfDay().toISOString();
++				const data = (await response.json()) as Expense[];
++				const fetched = data
++					.filter((expense) => expense.date >= dayStart && expense.date <= dayEnd)
++					.sort(
++						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++					);
++
++				if (mounted) {
++					setExpenses(fetched);
++				}
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load expenses");
++				}
++			}
++		};
++
++		void loadExpenses();
++		return () => {
++			mounted = false;
++		};
+ 	}, []);
+ 
+ 	const handleEdit = (expense: Expense) => {
+diff --git a/packages/client/src/pages/GameSales.tsx b/packages/client/src/pages/GameSales.tsx
+index 01563d4..516dca7 100644
+--- a/packages/client/src/pages/GameSales.tsx
++++ b/packages/client/src/pages/GameSales.tsx
+@@ -1,6 +1,5 @@
+ import type { GameRate, GameSalesLog } from "@level-up/shared";
+ import { format } from "date-fns";
+-import { collection, onSnapshot, query, where } from "firebase/firestore";
+ import { Edit2, Loader2, Trash2 } from "lucide-react";
+ import type React from "react";
+ import { useEffect, useState } from "react";
+@@ -17,9 +16,8 @@ import {
+ import { Input } from "../components/ui/input";
+ import { Label } from "../components/ui/label";
+ import { useAuth } from "../contexts/AuthContext";
+-import { auth, db } from "../firebase";
++import { auth } from "../firebase";
+ import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+ 
+ export function GameSales() {
+ 	const { user } = useAuth();
+@@ -35,47 +33,65 @@ export function GameSales() {
+ 	const [deleteReason, setDeleteReason] = useState("");
+ 
+ 	useEffect(() => {
+-		const qRates = query(
+-			collection(db, "game_rates"),
+-			where("isActive", "==", true),
+-		);
+-		const unsubRates = onSnapshot(
+-			qRates,
+-			(snap) => {
+-				setRates(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameRate));
+-				setLoadingRates(false);
+-			},
+-			(err) => {
+-				handleFirestoreError(err, OperationType.LIST, "game_rates");
+-				setLoadingRates(false);
+-			},
+-		);
++		let mounted = true;
++
++		const loadSalesData = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) {
++					throw new Error("Not authenticated");
++				}
++
++				const [ratesResponse, salesResponse] = await Promise.all([
++					fetch(`http://${window.location.hostname}:4000/api/rates`, {
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					}),
++					fetch(`http://${window.location.hostname}:4000/api/sales`, {
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					}),
++				]);
+ 
+-		const start = getShopStartOfDay().toISOString();
+-		const end = getShopEndOfDay().toISOString();
+-		const qLogs = query(
+-			collection(db, "game_sales_logs"),
+-			where("date", ">=", start),
+-			where("date", "<=", end),
+-		);
+-		const unsubLogs = onSnapshot(
+-			qLogs,
+-			(snap) => {
+-				const fetchedLogs = snap.docs.map(
+-					(d) => ({ id: d.id, ...d.data() }) as GameSalesLog,
++				if (!ratesResponse.ok) {
++					throw new Error("Failed to fetch rates");
++				}
++				if (!salesResponse.ok) {
++					throw new Error("Failed to fetch sales logs");
++				}
++
++				const fetchedRates = (await ratesResponse.json()) as GameRate[];
++				const fetchedSales = (await salesResponse.json()) as GameSalesLog[];
++				const start = getShopStartOfDay().toISOString();
++				const end = getShopEndOfDay().toISOString();
++				const dailySales = fetchedSales.filter(
++					(log) => log.date >= start && log.date <= end,
+ 				);
+-				// Sort client-side to avoid needing a composite index for this simple view
+-				fetchedLogs.sort(
+-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++
++				if (!mounted) return;
++
++				setRates(fetchedRates.filter((rate) => rate.isActive));
++				setLogs(
++					dailySales.sort(
++						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++					),
+ 				);
+-				setLogs(fetchedLogs);
+-			},
+-			(err) => handleFirestoreError(err, OperationType.LIST, "game_sales_logs"),
+-		);
++				setLoadingRates(false);
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load sales data");
++					setLoadingRates(false);
++				}
++			}
++		};
++
++		void loadSalesData();
+ 
+ 		return () => {
+-			unsubRates();
+-			unsubLogs();
++			mounted = false;
+ 		};
+ 	}, []);
+ 
+diff --git a/packages/client/src/pages/Keno.tsx b/packages/client/src/pages/Keno.tsx
+index e8e0ae6..9fb1d81 100644
+--- a/packages/client/src/pages/Keno.tsx
++++ b/packages/client/src/pages/Keno.tsx
+@@ -1,6 +1,5 @@
+ import type { KenoLog } from "@level-up/shared";
+ import { format } from "date-fns";
+-import { collection, onSnapshot, query, where } from "firebase/firestore";
+ import { Edit2, Loader2, Trash2 } from "lucide-react";
+ import type React from "react";
+ import { useEffect, useState } from "react";
+@@ -17,9 +16,8 @@ import {
+ import { Input } from "../components/ui/input";
+ import { Label } from "../components/ui/label";
+ import { useAuth } from "../contexts/AuthContext";
+-import { auth, db } from "../firebase";
++import { auth } from "../firebase";
+ import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
+ 
+ export function Keno() {
+ 	const { user } = useAuth();
+@@ -33,28 +31,49 @@ export function Keno() {
+ 	const [deleteReason, setDeleteReason] = useState("");
+ 
+ 	useEffect(() => {
+-		const start = getShopStartOfDay().toISOString();
+-		const end = getShopEndOfDay().toISOString();
+-		const qLogs = query(
+-			collection(db, "keno_logs"),
+-			where("date", ">=", start),
+-			where("date", "<=", end),
+-		);
+-		const unsubLogs = onSnapshot(
+-			qLogs,
+-			(snap) => {
+-				const fetchedLogs = snap.docs.map(
+-					(d) => ({ id: d.id, ...d.data() }) as KenoLog,
+-				);
+-				fetchedLogs.sort(
+-					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++		let mounted = true;
++
++		const loadKenoLogs = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const response = await fetch(
++					`http://${window.location.hostname}:4000/api/keno`,
++					{
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					},
+ 				);
+-				setLogs(fetchedLogs);
+-			},
+-			(err) => handleFirestoreError(err, OperationType.LIST, "keno_logs"),
+-		);
++				if (!response.ok) {
++					throw new Error((await response.json()).error || "Failed to fetch keno logs");
++				}
++
++				const dayStart = getShopStartOfDay().toISOString();
++				const dayEnd = getShopEndOfDay().toISOString();
++				const data = (await response.json()) as KenoLog[];
++				const fetchedLogs = data
++					.filter((log) => log.date >= dayStart && log.date <= dayEnd)
++					.sort(
++						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
++					);
++
++				if (mounted) {
++					setLogs(fetchedLogs);
++				}
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load keno logs");
++				}
++			}
++		};
+ 
+-		return () => unsubLogs();
++		void loadKenoLogs();
++		return () => {
++			mounted = false;
++		};
+ 	}, []);
+ 
+ 	const netProfit = parseFloat(sales || "0") - parseFloat(payouts || "0");
+diff --git a/packages/client/src/pages/Login.tsx b/packages/client/src/pages/Login.tsx
+index 2dbadd9..570ec4d 100644
+--- a/packages/client/src/pages/Login.tsx
++++ b/packages/client/src/pages/Login.tsx
+@@ -1,4 +1,4 @@
+-import { signInWithPopup } from "firebase/auth";
++import { signInWithPopup, signInWithRedirect } from "firebase/auth";
+ import { useState } from "react";
+ import { Button } from "../components/ui/button";
+ import {
+@@ -18,6 +18,14 @@ export function Login() {
+ 			await signInWithPopup(auth, googleProvider);
+ 			// biome-ignore lint/suspicious/noExplicitAny: API error response
+ 		} catch (err: any) {
++			if (err?.code === "auth/popup-blocked") {
++				try {
++					await signInWithRedirect(auth, googleProvider);
++				} catch (redirectError: any) {
++					setError(redirectError.message);
++				}
++				return;
++			}
+ 			setError(err.message);
+ 		}
+ 	};
+diff --git a/packages/client/src/pages/Reports.tsx b/packages/client/src/pages/Reports.tsx
+index 9d6217d..f76b90c 100644
+--- a/packages/client/src/pages/Reports.tsx
++++ b/packages/client/src/pages/Reports.tsx
+@@ -7,15 +7,16 @@ import type {
+ } from "@level-up/shared";
+ import { format } from "date-fns";
+ import { formatInTimeZone } from "date-fns-tz";
+-import { collection, onSnapshot, query, where } from "firebase/firestore";
+ import { Loader2 } from "lucide-react";
+ import { useEffect, useState } from "react";
++import { toast } from "sonner";
+ import {
+ 	Cell,
+ 	Pie,
+ 	PieChart,
+ 	Tooltip as RechartsTooltip,
+ 	ResponsiveContainer,
++	type TooltipValueType,
+ } from "recharts";
+ import { Button } from "../components/ui/button";
+ import {
+@@ -27,7 +28,7 @@ import {
+ } from "../components/ui/card";
+ import { Input } from "../components/ui/input";
+ import { useAuth } from "../contexts/AuthContext";
+-import { db } from "../firebase";
++import { auth } from "../firebase";
+ import { SHOP_TIMEZONE } from "../lib/dateUtils";
+ 
+ export function Reports() {
+@@ -51,9 +52,9 @@ export function Reports() {
+ 
+ 	useEffect(() => {
+ 		if (!user) return;
++		let mounted = true;
+ 		setLoading(true);
+ 
+-		// Parse the dates assuming they are in the shop's timezone (UTC+3 for Addis Ababa)
+ 		const startIso = new Date(
+ 			`${appliedStartDate}T00:00:00+03:00`,
+ 		).toISOString();
+@@ -61,60 +62,95 @@ export function Reports() {
+ 			`${appliedEndDate}T23:59:59.999+03:00`,
+ 		).toISOString();
+ 
+-		const qShifts = query(
+-			collection(db, "shifts"),
+-			where("start_time", ">=", startIso),
+-			where("start_time", "<=", endIso),
+-		);
+-		const unsubShifts = onSnapshot(qShifts, (snap) =>
+-			setShifts(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Shift)),
+-		);
+-
+-		const qGames = query(
+-			collection(db, "game_sales_logs"),
+-			where("date", ">=", startIso),
+-			where("date", "<=", endIso),
+-		);
+-		const unsubGames = onSnapshot(qGames, (snap) =>
+-			setGameSales(
+-				snap.docs.map((d) => ({ id: d.id, ...d.data() }) as GameSalesLog),
+-			),
+-		);
+-
+-		const qKeno = query(
+-			collection(db, "keno_logs"),
+-			where("date", ">=", startIso),
+-			where("date", "<=", endIso),
+-		);
+-		const unsubKeno = onSnapshot(qKeno, (snap) =>
+-			setKenoLogs(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as KenoLog)),
+-		);
+-
+-		const qCredits = query(
+-			collection(db, "credits"),
+-			where("date", ">=", startIso),
+-			where("date", "<=", endIso),
+-		);
+-		const unsubCredits = onSnapshot(qCredits, (snap) =>
+-			setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit)),
+-		);
+-
+-		const qExpenses = query(
+-			collection(db, "expenses"),
+-			where("date", ">=", startIso),
+-			where("date", "<=", endIso),
+-		);
+-		const unsubExpenses = onSnapshot(qExpenses, (snap) => {
+-			setExpenses(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Expense));
+-			setLoading(false);
+-		});
++		const loadReports = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const [shiftsResponse, salesResponse, kenoResponse, creditsResponse, expensesResponse] =
++					await Promise.all([
++						fetch(`http://${window.location.hostname}:4000/api/shifts`, {
++							headers: { Authorization: `Bearer ${token}` },
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/sales`, {
++							headers: { Authorization: `Bearer ${token}` },
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/keno`, {
++							headers: { Authorization: `Bearer ${token}` },
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/credits`, {
++							headers: { Authorization: `Bearer ${token}` },
++						}),
++						fetch(`http://${window.location.hostname}:4000/api/expenses`, {
++							headers: { Authorization: `Bearer ${token}` },
++						}),
++					]);
++
++				if (!shiftsResponse.ok) {
++					throw new Error("Failed to fetch shifts");
++				}
++				if (!salesResponse.ok) {
++					throw new Error("Failed to fetch sales logs");
++				}
++				if (!kenoResponse.ok) {
++					throw new Error("Failed to fetch keno logs");
++				}
++				if (!creditsResponse.ok) {
++					throw new Error("Failed to fetch credits");
++				}
++				if (!expensesResponse.ok) {
++					throw new Error("Failed to fetch expenses");
++				}
++
++				const [shiftsData, salesData, kenoData, creditsData, expensesData] =
++					await Promise.all([
++						shiftsResponse.json(),
++						salesResponse.json(),
++						kenoResponse.json(),
++						creditsResponse.json(),
++						expensesResponse.json(),
++					]);
++
++				if (!mounted) return;
++
++				setShifts(
++					(shiftsData as Shift[]).filter(
++						(shift) => shift.start_time >= startIso && shift.start_time <= endIso,
++					),
++				);
++				setGameSales(
++					(salesData as GameSalesLog[]).filter(
++						(log) => log.date >= startIso && log.date <= endIso,
++					),
++				);
++				setKenoLogs(
++					(kenoData as KenoLog[]).filter(
++						(log) => log.date >= startIso && log.date <= endIso,
++					),
++				);
++				setCredits(
++					(creditsData as Credit[]).filter(
++						(log) => log.date >= startIso && log.date <= endIso,
++					),
++				);
++				setExpenses(
++					(expensesData as Expense[]).filter(
++						(log) => log.date >= startIso && log.date <= endIso,
++					),
++				);
++				setLoading(false);
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load reports data");
++					setLoading(false);
++				}
++			}
++		};
+ 
++		void loadReports();
+ 		return () => {
+-			unsubShifts();
+-			unsubGames();
+-			unsubKeno();
+-			unsubCredits();
+-			unsubExpenses();
++			mounted = false;
+ 		};
+ 	}, [appliedStartDate, appliedEndDate, user]);
+ 
+@@ -316,7 +352,9 @@ export function Reports() {
+ 													))}
+ 												</Pie>
+ 												<RechartsTooltip
+-													formatter={(value: number) => `$${value.toFixed(2)}`}
++													formatter={(value: TooltipValueType | undefined) =>
++														`$${Number(value ?? 0).toFixed(2)}`
++													}
+ 												/>
+ 											</PieChart>
+ 										</ResponsiveContainer>
+@@ -372,7 +410,9 @@ export function Reports() {
+ 													))}
+ 												</Pie>
+ 												<RechartsTooltip
+-													formatter={(value: number) => `$${value.toFixed(2)}`}
++													formatter={(value: TooltipValueType | undefined) =>
++														`$${Number(value ?? 0).toFixed(2)}`
++													}
+ 												/>
+ 											</PieChart>
+ 										</ResponsiveContainer>
+diff --git a/packages/client/src/pages/SalaryReport.tsx b/packages/client/src/pages/SalaryReport.tsx
+index fdf5a20..34eb823 100644
+--- a/packages/client/src/pages/SalaryReport.tsx
++++ b/packages/client/src/pages/SalaryReport.tsx
+@@ -1,8 +1,8 @@
+ import type { Credit } from "@level-up/shared";
+ import { format } from "date-fns";
+-import { collection, onSnapshot, query, where } from "firebase/firestore";
+ import { Loader2 } from "lucide-react";
+ import { useEffect, useState } from "react";
++import { toast } from "sonner";
+ import {
+ 	Card,
+ 	CardContent,
+@@ -10,30 +10,52 @@ import {
+ 	CardHeader,
+ 	CardTitle,
+ } from "../components/ui/card";
+-import { db } from "../firebase";
+-import { handleFirestoreError, OperationType } from "../lib/errorHandler";
++import { auth } from "../firebase";
+ 
+ export function SalaryReport() {
+ 	const [credits, setCredits] = useState<Credit[]>([]);
+ 	const [loading, setLoading] = useState(true);
+ 
+ 	useEffect(() => {
+-		const q = query(
+-			collection(db, "credits"),
+-			where("status", "==", "Deducted"),
+-		);
+-		const unsub = onSnapshot(
+-			q,
+-			(snap) => {
+-				setCredits(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Credit));
+-				setLoading(false);
+-			},
+-			(err) => {
+-				handleFirestoreError(err, OperationType.LIST, "credits");
+-				setLoading(false);
+-			},
+-		);
+-		return () => unsub();
++		let mounted = true;
++
++		const loadSalaryDeductions = async () => {
++			try {
++				const token = await auth.currentUser?.getIdToken();
++				if (!token) throw new Error("Not authenticated");
++
++				const response = await fetch(
++					`http://${window.location.hostname}:4000/api/credits`,
++					{
++						headers: {
++							Authorization: `Bearer ${token}`,
++						},
++					},
++				);
++				if (!response.ok) {
++					throw new Error(
++						(await response.json()).error || "Failed to fetch deductions",
++					);
++				}
++
++				const data = (await response.json()) as Credit[];
++				if (mounted) {
++					setCredits(data.filter((credit) => credit.status === "Deducted"));
++					setLoading(false);
++				}
++			} catch (err) {
++				console.error(err);
++				if (mounted) {
++					toast.error("Failed to load salary deductions");
++					setLoading(false);
++				}
++			}
++		};
++
++		void loadSalaryDeductions();
++		return () => {
++			mounted = false;
++		};
+ 	}, []);
+ 
+ 	const groupedByEmployee = credits.reduce(
+diff --git a/packages/server/src/controllers/shiftsController.ts b/packages/server/src/controllers/shiftsController.ts
+index 141673c..20aaec8 100644
+--- a/packages/server/src/controllers/shiftsController.ts
++++ b/packages/server/src/controllers/shiftsController.ts
+@@ -3,6 +3,22 @@ import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
+ import { db } from "../firebase.js";
+ import type { AuthRequest } from "../middleware/auth.js";
+ 
++export const listShifts = async (req: AuthRequest, res: Response) => {
++	const user = req.user;
++	if (!user) return res.status(401).json({ error: "Unauthorized" });
++
++	try {
++		const snapshot = await db.collection("shifts").get();
++		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
++		return res.status(200).json(rows);
++	} catch (error: unknown) {
++		console.error("Error listing shifts:", error);
++		return res
++			.status(500)
++			.json({ error: (error as Error).message || "Internal server error" });
++	}
++};
++
+ export const startShift = async (req: AuthRequest, res: Response) => {
+ 	const user = req.user;
+ 	if (!user) return res.status(401).json({ error: "Unauthorized" });
+diff --git a/packages/server/src/index.ts b/packages/server/src/index.ts
+index b44c263..829c9fc 100644
+--- a/packages/server/src/index.ts
++++ b/packages/server/src/index.ts
+@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 4000;
+ app.use(cors());
+ app.use(express.json());
+ 
++import auditLogsRoutes from "./routes/auditLogs.js";
+ import creditsRoutes from "./routes/credits.js";
+ import expensesRoutes from "./routes/expenses.js";
+ import kenoRoutes from "./routes/keno.js";
+@@ -30,6 +31,7 @@ app.use("/api/expenses", expensesRoutes);
+ app.use("/api/rates", ratesRoutes);
+ app.use("/api/credits", creditsRoutes);
+ app.use("/api/users", usersRoutes);
++app.use("/api/audit-logs", auditLogsRoutes);
+ 
+ app.listen(PORT, () => {
+ 	console.log(`🚀 Server listening on http://localhost:${PORT}`);
+diff --git a/packages/server/src/routes/shifts.ts b/packages/server/src/routes/shifts.ts
+index 2fbc796..26c3f39 100644
+--- a/packages/server/src/routes/shifts.ts
++++ b/packages/server/src/routes/shifts.ts
+@@ -1,9 +1,14 @@
+ import { type RequestHandler, Router } from "express";
+-import { closeShift, startShift } from "../controllers/shiftsController.js";
++import {
++	closeShift,
++	listShifts,
++	startShift,
++} from "../controllers/shiftsController.js";
+ import { requireAuth } from "../middleware/auth.js";
+ 
+ const router = Router();
+ 
++router.get("/", requireAuth as RequestHandler, listShifts as RequestHandler);
+ router.post("/", requireAuth as RequestHandler, startShift as RequestHandler);
+ 
+ router.post(
+diff --git a/packages/server/tsconfig.tsbuildinfo b/packages/server/tsconfig.tsbuildinfo
+index 4a12be1..99c6a8d 100644
+--- a/packages/server/tsconfig.tsbuildinfo
++++ b/packages/server/tsconfig.tsbuildinfo
+@@ -1 +1 @@
+-{"root":["./src/firebase.ts","./src/index.ts","./src/__tests__/shiftsController.test.ts","./src/__tests__/usersController.test.ts","./src/controllers/creditsController.ts","./src/controllers/expensesController.ts","./src/controllers/gameRatesController.ts","./src/controllers/kenoController.ts","./src/controllers/salesController.ts","./src/controllers/shiftsController.ts","./src/controllers/usersController.ts","./src/middleware/auth.ts","./src/routes/credits.ts","./src/routes/expenses.ts","./src/routes/keno.ts","./src/routes/rates.ts","./src/routes/sales.ts","./src/routes/shifts.ts","./src/routes/users.ts"],"version":"5.8.3"}
+\ No newline at end of file
++{"root":["./src/firebase.ts","./src/index.ts","./src/__tests__/shiftsController.test.ts","./src/__tests__/usersController.test.ts","./src/controllers/auditLogsController.ts","./src/controllers/creditsController.ts","./src/controllers/expensesController.ts","./src/controllers/gameRatesController.ts","./src/controllers/kenoController.ts","./src/controllers/salesController.ts","./src/controllers/shiftsController.ts","./src/controllers/usersController.ts","./src/middleware/auth.ts","./src/routes/auditLogs.ts","./src/routes/credits.ts","./src/routes/expenses.ts","./src/routes/keno.ts","./src/routes/rates.ts","./src/routes/sales.ts","./src/routes/shifts.ts","./src/routes/users.ts"],"version":"5.8.3"}
+\ No newline at end of file

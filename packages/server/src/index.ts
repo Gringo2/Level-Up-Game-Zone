@@ -10,6 +10,7 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
+import auditLogsRoutes from "./routes/auditLogs.js";
 import creditsRoutes from "./routes/credits.js";
 import expensesRoutes from "./routes/expenses.js";
 import kenoRoutes from "./routes/keno.js";
@@ -30,6 +31,7 @@ app.use("/api/expenses", expensesRoutes);
 app.use("/api/rates", ratesRoutes);
 app.use("/api/credits", creditsRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/audit-logs", auditLogsRoutes);
 
 app.listen(PORT, () => {
 	console.log(`🚀 Server listening on http://localhost:${PORT}`);
