@@ -2,6 +2,7 @@ import { type RequestHandler, Router } from "express";
 import {
 	createKeno,
 	deleteKeno,
+	listKenoLogs,
 	updateKeno,
 	verifyKeno,
 } from "../controllers/kenoController.js";
@@ -9,6 +10,7 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
+router.get("/", requireAuth as RequestHandler, listKenoLogs as RequestHandler);
 router.post("/", requireAuth as RequestHandler, createKeno as RequestHandler);
 router.put("/:id", requireAuth as RequestHandler, updateKeno as RequestHandler);
 router.delete(

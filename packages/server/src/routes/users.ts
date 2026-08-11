@@ -1,9 +1,14 @@
 import { type RequestHandler, Router } from "express";
-import { createUser, updateRole } from "../controllers/usersController.js";
+import {
+	createUser,
+	listUsers,
+	updateRole,
+} from "../controllers/usersController.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
+router.get("/", requireAuth as RequestHandler, listUsers as RequestHandler);
 router.post("/", requireAuth as RequestHandler, createUser as RequestHandler);
 router.put(
 	"/:id/role",
