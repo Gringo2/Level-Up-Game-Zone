@@ -1,0 +1,31 @@
+# Code Owners
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# ─── Default: All files require owner review ────────────────────────────────
+* @gringo2
+
+# ─── Governance ─────────────────────────────────────────────────────────────
+/governance/    @gringo2
+/docs/          @gringo2
+AGENTS.md       @gringo2
+CHANGELOG.md    @gringo2
+
+# ─── Backend / Server ────────────────────────────────────────────────────────
+/packages/server/   @gringo2
+
+# ─── Frontend / Client ───────────────────────────────────────────────────────
+/packages/client/   @gringo2
+
+# ─── Shared Package ──────────────────────────────────────────────────────────
+/packages/shared/   @gringo2
+
+# ─── E2E Tests ───────────────────────────────────────────────────────────────
+/tests/             @gringo2
+
+# ─── Firestore Rules ─────────────────────────────────────────────────────────
+/firestore.rules    @gringo2
+
+# ─── CI / Tooling ────────────────────────────────────────────────────────────
+/.github/           @gringo2
+/playwright.config.ts   @gringo2
+/vitest.config.ts       @gringo2

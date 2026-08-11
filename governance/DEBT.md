@@ -6,11 +6,11 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 | ID | Reason | Impact | Priority | Owner | Resolution Mission |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| TD-001 | Example: Need to refactor auth middleware | Hard to test | Medium | Backend | M-02 |
-| TD-002 | Missing Release Mgmt & VCS Hooks (Changelog/CI/CODEOWNERS) | Poor audibility & lifecycle tracing | Medium | Infrastructure | M-08 |
+| — | No active debt | — | — | — | — |
 
 ## Resolved Debt
 
 | ID | Resolution Details | Date |
 | :--- | :--- | :--- |
-| | | |
+| TD-001 | Refactored `requireAuth` to use `makeRequireAuth` with injectable `TokenVerifier`. Added `auth.test.ts` with 4 unit tests (no-token, bad-header, invalid-token, valid-token). | 2026-08-11 |
+| TD-002 | Created `CHANGELOG.md` (Keep a Changelog format, seeded with Missions 1–7) and `CODEOWNERS` at repo root. | 2026-08-11 |

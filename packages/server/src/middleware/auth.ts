@@ -6,24 +6,33 @@ export interface AuthRequest extends Request {
 	user?: DecodedIdToken;
 }
 
-export const requireAuth = async (
-	req: Request,
-	res: Response,
-	next: NextFunction,
-) => {
-	const authHeader = req.headers.authorization;
-	if (!authHeader?.startsWith("Bearer ")) {
-		return res.status(401).json({ error: "Unauthorized: No token provided" });
-	}
+export type TokenVerifier = (token: string) => Promise<DecodedIdToken>;
 
-	const token = authHeader.split("Bearer ")[1];
+export const makeRequireAuth =
+	(verifier: TokenVerifier) =>
+	async (
+		req: AuthRequest,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> => {
+		const authHeader = req.headers.authorization;
+		if (!authHeader?.startsWith("Bearer ")) {
+			res.status(401).json({ error: "Unauthorized: No token provided" });
+			return;
+		}
 
-	try {
-		const decodedToken = await auth.verifyIdToken(token);
-		Object.assign(req, { user: decodedToken });
-		next();
-	} catch (error) {
-		console.error("Error verifying auth token", error);
-		return res.status(401).json({ error: "Unauthorized: Invalid token" });
-	}
-};
+		const token = authHeader.split("Bearer ")[1];
+
+		try {
+			const decodedToken = await verifier(token);
+			req.user = decodedToken;
+			next();
+		} catch (error) {
+			console.error("Error verifying auth token", error);
+			res.status(401).json({ error: "Unauthorized: Invalid token" });
+		}
+	};
+
+export const requireAuth = makeRequireAuth((token) =>
+	auth.verifyIdToken(token),
+);
