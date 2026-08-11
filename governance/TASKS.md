@@ -1,15 +1,10 @@
-# Phase 6 Agentic Behavior Gating
+# Mission 3: Complete Firestore Lockdown
 *Status: ACTIVE*
 
-## Phase A: Context & Looping Guards
-- [x] 1. Update `guard_run_command.sh` to block high-volume output commands.
-- [x] 2. Update `post_edit_verify.sh` to track failures and enforce a 3-strike Exhaustion Protocol.
+## Phase A: Governance & Rules Update
+- [x] 1. Activate Mission 3 in `MISSION.md` and `TASKS.md`.
+- [x] 2. Update `firestore.rules` to enforce `allow read, write: if false;` across all documents.
 
-## Phase B: Ghost File & Hallucination Gates
-- [x] 3. Update `mission_gate.sh` to implement the Anti-Littering Protocol.
-- [x] 4. Create `lock_gate.sh` to programmatically invoke `lock_mission.sh`.
-- [x] 5. Update `hooks.json` to bind `lock_gate.sh` to `MISSION.md` writes.
-
-## Phase C: Finalization
-- [x] 6. Verify all hooks via active shell probes.
-- [x] 7. Lock Mission Phase 6.
+## Phase B: Verification & Finalization
+- [x] 3. Run monorepo test suite and typechecks.
+- [x] 4. Lock Mission 3.

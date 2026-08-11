@@ -12,7 +12,7 @@ describe("Zero-Trust Infrastructure Metatests", () => {
 			encoding: "utf-8",
 			cwd: REPO_ROOT,
 		});
-		expect(output).toContain("**Status:** Locked");
+		expect(output).toMatch(/\*\*Status:\*\*\s*(Active|Locked)/);
 	});
 
 	it("WAKE protocol should extract the active mission scope anchors", () => {

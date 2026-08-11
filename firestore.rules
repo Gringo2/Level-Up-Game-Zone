@@ -95,47 +95,13 @@ service cloud.firestore {
     }
 
     // ===============================================================
-    // Rules (Locked Down for Thin Client Architecture)
+    // Rules (Zero-Trust Thin Client Architecture Lockdown)
     // ===============================================================
+    // All data operations are mediated through the Express Backend API
+    // using the firebase-admin SDK. Direct client access is disabled.
 
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isManagerOrAdmin();
-      allow write: if false;
-    }
-
-    match /game_rates/{rateId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
-    }
-
-    match /shifts/{shiftId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
-    }
-
-    match /audit_logs/{logId} {
-      allow read: if isManagerOrAdmin();
-      allow write: if false;
-    }
-
-    match /game_sales_logs/{logId} {
-      allow read: if isStaffOrHigher();
-      allow write: if false;
-    }
-
-    match /keno_logs/{logId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
-    }
-
-    match /credits/{creditId} {
-      allow read: if isManagerOrAdmin();
-      allow write: if false;
-    }
-
-    match /expenses/{expenseId} {
-      allow read: if isAuthenticated();
-      allow write: if false;
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
