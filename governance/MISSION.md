@@ -1,27 +1,25 @@
-# Active Mission: Mission 5 — Refactor Auth State Management
+# Active Mission: Mission 6 — E2E Testing Strategy
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Refactoring
-**Phase:** Phase 4 — Client Refactoring
+**Type:** Hardening / Quality Assurance
+**Phase:** Phase 5 — Maturation
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Eradicate direct client-side Firestore access in `AuthContext.tsx` by implementing `GET /api/users/me` on the Express backend and fetching user profiles exclusively via API endpoints.
+Expand the Playwright E2E suite (`tests/e2e/`) to validate thin-client UI routing, RBAC route isolation, API mock integration, and negative path handling.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/server/src/controllers/usersController.ts`
-  - `packages/server/src/routes/users.ts`
-  - `packages/client/src/contexts/AuthContext.tsx`
-  - `packages/server/src/__tests__/usersController.test.ts`
-  - `packages/client/src/__tests__/contexts/AuthContext.test.tsx`
+  - `tests/e2e/auth.spec.ts`
+  - `tests/e2e/rbac.spec.ts`
+  - `tests/e2e/dashboard_flow.spec.ts`
   - `governance/MISSION.md`
   - `governance/TASKS.md`
 - **Out of Scope:**
-  - Modifying other client pages or UI layout components.
+  - Refactoring production application source code unless an E2E test proves a critical bug.
 
 ## Evidence Payload
-- Zero `firebase/firestore` or `db` imports in `AuthContext.tsx`.
-- `GET /api/users/me` endpoint returns current user profile or 404 if not registered.
+- Playwright E2E suite passes cleanly (`npx playwright test`).
+- RBAC specs verify role isolation for Staff, Manager, and Admin users.
 - `vitest` unit tests and `tsc` typechecks pass cleanly across the monorepo.

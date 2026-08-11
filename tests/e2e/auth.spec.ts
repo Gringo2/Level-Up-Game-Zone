@@ -17,5 +17,8 @@ test.describe("Authentication & Routing", () => {
 
 		await page.goto("/expenses");
 		await expect(page.locator("text=Game Zone Manager")).toBeVisible();
+
+		await page.goto("/reports");
+		await expect(page.locator("text=Game Zone Manager")).toBeVisible();
 	});
 });

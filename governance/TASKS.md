@@ -1,15 +1,13 @@
-# Mission 5: Refactor Auth State Management
+# Mission 6: E2E Testing Strategy
 *Status: ACTIVE*
 
-## Phase A: Backend API Implementation
-- [x] 1. Activate Mission 5 in `MISSION.md` and `TASKS.md`.
-- [x] 2. Implement `getMe` controller in `usersController.ts` and `/api/users/me` route in `routes/users.ts`.
-- [x] 3. Add `getMe` unit test in `usersController.test.ts`.
+## Phase A: E2E Suite Expansion
+- [x] 1. Activate Mission 6 in `MISSION.md` and `TASKS.md`.
+- [x] 2. Expand `tests/e2e/auth.spec.ts` with unauthenticated navigation checks.
+- [x] 3. Create `tests/e2e/rbac.spec.ts` to test role-based route isolation.
+- [x] 4. Create `tests/e2e/dashboard_flow.spec.ts` to test authenticated UI rendering and API mocks.
 
-## Phase B: Frontend Auth Refactoring
-- [x] 4. Refactor `AuthContext.tsx` to fetch `/api/users/me` and remove all `firebase/firestore` imports.
-- [x] 5. Update `AuthContext.test.tsx` to mock `/api/users/me` HTTP calls.
-
-## Phase C: Verification & Finalization
-- [x] 6. Run monorepo test suite, typechecks, and Knip hygiene.
-- [x] 7. Lock Mission 5.
+## Phase B: Verification & Finalization
+- [x] 5. Run `npx playwright test` and verify 100% green.
+- [x] 6. Run full verification suite (`tsc`, `vitest`, `knip`).
+- [x] 7. Lock Mission 6.
