@@ -11,6 +11,33 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ---
 
+## [0.9.0] — 2026-08-11
+
+### Added (Mission 9 — System Stability & Crash Resilience)
+- Added class-based React `ErrorBoundary` in `packages/client/src/components/ErrorBoundary.tsx` wrapping root in `App.tsx` with error details and reload recovery button.
+- Added global Express error handling middleware `(err, req, res, next)` returning HTTP 500 JSON in `packages/server/src/index.ts`.
+- Added `unhandledRejection`, `uncaughtException`, and `SIGTERM`/`SIGINT` graceful shutdown listeners in `packages/server/src/index.ts`.
+- Added `packages/client/src/lib/api.ts` exporting `API_BASE` (environment-aware API URL) and `safeJson<T>()` (content-type guarded JSON parser).
+- Added `packages/client/.env.example` documenting `VITE_API_URL` for staging deployments.
+- Added `packages/client/src/vite-env.d.ts` declaring `VITE_API_URL` type definitions.
+
+### Changed
+- Replaced 44 hardcoded `http://` API URLs across 13 client files with `${API_BASE}`.
+- Replaced direct `response.json()` calls across client pages with `safeJson(response)`.
+- Updated `STABILITY_GAP_ANALYSIS.md` to reflect resolution of all 5 stability gaps.
+
+---
+
+## [0.8.0] — 2026-08-11
+
+### Added (Mission 8 — Domain Validation & Server Hardening)
+- Added domain-driven Zod schemas in `packages/server/src/schemas/index.ts` covering Shift, Sale, Keno, Expense, Credit, GameRate, Role, and audit reasons.
+- Added `validateBody` Express middleware in `packages/server/src/middleware/validate.ts` returning HTTP 400 on Zod schema failure.
+- Wired `validateBody` across all 7 Express mutation route files (`shifts`, `sales`, `keno`, `expenses`, `credits`, `rates`, `users`).
+- Added `packages/server/src/__tests__/validation.test.ts` vitest suite (6 unit tests, Red-Green verified per Rule 28).
+
+---
+
 ## [0.7.0] — 2026-08-11
 
 ### Added (Mission 7 — Technical Debt Resolution)

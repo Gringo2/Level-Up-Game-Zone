@@ -8,54 +8,46 @@ This document records an empirical stability audit of the codebase, evaluating e
 ## Detailed Stability Gap Findings
 
 ### 1. Input Validation & `NaN` Financial Data Corruption
-- **Risk Severity:** 🔴 **HIGH**
-- **Empirical Evidence:** In [salesController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/salesController.ts#L35-L37), [kenoController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/kenoController.ts#L35), [expensesController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/expensesController.ts#L35), and [shiftsController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/shiftsController.ts#L35), incoming payload strings are parsed using raw `parseFloat()` (e.g. `parseFloat(quantity_sold)`). None of the controllers validate against `isNaN()`.
-- **Stability Impact:** If a client passes an un-parseable string (e.g., `{ quantity_sold: "abc" }`), `parseFloat()` returns `NaN`. Firestore persists `NaN` values without error. When the client later fetches operational data and executes `.reduce((sum, item) => sum + item.calculated_total, 0)`, `NaN + 10` propagates `NaN` across the entire Dashboard, corrupting total calculations for all users.
-- **Remediation Target:** Add a numeric validation helper in the server package that checks `isNaN(val)` and returns HTTP `400 Bad Request` before invoking Firestore transactions.
+- **Risk Severity:** ✅ **RESOLVED** *(was 🔴 HIGH — Mission 8)*
+- **Empirical Evidence:** In [salesController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/salesController.ts#L35-L37), [kenoController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/kenoController.ts#L35), [expensesController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/expensesController.ts#L35), and [shiftsController.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/controllers/shiftsController.ts#L35), incoming payload strings were parsed using raw `parseFloat()` without `isNaN()` guards.
+- **Resolution (Mission 8):** Domain-driven Zod schemas introduced in [schemas/index.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/schemas/index.ts) enforce numeric coercion with explicit rejection on `NaN`, negative amounts, invalid enums (`unit_type`, `category`, `status`, `role`), and blank audit reasons. The [validateBody](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/middleware/validate.ts) middleware intercepts all mutation routes and returns `HTTP 400 { error }` before any controller or Firestore transaction is reached. Verified by 6 unit tests in [validation.test.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/__tests__/validation.test.ts).
 
 ---
 
 ### 2. Missing Frontend Error Boundaries (White Screen Crashes)
-- **Risk Severity:** 🔴 **HIGH**
-- **Empirical Evidence:** In [App.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/App.tsx), the application root renders `<AuthProvider>` and `<ShiftProvider>` without a React `<ErrorBoundary>`.
-- **Stability Impact:** If a component encounters an unexpected runtime error (e.g. `date-fns` attempting to parse an invalid ISO date string or undefined object property access), React unmounts the entire component tree, causing a blank white screen with no fallback UI or recovery options for the user.
-- **Remediation Target:** Wrap `<AppContent />` in a top-level React Error Boundary that displays a clean error fallback card with a "Reload Application" recovery button.
+- **Risk Severity:** ✅ **RESOLVED** *(was 🔴 HIGH — Mission 9)*
+- **Empirical Evidence:** In [App.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/App.tsx), `<AppContent />` previously rendered inside `<AuthProvider>` without a React `<ErrorBoundary>`.
+- **Resolution (Mission 9):** Implemented [ErrorBoundary.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/components/ErrorBoundary.tsx) class component that catches render-phase exceptions and displays a dark-themed fallback card with error details and a "Reload Application" recovery button. Wrapped around `<AuthProvider>` in [App.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/App.tsx).
 
 ---
 
 ### 3. Express Backend Exception & Crash Resilience
-- **Risk Severity:** 🟡 **MEDIUM**
-- **Empirical Evidence:** In [index.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/index.ts), Express is configured with `app.use(express.json())` and route modules, but lacks:
-  1. A global Express error-handling middleware (`app.use((err, req, res, next) => ...)`).
-  2. Process-level rejection handlers (`process.on('unhandledRejection')` and `process.on('uncaughtException')`).
-  3. Graceful shutdown listeners (`process.on('SIGTERM')` / `process.on('SIGINT')`).
-- **Stability Impact:** Uncaught asynchronous exceptions outside `try/catch` blocks will cause the Node process to crash abruptly without completing pending database transactions or responding to open HTTP client requests.
-- **Remediation Target:** Implement a standard 4-argument Express error handling middleware in `index.ts` and attach process rejection/signal listeners.
+- **Risk Severity:** ✅ **RESOLVED** *(was 🟡 MEDIUM — Mission 9)*
+- **Empirical Evidence:** In [index.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/index.ts), Express lacked a global 4-argument error handler and process-level rejection/signal handlers.
+- **Resolution (Mission 9):** Added global Express error handling middleware `(err, req, res, next)` returning HTTP 500 JSON, attached `unhandledRejection` logging, `uncaughtException` process exit handlers, and `SIGTERM`/`SIGINT` graceful shutdown connection draining in [index.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/server/src/index.ts).
 
 ---
 
 ### 4. Hardcoded Transport Protocols & Environment Isolation
-- **Risk Severity:** 🟡 **MEDIUM**
-- **Empirical Evidence:** Across all client pages ([Admin.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/pages/Admin.tsx), [GameSales.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/pages/GameSales.tsx), [Reports.tsx](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/pages/Reports.tsx)), API calls hardcode `http://${window.location.hostname}:4000/api/...`.
-- **Stability Impact:** If the application is deployed behind an HTTPS SSL reverse proxy or staging domain, modern web browser mixed-content security rules will automatically block all `http://` calls from `https://` pages, breaking client-server communication completely.
-- **Remediation Target:** Centralize API base URL resolution into a single utility helper (`import.meta.env.VITE_API_URL || "http://localhost:4000"`) and reuse it across all `fetch` invocations.
+- **Risk Severity:** ✅ **RESOLVED** *(was 🟡 MEDIUM — Mission 9)*
+- **Empirical Evidence:** Across all 13 client files, API calls hardcoded `http://${window.location.hostname}:4000/api/...`.
+- **Resolution (Mission 9):** Created [api.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/lib/api.ts) exporting `API_BASE` which resolves from `import.meta.env.VITE_API_URL` with runtime fallback. Added [.env.example](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/.env.example). Replaced all 44 hardcoded strings across all client pages, contexts, components, and layouts.
 
 ---
 
 ### 5. API Response Parsing Resilience
-- **Risk Severity:** 🟢 **LOW**
-- **Empirical Evidence:** In several page handlers (e.g. `const errorData = await response.json()`), the code assumes the server always responds with a valid JSON payload.
-- **Stability Impact:** If a network proxy, gateway, or load balancer returns an HTML error page (e.g., 502 Bad Gateway / 504 Gateway Timeout), `response.json()` throws an unhandled `SyntaxError: Unexpected token '<'`, hiding the true underlying network status.
-- **Remediation Target:** Safely parse response JSON with `.catch(() => ({}))` or check `response.headers.get("content-type")?.includes("application/json")` before parsing error bodies.
+- **Risk Severity:** ✅ **RESOLVED** *(was 🟢 LOW — Mission 9)*
+- **Empirical Evidence:** Direct `response.json()` calls threw `SyntaxError` on non-JSON gateway error responses (e.g. HTML 502/504).
+- **Resolution (Mission 9):** Introduced `safeJson<T>()` in [api.ts](file:///home/gringo2/gringo2/Level-Up-Game-Zone/packages/client/src/lib/api.ts) checking `Content-Type: application/json` before parsing, returning `{}` fallback on non-JSON responses. Replaced all direct `.json()` calls across client pages and contexts.
 
 ---
 
 ## Summary Gap Matrix
 
-| Stability Gap Area | Current State | Risk | Proposed Remediation |
+| Stability Gap Area | Current State | Risk | Resolution |
 |---|---|---|---|
-| **Numeric Parsing** | Raw `parseFloat()` without `isNaN` checks | 🔴 High | Server numeric validation helper returning 400 |
-| **UI Crash Guard** | No top-level React `<ErrorBoundary>` | 🔴 High | Add React ErrorBoundary around `<AppContent />` |
-| **Server Crash Guard** | Missing Express error middleware & signal listeners | 🟡 Medium | Add Express global error handler & `SIGTERM` listeners |
-| **API Base URL** | Hardcoded `http://` transport string | 🟡 Medium | Centralize base URL in client config utility |
-| **JSON Response Parsing** | Direct `response.json()` on error responses | 🟢 Low | Safe `.json().catch()` fallback parsing |
+| **Numeric Parsing** | ✅ Zod schemas + `validateBody` middleware on all mutation routes | ~~🔴 High~~ | Mission 8 — `schemas/index.ts`, `middleware/validate.ts` |
+| **UI Crash Guard** | ✅ Class-based React `<ErrorBoundary>` wrapped around root | ~~🔴 High~~ | Mission 9 — `components/ErrorBoundary.tsx` |
+| **Server Crash Guard** | ✅ Global Express error middleware & `SIGTERM`/`SIGINT` listeners | ~~🟡 Medium~~ | Mission 9 — `packages/server/src/index.ts` |
+| **API Base URL** | ✅ Centralized `API_BASE` with `VITE_API_URL` env override | ~~🟡 Medium~~ | Mission 9 — `lib/api.ts`, `.env.example` |
+| **JSON Response Parsing** | ✅ `safeJson<T>()` checking Content-Type before parsing | ~~🟢 Low~~ | Mission 9 — `lib/api.ts` |

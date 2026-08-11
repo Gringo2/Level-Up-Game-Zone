@@ -2,6 +2,7 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
@@ -23,21 +24,18 @@ export function UserManagement() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/users`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/users`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(
-						(await response.json()).error || "Failed to fetch users",
+						(await safeJson(response)).error || "Failed to fetch users",
 					);
 				}
 
-				const data = (await response.json()) as AppUser[];
+				const data = (await safeJson(response)) as AppUser[];
 				if (mounted) {
 					setUsers(data);
 					setLoading(false);
@@ -66,24 +64,21 @@ export function UserManagement() {
 			if (!token) throw new Error("Not authenticated");
 
 			const oldRole = user.role;
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/users/${user.uid}/role`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({
-						role: newRole,
-						editReason: `Role updated from ${oldRole} to ${newRole}`,
-					}),
+			const response = await fetch(`${API_BASE}/api/users/${user.uid}/role`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({
+					role: newRole,
+					editReason: `Role updated from ${oldRole} to ${newRole}`,
+				}),
+			});
 
 			if (!response.ok)
 				throw new Error(
-					(await response.json()).error || "Failed to update role",
+					(await safeJson(response)).error || "Failed to update role",
 				);
 
 			toast.success("Role updated successfully!");

@@ -1,6 +1,10 @@
 import cors from "cors";
 import dotenv from "dotenv";
-import express from "express";
+import express, {
+	type NextFunction,
+	type Request,
+	type Response,
+} from "express";
 
 dotenv.config();
 
@@ -33,6 +37,35 @@ app.use("/api/credits", creditsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/audit-logs", auditLogsRoutes);
 
-app.listen(PORT, () => {
+// Global Express error handler — must be registered after all routes
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+	console.error("[Express Error]", err.message);
+	res.status(500).json({ error: "Internal server error" });
+});
+
+const server = app.listen(PORT, () => {
 	console.log(`🚀 Server listening on http://localhost:${PORT}`);
+});
+
+// Graceful shutdown on container/process signals
+const shutdown = (signal: string) => {
+	console.log(`[${signal}] Shutting down gracefully…`);
+	server.close(() => {
+		console.log("Server closed.");
+		process.exit(0);
+	});
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
+// Process-level safety nets
+process.on("unhandledRejection", (reason) => {
+	console.error("[UnhandledRejection]", reason);
+});
+
+process.on("uncaughtException", (err) => {
+	console.error("[UncaughtException]", err.message);
+	process.exit(1);
 });

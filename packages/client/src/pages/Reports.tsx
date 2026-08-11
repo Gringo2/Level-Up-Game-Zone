@@ -29,6 +29,7 @@ import {
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 import { SHOP_TIMEZONE } from "../lib/dateUtils";
 
 export function Reports() {
@@ -74,19 +75,19 @@ export function Reports() {
 					creditsResponse,
 					expensesResponse,
 				] = await Promise.all([
-					fetch(`http://${window.location.hostname}:4000/api/shifts`, {
+					fetch(`${API_BASE}/api/shifts`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`http://${window.location.hostname}:4000/api/sales`, {
+					fetch(`${API_BASE}/api/sales`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`http://${window.location.hostname}:4000/api/keno`, {
+					fetch(`${API_BASE}/api/keno`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`http://${window.location.hostname}:4000/api/credits`, {
+					fetch(`${API_BASE}/api/credits`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`http://${window.location.hostname}:4000/api/expenses`, {
+					fetch(`${API_BASE}/api/expenses`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
 				]);

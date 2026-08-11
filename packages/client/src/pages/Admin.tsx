@@ -15,6 +15,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 
 interface EditState {
 	rateId: string;
@@ -43,21 +44,18 @@ export function Admin() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/rates`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/rates`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(
-						(await response.json()).error || "Failed to fetch rates",
+						(await safeJson(response)).error || "Failed to fetch rates",
 					);
 				}
 
-				const data = (await response.json()) as GameRate[];
+				const data = (await safeJson(response)) as GameRate[];
 				if (mounted) {
 					setRates(data);
 				}
@@ -82,26 +80,25 @@ export function Admin() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/rates`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({
-						game_name: gameName,
-						price_per_unit: price,
-						unit_type: unitType,
-						isActive: true,
-					}),
+			const response = await fetch(`${API_BASE}/api/rates`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({
+					game_name: gameName,
+					price_per_unit: price,
+					unit_type: unitType,
+					isActive: true,
+				}),
+			});
 			if (!response.ok)
-				throw new Error((await response.json()).error || "Failed to add rate");
+				throw new Error(
+					(await safeJson(response)).error || "Failed to add rate",
+				);
 
-			const newRate = (await response.json()) as GameRate;
+			const newRate = (await safeJson(response)) as GameRate;
 			setRates((prev) => [...prev, newRate]);
 			setGameName("");
 			setPrice("");
@@ -141,7 +138,7 @@ export function Admin() {
 			if (!token) throw new Error("Not authenticated");
 
 			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/rates/${editState.rateId}`,
+				`${API_BASE}/api/rates/${editState.rateId}`,
 				{
 					method: "PUT",
 					headers: {
@@ -158,7 +155,7 @@ export function Admin() {
 			);
 			if (!response.ok)
 				throw new Error(
-					(await response.json()).error || "Failed to update rate",
+					(await safeJson(response)).error || "Failed to update rate",
 				);
 
 			setRates((prev) =>
@@ -188,23 +185,20 @@ export function Admin() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/rates/${rate.id}`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({
-						isActive: !rate.isActive,
-						editReason: `Toggled active status to ${!rate.isActive}`,
-					}),
+			const response = await fetch(`${API_BASE}/api/rates/${rate.id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({
+					isActive: !rate.isActive,
+					editReason: `Toggled active status to ${!rate.isActive}`,
+				}),
+			});
 			if (!response.ok)
 				throw new Error(
-					(await response.json()).error || "Failed to update rate",
+					(await safeJson(response)).error || "Failed to update rate",
 				);
 
 			setRates((prev) =>

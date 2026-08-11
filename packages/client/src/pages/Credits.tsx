@@ -17,6 +17,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 
 export function Credits() {
 	const { user } = useAuth();
@@ -37,21 +38,18 @@ export function Credits() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/credits`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/credits`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(
-						(await response.json()).error || "Failed to fetch credits",
+						(await safeJson(response)).error || "Failed to fetch credits",
 					);
 				}
 
-				const data = (await response.json()) as Credit[];
+				const data = (await safeJson(response)) as Credit[];
 				if (mounted) {
 					setCredits(
 						data.sort(
@@ -81,23 +79,20 @@ export function Credits() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/credits/${id}`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({
-						status: resolution,
-						editReason: `Status updated to ${resolution}`,
-					}),
+			const response = await fetch(`${API_BASE}/api/credits/${id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({
+					status: resolution,
+					editReason: `Status updated to ${resolution}`,
+				}),
+			});
 			if (!response.ok)
 				throw new Error(
-					(await response.json()).error || "Failed to update status",
+					(await safeJson(response)).error || "Failed to update status",
 				);
 
 			toast.success(`Credit marked as ${resolution}`);
@@ -130,19 +125,16 @@ export function Credits() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/credits/${id}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ deleteReason }),
+			const response = await fetch(`${API_BASE}/api/credits/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({ deleteReason }),
+			});
 			if (!response.ok)
-				throw new Error((await response.json()).error || "Failed to delete");
+				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Credit deleted successfully!");
 			setDeletingId(null);
@@ -168,43 +160,39 @@ export function Credits() {
 					setLoading(false);
 					return;
 				}
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/credits/${editingId}`,
-					{
-						method: "PUT",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							employee_name: employeeName,
-							amount: amount,
-							editReason,
-						}),
+				const response = await fetch(`${API_BASE}/api/credits/${editingId}`, {
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
-				);
+					body: JSON.stringify({
+						employee_name: employeeName,
+						amount: amount,
+						editReason,
+					}),
+				});
 				if (!response.ok)
-					throw new Error((await response.json()).error || "Failed to update");
+					throw new Error(
+						(await safeJson(response)).error || "Failed to update",
+					);
 				toast.success("Credit updated successfully!");
 				cancelEdit();
 			} else {
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/credits`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							employee_name: employeeName,
-							amount: amount,
-						}),
+				const response = await fetch(`${API_BASE}/api/credits`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
-				);
+					body: JSON.stringify({
+						employee_name: employeeName,
+						amount: amount,
+					}),
+				});
 				if (!response.ok)
 					throw new Error(
-						(await response.json()).error || "Failed to log credit",
+						(await safeJson(response)).error || "Failed to log credit",
 					);
 				setEmployeeName("");
 				setAmount("");

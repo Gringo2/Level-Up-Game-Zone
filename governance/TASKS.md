@@ -1,16 +1,21 @@
-# Mission 8: Domain Validation & Server Hardening
+# Mission 9: System Stability & Crash Resilience
 *Status: LOCKED*
 
-## Phase A: Zod Schema & Validation Middleware Implementation
-- [x] 1. Add `zod` to `packages/server/package.json`.
-- [x] 2. Activate Mission 8 in `MISSION.md` and `TASKS.md`.
-- [x] 3. Create `packages/server/src/schemas/index.ts` with domain-driven Zod schemas.
-- [x] 4. Create `packages/server/src/middleware/validate.ts` Express validation middleware.
+## Phase A: UI Crash Boundary
+- [x] 1. Create `packages/client/src/components/ErrorBoundary.tsx` class component.
+- [x] 2. Wrap `<AppContent />` root in `App.tsx` with `<ErrorBoundary>`.
 
-## Phase B: Route Integration & Unit Testing
-- [x] 5. Wire `validateBody` middleware across all Express route files.
-- [x] 6. Create `packages/server/src/__tests__/validation.test.ts` vitest suite.
+## Phase B: Server Exception & Signal Handling
+- [x] 3. Add 4-argument Express error handling middleware `(err, req, res, next)` in `index.ts`.
+- [x] 4. Add `unhandledRejection`, `uncaughtException`, `SIGTERM`, `SIGINT` process listeners.
 
-## Phase C: Verification & Finalization
-- [x] 7. Run full verification suite (`tsc`, `vitest`, `knip`, `playwright`).
-- [x] 8. Lock Mission 8.
+## Phase C: Transport & Safe Parsing
+- [x] 5. Create `packages/client/src/lib/api.ts` exporting `API_BASE` and `safeJson<T>()`.
+- [x] 6. Create `packages/client/.env.example` documenting `VITE_API_URL`.
+- [x] 7. Replace 44 hardcoded `http://` strings across 13 client files with `${API_BASE}`.
+- [x] 8. Replace unsafe `.json()` calls with `safeJson(response)`.
+
+## Phase D: Verification & Finalization
+- [x] 9. Run full verification suite (`tsc`, `vitest`, `knip`, `playwright`).
+- [x] 10. Lock Mission 9 and update `STABILITY_GAP_ANALYSIS.md`.
+

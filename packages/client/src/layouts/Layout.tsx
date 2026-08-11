@@ -30,6 +30,7 @@ import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { useShift } from "../contexts/ShiftContext";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
@@ -44,23 +45,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/shifts`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({
-						floatAmount: openingFloat,
-						managerName: user.displayName || user.email,
-					}),
+			const response = await fetch(`${API_BASE}/api/shifts`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({
+					floatAmount: openingFloat,
+					managerName: user.displayName || user.email,
+				}),
+			});
 			if (!response.ok)
 				throw new Error(
-					(await response.json()).error || "Failed to start shift",
+					(await safeJson(response)).error || "Failed to start shift",
 				);
 
 			setOpeningFloat("");

@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { UserManagement } from "./components/UserManagement";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ShiftProvider } from "./contexts/ShiftContext";
@@ -70,8 +71,10 @@ function AppContent() {
 
 export default function App() {
 	return (
-		<AuthProvider>
-			<AppContent />
-		</AuthProvider>
+		<ErrorBoundary>
+			<AuthProvider>
+				<AppContent />
+			</AuthProvider>
+		</ErrorBoundary>
 	);
 }

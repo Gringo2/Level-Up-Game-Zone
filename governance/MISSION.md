@@ -1,34 +1,33 @@
-# Active Mission: Mission 8 — Domain Validation & Server Hardening
+# Active Mission: Mission 9 — System Stability & Crash Resilience
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Hardening / Quality Assurance
+**Type:** Quality Assurance / Hardening
 **Phase:** Phase 5 — Maturation
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Implement domain-driven Zod schema validation on all Express mutation routes to enforce server-side business rules, eliminate invalid data ingress, and harden the API against malformed payloads.
+Remediate all 4 remaining empirically verified codebase stability gaps: missing React ErrorBoundary, lack of Express crash handlers, hardcoded API URLs, and unsafe JSON parsing.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/server/src/schemas/index.ts`
-  - `packages/server/src/middleware/validate.ts`
-  - `packages/server/src/routes/shifts.ts`
-  - `packages/server/src/routes/sales.ts`
-  - `packages/server/src/routes/keno.ts`
-  - `packages/server/src/routes/expenses.ts`
-  - `packages/server/src/routes/credits.ts`
-  - `packages/server/src/routes/rates.ts`
-  - `packages/server/src/routes/users.ts`
-  - `packages/server/src/__tests__/validation.test.ts`
-  - `governance/MISSION.md`
-  - `governance/TASKS.md`
+  - `packages/client/src/components/ErrorBoundary.tsx`
+  - `packages/client/src/App.tsx`
+  - `packages/server/src/index.ts`
+  - `packages/client/src/lib/api.ts`
+  - `packages/client/src/vite-env.d.ts`
+  - `packages/client/.env.example`
+  - 13 client page, component, context, and layout files
+  - `STABILITY_GAP_ANALYSIS.md`
 - **Out of Scope:**
-  - Client-side validation, CI/CD pipeline.
+  - Database schema changes, deployment infrastructure.
 
 ## Evidence Payload
-- `schemas/index.ts`: 9 domain schemas covering Shift, Sale, Keno, Expense, Credit, GameRate, Role, DeleteReason, EditReason — enforcing non-negative amounts, valid enums, trimmed non-empty strings.
-- `middleware/validate.ts`: `validateBody(schema)` Express middleware returning HTTP 400 `{ error }` on Zod failure; passes coerced sanitized data to `req.body` on success.
-- Route integration: `validateBody` wired to all 7 mutation route files (shifts, sales, keno, expenses, credits, rates, users).
-- `validation.test.ts`: 6 unit tests (Red–Green verified) covering negative float, NaN quantity, invalid enum, invalid role, blank reason, and valid coercion path.
-- Full suite: **23 vitest tests (6 files)**, **tsc clean**, **knip 0 issues**, **6 Playwright E2E tests** — all pass.
+- `ErrorBoundary.tsx`: React class component displaying Zinc dark-theme error card with reload button. Wrapped around `<AuthProvider>` root in `App.tsx`.
+- `index.ts`: 4-argument Express error handler, `unhandledRejection` logging, `uncaughtException` exit handler, `SIGTERM`/`SIGINT` server close listeners.
+- `lib/api.ts`: `API_BASE` resolving `VITE_API_URL` env variable with runtime fallback. `safeJson<T>()` checking `Content-Type: application/json` before parsing.
+- 44 hardcoded `http://` strings across 13 client files replaced with `${API_BASE}`.
+- Direct `response.json()` calls replaced with `safeJson(response)`.
+- `.env.example`: Documented `VITE_API_URL` variable.
+- Verification: **23/23 vitest tests**, **tsc clean**, **knip 0 issues**, **6/6 Playwright E2E tests** all pass.
+

@@ -16,6 +16,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useShift } from "../contexts/ShiftContext";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 import { getShopStartOfDay } from "../lib/dateUtils";
 
 export function Dashboard() {
@@ -44,22 +45,22 @@ export function Dashboard() {
 
 				const [gamesResponse, kenoResponse, creditsResponse, expensesResponse] =
 					await Promise.all([
-						fetch(`http://${window.location.hostname}:4000/api/sales`, {
+						fetch(`${API_BASE}/api/sales`, {
 							headers: {
 								Authorization: `Bearer ${token}`,
 							},
 						}),
-						fetch(`http://${window.location.hostname}:4000/api/keno`, {
+						fetch(`${API_BASE}/api/keno`, {
 							headers: {
 								Authorization: `Bearer ${token}`,
 							},
 						}),
-						fetch(`http://${window.location.hostname}:4000/api/credits`, {
+						fetch(`${API_BASE}/api/credits`, {
 							headers: {
 								Authorization: `Bearer ${token}`,
 							},
 						}),
-						fetch(`http://${window.location.hostname}:4000/api/expenses`, {
+						fetch(`${API_BASE}/api/expenses`, {
 							headers: {
 								Authorization: `Bearer ${token}`,
 							},
@@ -144,7 +145,7 @@ export function Dashboard() {
 			if (!token) throw new Error("Not authenticated");
 
 			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/shifts/${activeShift.id}/close`,
+				`${API_BASE}/api/shifts/${activeShift.id}/close`,
 				{
 					method: "POST",
 					headers: {
@@ -158,7 +159,7 @@ export function Dashboard() {
 				},
 			);
 
-			const data = await response.json();
+			const data = await safeJson(response);
 			if (!response.ok) throw new Error(data.error || "Failed to close shift");
 
 			setClosingCash("");

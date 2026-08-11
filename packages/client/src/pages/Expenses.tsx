@@ -17,6 +17,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function Expenses() {
@@ -39,23 +40,20 @@ export function Expenses() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/expenses`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/expenses`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(
-						(await response.json()).error || "Failed to fetch expenses",
+						(await safeJson(response)).error || "Failed to fetch expenses",
 					);
 				}
 
 				const dayStart = getShopStartOfDay().toISOString();
 				const dayEnd = getShopEndOfDay().toISOString();
-				const data = (await response.json()) as Expense[];
+				const data = (await safeJson(response)) as Expense[];
 				const fetched = data
 					.filter(
 						(expense) => expense.date >= dayStart && expense.date <= dayEnd,
@@ -106,19 +104,16 @@ export function Expenses() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/expenses/${id}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ deleteReason }),
+			const response = await fetch(`${API_BASE}/api/expenses/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({ deleteReason }),
+			});
 			if (!response.ok)
-				throw new Error((await response.json()).error || "Failed to delete");
+				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Expense deleted successfully!");
 			setDeletingId(null);
@@ -134,18 +129,15 @@ export function Expenses() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/expenses/${id}/verify`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
+			const response = await fetch(`${API_BASE}/api/expenses/${id}/verify`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+			});
 			if (!response.ok)
-				throw new Error((await response.json()).error || "Failed to verify");
+				throw new Error((await safeJson(response)).error || "Failed to verify");
 
 			toast.success("Expense verified!");
 		} catch (err: unknown) {
@@ -169,45 +161,41 @@ export function Expenses() {
 					setLoading(false);
 					return;
 				}
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/expenses/${editingId}`,
-					{
-						method: "PUT",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							description: description,
-							amount: amount,
-							category: category,
-							editReason,
-						}),
+				const response = await fetch(`${API_BASE}/api/expenses/${editingId}`, {
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
-				);
+					body: JSON.stringify({
+						description: description,
+						amount: amount,
+						category: category,
+						editReason,
+					}),
+				});
 				if (!response.ok)
-					throw new Error((await response.json()).error || "Failed to update");
+					throw new Error(
+						(await safeJson(response)).error || "Failed to update",
+					);
 				toast.success("Expense updated successfully!");
 				cancelEdit();
 			} else {
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/expenses`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							description: description,
-							amount: amount,
-							category: category,
-						}),
+				const response = await fetch(`${API_BASE}/api/expenses`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
-				);
+					body: JSON.stringify({
+						description: description,
+						amount: amount,
+						category: category,
+					}),
+				});
 				if (!response.ok)
 					throw new Error(
-						(await response.json()).error || "Failed to log expense",
+						(await safeJson(response)).error || "Failed to log expense",
 					);
 				setDescription("");
 				setAmount("");

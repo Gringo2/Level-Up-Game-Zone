@@ -11,6 +11,7 @@ import {
 	CardTitle,
 } from "../components/ui/card";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 
 export function SalaryReport() {
 	const [credits, setCredits] = useState<Credit[]>([]);
@@ -24,21 +25,18 @@ export function SalaryReport() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/credits`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/credits`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(
-						(await response.json()).error || "Failed to fetch deductions",
+						(await safeJson(response)).error || "Failed to fetch deductions",
 					);
 				}
 
-				const data = (await response.json()) as Credit[];
+				const data = (await safeJson(response)) as Credit[];
 				if (mounted) {
 					setCredits(data.filter((credit) => credit.status === "Deducted"));
 					setLoading(false);

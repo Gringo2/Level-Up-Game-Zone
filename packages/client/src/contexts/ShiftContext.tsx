@@ -2,6 +2,7 @@ import type { Shift } from "@level-up/shared";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 import { useAuth } from "./AuthContext";
 
 interface ShiftContextType {
@@ -32,19 +33,16 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/shifts`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/shifts`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error("Failed to fetch shifts");
 				}
 
-				const data = (await response.json()) as Shift[];
+				const data = (await safeJson(response)) as Shift[];
 				const openShift =
 					data
 						.filter((s) => s.status === "OPEN")

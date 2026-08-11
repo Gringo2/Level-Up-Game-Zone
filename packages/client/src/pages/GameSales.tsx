@@ -17,6 +17,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function GameSales() {
@@ -43,12 +44,12 @@ export function GameSales() {
 				}
 
 				const [ratesResponse, salesResponse] = await Promise.all([
-					fetch(`http://${window.location.hostname}:4000/api/rates`, {
+					fetch(`${API_BASE}/api/rates`, {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
 					}),
-					fetch(`http://${window.location.hostname}:4000/api/sales`, {
+					fetch(`${API_BASE}/api/sales`, {
 						headers: {
 							Authorization: `Bearer ${token}`,
 						},
@@ -124,19 +125,16 @@ export function GameSales() {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(
-				`http://${window.location.hostname}:4000/api/sales/${id}`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
-					},
-					body: JSON.stringify({ deleteReason }),
+			const response = await fetch(`${API_BASE}/api/sales/${id}`, {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
 				},
-			);
+				body: JSON.stringify({ deleteReason }),
+			});
 			if (!response.ok)
-				throw new Error((await response.json()).error || "Failed to delete");
+				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Log deleted successfully!");
 			setDeletingId(null);
@@ -162,49 +160,45 @@ export function GameSales() {
 					setLoading(false);
 					return;
 				}
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/sales/${editingId}`,
-					{
-						method: "PUT",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							game_id: selectedRate.id,
-							game_name: selectedRate.game_name,
-							quantity_sold: quantity,
-							rate_applied: selectedRate.price_per_unit,
-							calculated_total: calculatedTotal,
-							editReason,
-						}),
+				const response = await fetch(`${API_BASE}/api/sales/${editingId}`, {
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
-				);
+					body: JSON.stringify({
+						game_id: selectedRate.id,
+						game_name: selectedRate.game_name,
+						quantity_sold: quantity,
+						rate_applied: selectedRate.price_per_unit,
+						calculated_total: calculatedTotal,
+						editReason,
+					}),
+				});
 				if (!response.ok)
-					throw new Error((await response.json()).error || "Failed to update");
+					throw new Error(
+						(await safeJson(response)).error || "Failed to update",
+					);
 				toast.success("Game sale updated successfully!");
 				cancelEdit();
 			} else {
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/sales`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${token}`,
-						},
-						body: JSON.stringify({
-							game_id: selectedRate.id,
-							game_name: selectedRate.game_name,
-							quantity_sold: quantity,
-							rate_applied: selectedRate.price_per_unit,
-							calculated_total: calculatedTotal,
-						}),
+				const response = await fetch(`${API_BASE}/api/sales`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
 					},
-				);
+					body: JSON.stringify({
+						game_id: selectedRate.id,
+						game_name: selectedRate.game_name,
+						quantity_sold: quantity,
+						rate_applied: selectedRate.price_per_unit,
+						calculated_total: calculatedTotal,
+					}),
+				});
 				if (!response.ok)
 					throw new Error(
-						(await response.json()).error || "Failed to log sale",
+						(await safeJson(response)).error || "Failed to log sale",
 					);
 				setQuantity("");
 				toast.success("Game sale logged successfully!");
@@ -238,38 +232,32 @@ export function GameSales() {
 								const token = await auth.currentUser?.getIdToken();
 								if (!token) return;
 
-								await fetch(
-									`http://${window.location.hostname}:4000/api/rates`,
-									{
-										method: "POST",
-										headers: {
-											"Content-Type": "application/json",
-											Authorization: `Bearer ${token}`,
-										},
-										body: JSON.stringify({
-											game_name: "PS4",
-											price_per_unit: 5,
-											unit_type: "Hour",
-											isActive: true,
-										}),
+								await fetch(`${API_BASE}/api/rates`, {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+										Authorization: `Bearer ${token}`,
 									},
-								);
-								await fetch(
-									`http://${window.location.hostname}:4000/api/rates`,
-									{
-										method: "POST",
-										headers: {
-											"Content-Type": "application/json",
-											Authorization: `Bearer ${token}`,
-										},
-										body: JSON.stringify({
-											game_name: "Pool",
-											price_per_unit: 2,
-											unit_type: "Game",
-											isActive: true,
-										}),
+									body: JSON.stringify({
+										game_name: "PS4",
+										price_per_unit: 5,
+										unit_type: "Hour",
+										isActive: true,
+									}),
+								});
+								await fetch(`${API_BASE}/api/rates`, {
+									method: "POST",
+									headers: {
+										"Content-Type": "application/json",
+										Authorization: `Bearer ${token}`,
 									},
-								);
+									body: JSON.stringify({
+										game_name: "Pool",
+										price_per_unit: 2,
+										unit_type: "Game",
+										isActive: true,
+									}),
+								});
 								toast.success("Default games configured!");
 							} catch (_err) {
 								toast.error("Failed to configure games");

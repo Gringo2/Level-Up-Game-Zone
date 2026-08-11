@@ -10,6 +10,7 @@ import {
 	CardTitle,
 } from "../components/ui/card";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 
 export function AuditLogs() {
 	// biome-ignore lint/suspicious/noExplicitAny: Firestore documents
@@ -24,21 +25,18 @@ export function AuditLogs() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(
-					`http://${window.location.hostname}:4000/api/audit-logs`,
-					{
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
+				const response = await fetch(`${API_BASE}/api/audit-logs`, {
+					headers: {
+						Authorization: `Bearer ${token}`,
 					},
-				);
+				});
 				if (!response.ok) {
 					throw new Error(
-						(await response.json()).error || "Failed to fetch audit logs",
+						(await safeJson(response)).error || "Failed to fetch audit logs",
 					);
 				}
 
-				const data = await response.json();
+				const data = await safeJson<any[]>(response);
 				if (mounted) {
 					setLogs(data);
 					setLoading(false);

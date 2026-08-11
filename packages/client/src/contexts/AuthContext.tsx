@@ -4,6 +4,7 @@ import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { auth } from "../firebase";
+import { API_BASE, safeJson } from "../lib/api";
 
 interface AuthContextType {
 	user: AppUser | null;
@@ -33,14 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			if (firebaseUser) {
 				try {
 					const token = await firebaseUser.getIdToken();
-					const meResponse = await fetch(
-						`http://${window.location.hostname}:4000/api/users/me`,
-						{
-							headers: {
-								Authorization: `Bearer ${token}`,
-							},
+					const meResponse = await fetch(`${API_BASE}/api/users/me`, {
+						headers: {
+							Authorization: `Bearer ${token}`,
 						},
-					);
+					});
 
 					if (meResponse.ok) {
 						const meData = await meResponse.json();
@@ -48,17 +46,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					} else if (meResponse.status === 404) {
 						const role =
 							firebaseUser.email === "bezueyob3@gmail.com" ? "admin" : "staff";
-						const createResponse = await fetch(
-							`http://${window.location.hostname}:4000/api/users`,
-							{
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-									Authorization: `Bearer ${token}`,
-								},
-								body: JSON.stringify({ role }),
+						const createResponse = await fetch(`${API_BASE}/api/users`, {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+								Authorization: `Bearer ${token}`,
 							},
-						);
+							body: JSON.stringify({ role }),
+						});
 
 						if (createResponse.ok) {
 							const newUser = await createResponse.json();
