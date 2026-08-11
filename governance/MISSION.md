@@ -1,22 +1,27 @@
-# Active Mission: Mission 3 — Complete Firestore Lockdown
+# Active Mission: Mission 5 — Refactor Auth State Management
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Governance
-**Phase:** Phase 3 — Firestore Lockdown
+**Type:** Refactoring
+**Phase:** Phase 4 — Client Refactoring
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Lock down `firestore.rules` so that all direct client-side reads and writes are blocked (`allow read, write: if false;`), enforcing Zero-Trust Thin Client Architecture.
+Eradicate direct client-side Firestore access in `AuthContext.tsx` by implementing `GET /api/users/me` on the Express backend and fetching user profiles exclusively via API endpoints.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `firestore.rules`
+  - `packages/server/src/controllers/usersController.ts`
+  - `packages/server/src/routes/users.ts`
+  - `packages/client/src/contexts/AuthContext.tsx`
+  - `packages/server/src/__tests__/usersController.test.ts`
+  - `packages/client/src/__tests__/contexts/AuthContext.test.tsx`
   - `governance/MISSION.md`
   - `governance/TASKS.md`
 - **Out of Scope:**
-  - Modifying backend server logic or client UI components.
+  - Modifying other client pages or UI layout components.
 
 ## Evidence Payload
-- `firestore.rules` restricts all collections to `allow read, write: if false;`.
+- Zero `firebase/firestore` or `db` imports in `AuthContext.tsx`.
+- `GET /api/users/me` endpoint returns current user profile or 404 if not registered.
 - `vitest` unit tests and `tsc` typechecks pass cleanly across the monorepo.

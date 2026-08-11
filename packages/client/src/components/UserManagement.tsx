@@ -1,8 +1,7 @@
-import { collection, onSnapshot, query } from "firebase/firestore";
 import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
@@ -18,12 +17,44 @@ export function UserManagement() {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const q = query(collection(db, "users"));
-		const unsub = onSnapshot(q, (snap) => {
-			setUsers(snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as AppUser));
-			setLoading(false);
-		});
-		return () => unsub();
+		let mounted = true;
+		const loadUsers = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/users`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error(
+						(await response.json()).error || "Failed to fetch users",
+					);
+				}
+
+				const data = (await response.json()) as AppUser[];
+				if (mounted) {
+					setUsers(data);
+					setLoading(false);
+				}
+			} catch (err) {
+				console.error(err);
+				if (mounted) {
+					toast.error("Failed to load users");
+					setLoading(false);
+				}
+			}
+		};
+
+		void loadUsers();
+		return () => {
+			mounted = false;
+		};
 	}, []);
 
 	const handleUpdateRole = async (

@@ -21,16 +21,8 @@ vi.mock("firebase/auth", () => ({
 	signOut: vi.fn(),
 }));
 
-vi.mock("firebase/firestore", () => ({
-	doc: vi.fn(),
-	getDoc: vi.fn().mockResolvedValue({
-		exists: () => false, // Simulate user not found in DB
-	}),
-}));
-
 vi.mock("../../firebase", () => ({
 	auth: {},
-	db: {},
 }));
 
 // Mock sonner
@@ -51,12 +43,22 @@ const TestComponent = () => {
 
 describe("AuthContext - Negative Tests", () => {
 	it("should fail closed and sign out if backend token validation fails", async () => {
-		// Mock a backend rejection (e.g., 500 error during user creation)
-		global.fetch = vi.fn().mockResolvedValue({
-			ok: false,
-			status: 500,
-			statusText: "Internal Server Error",
-			json: vi.fn().mockResolvedValue({ error: "User already exists" }),
+		// Mock a 404 for /api/users/me, followed by a 500 rejection for /api/users creation
+		global.fetch = vi.fn().mockImplementation((url: string) => {
+			if (url.includes("/api/users/me")) {
+				return Promise.resolve({
+					ok: false,
+					status: 404,
+					statusText: "Not Found",
+					json: () => Promise.resolve({ error: "User profile not found" }),
+				});
+			}
+			return Promise.resolve({
+				ok: false,
+				status: 500,
+				statusText: "Internal Server Error",
+				json: () => Promise.resolve({ error: "User already exists" }),
+			});
 		});
 
 		render(

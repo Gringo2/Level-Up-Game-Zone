@@ -6,9 +6,9 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 **Why does it exist?**
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
-**Current Phase:** Implementation
-**Current Mission:** Phase 4 Client Refactoring
-**Mission Status:** Active
+**Current Phase:** Phase 4 / Phase 5 Transition
+**Current Mission:** Awaiting Mission Selection (Mission 5, 6, or 8)
+**Mission Status:** Idle
 
 **Current Architecture Version:** v1.0.0
 
@@ -19,8 +19,7 @@ To provide a unified, secure, and robust platform for managing the physical stor
 - AI Implementor must follow the Engineering Constitution (`AGENTS.md`).
 - Maintain Zero-Trust Thin Client architecture.
 - All data mutations must route through `http://localhost:4000/api/*`.
-- Client must not use Firebase SDK for mutations.
-- The `App.tsx` "God Component" must be refactored into modular `pages/` and `layouts/`.
+- Client must not use Firebase SDK for direct database reads or writes.
 
 **System Boundaries & Ownership:**
 *   **Express Backend** owns all database writes and transaction logic.

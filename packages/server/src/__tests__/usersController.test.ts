@@ -1,6 +1,10 @@
 import type { Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import { createUser, updateRole } from "../controllers/usersController.js";
+import {
+	createUser,
+	getMe,
+	updateRole,
+} from "../controllers/usersController.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 // Mock Firebase
@@ -17,6 +21,18 @@ vi.mock("../firebase.js", () => ({
 }));
 
 describe("Users Controller - Negative Tests", () => {
+	it("getMe should return 401 if user is missing from request", async () => {
+		const req = {} as AuthRequest;
+		const res = {
+			status: vi.fn().mockReturnThis(),
+			json: vi.fn(),
+		} as unknown as Response;
+
+		await getMe(req, res);
+
+		expect(res.status).toHaveBeenCalledWith(401);
+		expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+	});
 	it("createUser should return 401 if user is missing from request", async () => {
 		const req = {} as AuthRequest;
 		const res = {

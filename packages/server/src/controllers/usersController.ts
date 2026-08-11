@@ -2,6 +2,24 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
+export const getMe = async (req: AuthRequest, res: Response) => {
+	const user = req.user;
+	if (!user) return res.status(401).json({ error: "Unauthorized" });
+
+	try {
+		const docSnap = await db.collection("users").doc(user.uid).get();
+		if (!docSnap.exists) {
+			return res.status(404).json({ error: "User profile not found" });
+		}
+		return res.status(200).json({ uid: docSnap.id, ...docSnap.data() });
+	} catch (error: unknown) {
+		console.error("Error fetching user profile:", error);
+		return res
+			.status(500)
+			.json({ error: (error as Error).message || "Internal server error" });
+	}
+};
+
 export const listUsers = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 	if (!user) return res.status(401).json({ error: "Unauthorized" });

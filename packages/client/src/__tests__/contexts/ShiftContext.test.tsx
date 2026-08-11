@@ -7,21 +7,8 @@ import { describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { ShiftProvider, useShift } from "../../contexts/ShiftContext.js";
 
-// Mock Firebase Modules
-vi.mock("firebase/firestore", () => ({
-	collection: vi.fn(),
-	query: vi.fn(),
-	where: vi.fn(),
-	orderBy: vi.fn(),
-	onSnapshot: vi.fn((_q, _onNext, onError) => {
-		// Simulate a firestore permission error
-		onError(new Error("Missing or insufficient permissions."));
-		return vi.fn();
-	}),
-}));
-
 vi.mock("../../firebase", () => ({
-	db: {},
+	auth: {},
 }));
 
 vi.mock("../../contexts/AuthContext.js", () => ({
@@ -37,7 +24,12 @@ const TestComponent = () => {
 };
 
 describe("ShiftContext - Negative Tests", () => {
-	it("should gracefully handle firestore errors and stop loading", async () => {
+	it("should gracefully handle API errors and stop loading", async () => {
+		global.fetch = vi.fn().mockResolvedValue({
+			ok: false,
+			status: 500,
+			statusText: "Internal Server Error",
+		});
 		// Mock an active user so ShiftContext attempts to fetch
 		vi.mocked(useAuth).mockReturnValue({
 			user: {

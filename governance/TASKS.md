@@ -1,10 +1,15 @@
-# Mission 3: Complete Firestore Lockdown
+# Mission 5: Refactor Auth State Management
 *Status: ACTIVE*
 
-## Phase A: Governance & Rules Update
-- [x] 1. Activate Mission 3 in `MISSION.md` and `TASKS.md`.
-- [x] 2. Update `firestore.rules` to enforce `allow read, write: if false;` across all documents.
+## Phase A: Backend API Implementation
+- [x] 1. Activate Mission 5 in `MISSION.md` and `TASKS.md`.
+- [x] 2. Implement `getMe` controller in `usersController.ts` and `/api/users/me` route in `routes/users.ts`.
+- [x] 3. Add `getMe` unit test in `usersController.test.ts`.
 
-## Phase B: Verification & Finalization
-- [x] 3. Run monorepo test suite and typechecks.
-- [x] 4. Lock Mission 3.
+## Phase B: Frontend Auth Refactoring
+- [x] 4. Refactor `AuthContext.tsx` to fetch `/api/users/me` and remove all `firebase/firestore` imports.
+- [x] 5. Update `AuthContext.test.tsx` to mock `/api/users/me` HTTP calls.
+
+## Phase C: Verification & Finalization
+- [x] 6. Run monorepo test suite, typechecks, and Knip hygiene.
+- [x] 7. Lock Mission 5.

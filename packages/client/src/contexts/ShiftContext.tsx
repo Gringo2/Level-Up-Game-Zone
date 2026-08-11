@@ -1,14 +1,7 @@
 import type { Shift } from "@level-up/shared";
-import {
-	collection,
-	onSnapshot,
-	orderBy,
-	query,
-	where,
-} from "firebase/firestore";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { db } from "../firebase";
+import { auth } from "../firebase";
 import { useAuth } from "./AuthContext";
 
 interface ShiftContextType {
@@ -32,30 +25,52 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 			setLoadingShift(false);
 			return;
 		}
-		const q = query(
-			collection(db, "shifts"),
-			where("status", "==", "OPEN"),
-			orderBy("start_time", "desc"),
-		);
-		const unsub = onSnapshot(
-			q,
-			(snap) => {
-				if (!snap.empty) {
-					setActiveShift({
-						id: snap.docs[0].id,
-						...snap.docs[0].data(),
-					} as Shift);
-				} else {
-					setActiveShift(null);
+
+		let mounted = true;
+		const loadActiveShift = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const response = await fetch(
+					`http://${window.location.hostname}:4000/api/shifts`,
+					{
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					},
+				);
+				if (!response.ok) {
+					throw new Error("Failed to fetch shifts");
 				}
-				setLoadingShift(false);
-			},
-			(err) => {
+
+				const data = (await response.json()) as Shift[];
+				const openShift =
+					data
+						.filter((s) => s.status === "OPEN")
+						.sort(
+							(a, b) =>
+								new Date(b.start_time).getTime() -
+								new Date(a.start_time).getTime(),
+						)[0] || null;
+
+				if (mounted) {
+					setActiveShift(openShift);
+					setLoadingShift(false);
+				}
+			} catch (err) {
 				console.error("Error fetching shift:", err);
-				setLoadingShift(false);
-			},
-		);
-		return () => unsub();
+				if (mounted) {
+					setActiveShift(null);
+					setLoadingShift(false);
+				}
+			}
+		};
+
+		void loadActiveShift();
+		return () => {
+			mounted = false;
+		};
 	}, [user]);
 
 	return (
