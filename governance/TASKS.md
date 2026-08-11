@@ -1,16 +1,16 @@
-# Mission 7: Technical Debt Resolution
-*Status: ACTIVE*
+# Mission 8: Domain Validation & Server Hardening
+*Status: LOCKED*
 
-## Phase A: TD-001 — Auth Middleware Refactoring
-- [x] 1. Activate Mission 7 in `MISSION.md` and `TASKS.md`.
-- [x] 2. Refactor `requireAuth` in `middleware/auth.ts` to accept an injectable `verifier` function and use `AuthRequest` signature throughout.
-- [x] 3. Create `middleware/auth.test.ts` with unit tests: no-token → 401, bad-header → 401, invalid-token → 401, valid-token → `next()` with user attached.
+## Phase A: Zod Schema & Validation Middleware Implementation
+- [x] 1. Add `zod` to `packages/server/package.json`.
+- [x] 2. Activate Mission 8 in `MISSION.md` and `TASKS.md`.
+- [x] 3. Create `packages/server/src/schemas/index.ts` with domain-driven Zod schemas.
+- [x] 4. Create `packages/server/src/middleware/validate.ts` Express validation middleware.
 
-## Phase B: TD-002 — Release Management Artifacts
-- [x] 4. Create `CHANGELOG.md` at repo root (Keep a Changelog format, seeded with Missions 1–7).
-- [x] 5. Create `CODEOWNERS` at repo root mapping governance, server, client, and tests.
+## Phase B: Route Integration & Unit Testing
+- [x] 5. Wire `validateBody` middleware across all Express route files.
+- [x] 6. Create `packages/server/src/__tests__/validation.test.ts` vitest suite.
 
 ## Phase C: Verification & Finalization
-- [x] 6. Run full verification suite (`tsc`, `vitest`, `knip`, `playwright`).
-- [x] 7. Resolve TD-001 and TD-002 in `DEBT.md`.
-- [x] 8. Lock Mission 7.
+- [x] 7. Run full verification suite (`tsc`, `vitest`, `knip`, `playwright`).
+- [x] 8. Lock Mission 8.

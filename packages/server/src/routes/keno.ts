@@ -7,15 +7,32 @@ import {
 	verifyKeno,
 } from "../controllers/kenoController.js";
 import { requireAuth } from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
+import {
+	CreateKenoSchema,
+	DeleteReasonSchema,
+	UpdateKenoSchema,
+} from "../schemas/index.js";
 
 const router = Router();
 
 router.get("/", requireAuth as RequestHandler, listKenoLogs as RequestHandler);
-router.post("/", requireAuth as RequestHandler, createKeno as RequestHandler);
-router.put("/:id", requireAuth as RequestHandler, updateKeno as RequestHandler);
+router.post(
+	"/",
+	requireAuth as RequestHandler,
+	validateBody(CreateKenoSchema) as RequestHandler,
+	createKeno as RequestHandler,
+);
+router.put(
+	"/:id",
+	requireAuth as RequestHandler,
+	validateBody(UpdateKenoSchema) as RequestHandler,
+	updateKeno as RequestHandler,
+);
 router.delete(
 	"/:id",
 	requireAuth as RequestHandler,
+	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteKeno as RequestHandler,
 );
 router.put(
