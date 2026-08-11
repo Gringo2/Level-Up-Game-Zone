@@ -82,10 +82,10 @@ export function Dashboard() {
 
 				const [gamesData, kenoData, creditsData, expensesData] =
 					await Promise.all([
-						gamesResponse.json(),
-						kenoResponse.json(),
-						creditsResponse.json(),
-						expensesResponse.json(),
+						safeJson<GameSalesLog[]>(gamesResponse),
+						safeJson<KenoLog[]>(kenoResponse),
+						safeJson<Credit[]>(creditsResponse),
+						safeJson<Expense[]>(expensesResponse),
 					]);
 
 				if (!mounted) return;

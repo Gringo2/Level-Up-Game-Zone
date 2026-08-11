@@ -63,8 +63,8 @@ export function GameSales() {
 					throw new Error("Failed to fetch sales logs");
 				}
 
-				const fetchedRates = (await ratesResponse.json()) as GameRate[];
-				const fetchedSales = (await salesResponse.json()) as GameSalesLog[];
+				const fetchedRates = await safeJson<GameRate[]>(ratesResponse);
+				const fetchedSales = await safeJson<GameSalesLog[]>(salesResponse);
 				const start = getShopStartOfDay().toISOString();
 				const end = getShopEndOfDay().toISOString();
 				const dailySales = fetchedSales.filter(

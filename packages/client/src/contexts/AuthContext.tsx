@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 					});
 
 					if (meResponse.ok) {
-						const meData = await meResponse.json();
-						setUser(meData as AppUser);
+						const meData = await safeJson<AppUser>(meResponse);
+						setUser(meData);
 					} else if (meResponse.status === 404) {
 						const role =
 							firebaseUser.email === "bezueyob3@gmail.com" ? "admin" : "staff";
@@ -56,11 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 						});
 
 						if (createResponse.ok) {
-							const newUser = await createResponse.json();
-							setUser(newUser as AppUser);
+							const newUser = await safeJson<AppUser>(createResponse);
+							setUser(newUser);
 							toast.success("Login successful!");
 						} else {
-							const errData = await createResponse.json().catch(() => ({}));
+							const errData = await safeJson(createResponse);
 							const errMsg = errData.error || createResponse.statusText;
 							toast.error(
 								`Backend Login Error: ${createResponse.status} ${errMsg}`,
@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 							signOut(auth);
 						}
 					} else {
-						const errData = await meResponse.json().catch(() => ({}));
+						const errData = await safeJson(meResponse);
 						const errMsg = errData.error || meResponse.statusText;
 						toast.error(`Backend Auth Error: ${meResponse.status} ${errMsg}`);
 						setUser(null);

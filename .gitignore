@@ -10,4 +10,4 @@ serviceAccountKey.json
 playwright-report/
 test-results/
 dependency-report.html
-
+*.tsbuildinfo

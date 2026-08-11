@@ -110,11 +110,11 @@ export function Reports() {
 
 				const [shiftsData, salesData, kenoData, creditsData, expensesData] =
 					await Promise.all([
-						shiftsResponse.json(),
-						salesResponse.json(),
-						kenoResponse.json(),
-						creditsResponse.json(),
-						expensesResponse.json(),
+						safeJson<Shift[]>(shiftsResponse),
+						safeJson<GameSalesLog[]>(salesResponse),
+						safeJson<KenoLog[]>(kenoResponse),
+						safeJson<Credit[]>(creditsResponse),
+						safeJson<Expense[]>(expensesResponse),
 					]);
 
 				if (!mounted) return;

@@ -14,4 +14,5 @@
 ## Phase 5 — Maturation
 *   [x] **Mission 6:** E2E Testing Strategy
 *   [x] **Mission 7:** Technical Debt Resolution
-*   [ ] **Mission 8:** Open-Source Governance Maturation
+*   [x] **Mission 8:** Domain Validation & Server Hardening
+*   [x] **Mission 9:** System Stability & Crash Resilience
