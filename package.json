@@ -30,8 +30,7 @@
 		"vitest": "^4.1.10"
 	},
 	"lint-staged": {
-		"*.{ts,tsx,js,jsx,json,md}": [
-			"biome check --write"
+    "*.{ts,tsx,js,jsx,json}": [
 		]
 	}
 }

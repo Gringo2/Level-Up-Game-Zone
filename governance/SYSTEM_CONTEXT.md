@@ -6,9 +6,9 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 **Why does it exist?**
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
-**Current Phase:** Phase 4 / Phase 5 Transition
-**Current Mission:** Awaiting Mission Selection (Mission 5, 6, or 8)
-**Mission Status:** Idle
+**Current Phase:** Phase 5 — Maturation
+**Current Mission:** Mission 9 — System Stability & Crash Resilience
+**Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0
 
@@ -18,7 +18,7 @@ To provide a unified, secure, and robust platform for managing the physical stor
 **Active Constraints:**
 - AI Implementor must follow the Engineering Constitution (`AGENTS.md`).
 - Maintain Zero-Trust Thin Client architecture.
-- All data mutations must route through `http://localhost:4000/api/*`.
+- All data mutations must route through Express API via centralized `API_BASE` (`VITE_API_URL` env variable with runtime fallback).
 - Client must not use Firebase SDK for direct database reads or writes.
 
 **System Boundaries & Ownership:**
@@ -30,4 +30,3 @@ To provide a unified, secure, and robust platform for managing the physical stor
 *   `packages/client/src` -> `firebase-admin` (Forbidden)
 *   `packages/shared/src` -> `packages/client/src` (Forbidden)
 *   `packages/shared/src` -> `packages/server/src` (Forbidden)
-
