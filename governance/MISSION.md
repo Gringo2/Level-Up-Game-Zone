@@ -1,24 +1,34 @@
-# Active Mission: Mission 14 — Shift Context State Reactivity
+# Active Mission: Mission 15 — Employee Roster & Salary Reconciliation
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Frontend State Synchronization
+**Type:** Feature & Domain Alignment
 **Phase:** Phase 5 — Maturation
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Expose a `refetchShift` trigger in `ShiftContext.tsx` and integrate it into `Layout.tsx` and `Dashboard.tsx` so that starting or closing shifts immediately updates app-wide UI overlays and banners without page reloads.
+Implement a managed Employee Roster capability (`/admin/employees`) for store staff members (including `hired_date` and nullable `break_day`). Connect this roster to `Credits.tsx` via a dropdown selector to guarantee accurate, typo-free salary reconciliation and deduction reports.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/client/src/contexts/ShiftContext.tsx`
+  - `packages/shared/src/index.ts`
+  - `packages/server/src/schemas/index.ts`
+  - `packages/server/src/controllers/employeesController.ts`
+  - `packages/server/src/routes/employees.ts`
+  - `packages/server/src/index.ts`
+  - `packages/client/src/pages/EmployeeRoster.tsx`
+  - `packages/client/src/pages/Credits.tsx`
   - `packages/client/src/layouts/Layout.tsx`
-  - `packages/client/src/pages/Dashboard.tsx`
+  - `packages/client/src/App.tsx`
 - **Out of Scope:**
-  - Backend controller modifications.
+  - Changes to user authentication routes or Firestore rules.
 
 ## Evidence Payload
-- `ShiftContext.tsx`: Exported `refetchShift: () => Promise<void>` wrapped in `useCallback` to allow child components to trigger shift re-fetches.
-- `Layout.tsx`: Awaited `refetchShift()` when starting a shift (`POST /api/shifts`).
-- `Dashboard.tsx`: Awaited `refetchShift()` when closing a shift (`POST /api/shifts/:id/close`).
-- **Verification:** All 23 vitest unit tests passed. Biome linter and Knip dead-code checks clean. TypeScript typecheck clean.
+- `shared/src/index.ts`: Added `Employee` interface and `BreakDay` type definition.
+- `schemas/index.ts`: Added `CreateEmployeeSchema` and `UpdateEmployeeSchema` with validation for `hired_date` and nullable `break_day`.
+- `employeesController.ts`: Implemented `listEmployees`, `createEmployee`, and `updateEmployee` with mandatory audit logging.
+- `routes/employees.ts` & `server/src/index.ts`: Exposed and registered `/api/employees`.
+- `EmployeeRoster.tsx`: Built store employee management page (`/admin/employees`) with complete CRUD and local state mutation.
+- `App.tsx` & `Layout.tsx`: Registered `/admin/employees` route and added sidebar link for `admin` and `manager` roles.
+- `Credits.tsx`: Integrated Employee Roster dropdown selector to eliminate freeform name typos in IOUs.
+- **Verification:** All 23 vitest unit tests passed. Biome linter (83 files) and Knip dead-code checks clean. TypeScript typecheck clean.

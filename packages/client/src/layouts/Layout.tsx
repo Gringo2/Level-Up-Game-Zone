@@ -109,6 +109,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			roles: ["admin", "manager"],
 		},
 		{
+			path: "/admin/employees",
+			label: "Employee Roster",
+			icon: UserCog,
+			roles: ["admin", "manager"],
+		},
+		{
 			path: "/audit-logs",
 			label: "Activity Log",
 			icon: ClipboardList,

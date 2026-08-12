@@ -16,6 +16,7 @@ import { Keno } from "./pages/Keno";
 import { Login } from "./pages/Login";
 import { Reports } from "./pages/Reports";
 import { SalaryReport } from "./pages/SalaryReport";
+import { EmployeeRoster } from "./pages/EmployeeRoster";
 
 function AppContent() {
 	const { user, loading } = useAuth();
@@ -49,6 +50,7 @@ function AppContent() {
 								<Route path="/expenses" element={<Expenses />} />
 								<Route path="/salary-report" element={<SalaryReport />} />
 								<Route path="/reports" element={<Reports />} />
+								<Route path="/admin/employees" element={<EmployeeRoster />} />
 							</>
 						)}
 

@@ -7,6 +7,27 @@ export interface AppUser {
 	role: Role;
 }
 
+export type BreakDay =
+	| "Monday"
+	| "Tuesday"
+	| "Wednesday"
+	| "Thursday"
+	| "Friday"
+	| "Saturday"
+	| "Sunday"
+	| null;
+
+export interface Employee {
+	id: string;
+	name: string;
+	position: string;
+	base_salary: number;
+	hired_date: string;
+	break_day: BreakDay;
+	isActive: boolean;
+	created_at: string;
+}
+
 export interface GameRate {
 	id: string;
 	game_name: string;

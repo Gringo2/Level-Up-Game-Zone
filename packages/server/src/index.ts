@@ -22,6 +22,7 @@ import ratesRoutes from "./routes/rates.js";
 import salesRoutes from "./routes/sales.js";
 import shiftRoutes from "./routes/shifts.js";
 import usersRoutes from "./routes/users.js";
+import employeesRoutes from "./routes/employees.js";
 
 // Health check endpoint
 app.get("/api/health", (_req, res) => {
@@ -35,6 +36,7 @@ app.use("/api/expenses", expensesRoutes);
 app.use("/api/rates", ratesRoutes);
 app.use("/api/credits", creditsRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/employees", employeesRoutes);
 app.use("/api/audit-logs", auditLogsRoutes);
 
 // Global Express error handler — must be registered after all routes

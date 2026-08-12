@@ -1,4 +1,4 @@
-import type { Credit } from "@level-up/shared";
+import type { Credit, Employee } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -25,6 +25,7 @@ export function Credits() {
 	const [amount, setAmount] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [credits, setCredits] = useState<Credit[]>([]);
+	const [employeeRoster, setEmployeeRoster] = useState<Employee[]>([]);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
@@ -38,24 +39,35 @@ export function Credits() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(`${API_BASE}/api/credits`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
-				if (!response.ok) {
-					throw new Error(
-						(await safeJson(response)).error || "Failed to fetch credits",
-					);
+				const [creditsResponse, employeesResponse] = await Promise.all([
+					fetch(`${API_BASE}/api/credits`, {
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}),
+					fetch(`${API_BASE}/api/employees`, {
+						headers: {
+							Authorization: `Bearer ${token}`,
+						},
+					}),
+				]);
+
+				if (!creditsResponse.ok) {
+					throw new Error("Failed to fetch credits");
 				}
 
-				const data = (await safeJson(response)) as Credit[];
+				const data = (await safeJson(creditsResponse)) as Credit[];
+				const empData = employeesResponse.ok
+					? ((await safeJson(employeesResponse)) as Employee[])
+					: [];
+
 				if (mounted) {
 					setCredits(
 						data.sort(
 							(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 						),
 					);
+					setEmployeeRoster(empData.filter((e) => e.isActive));
 				}
 			} catch (err) {
 				console.error(err);
@@ -240,13 +252,33 @@ export function Credits() {
 						<CardContent className="space-y-4">
 							<div className="space-y-2">
 								<Label htmlFor="employee">Employee Name</Label>
-								<Input
-									id="employee"
-									type="text"
-									value={employeeName}
-									onChange={(e) => setEmployeeName(e.target.value)}
-									required
-								/>
+								{employeeRoster.length > 0 ? (
+									<select
+										id="employee"
+										value={employeeName}
+										onChange={(e) => setEmployeeName(e.target.value)}
+										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+										required
+									>
+										<option value="" disabled>
+											Select an employee...
+										</option>
+										{employeeRoster.map((emp) => (
+											<option key={emp.id} value={emp.name}>
+												{emp.name} ({emp.position})
+											</option>
+										))}
+									</select>
+								) : (
+									<Input
+										id="employee"
+										type="text"
+										placeholder="Type employee name..."
+										value={employeeName}
+										onChange={(e) => setEmployeeName(e.target.value)}
+										required
+									/>
+								)}
 							</div>
 							<div className="space-y-2">
 								<Label htmlFor="amount">Amount ($)</Label>

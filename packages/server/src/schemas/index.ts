@@ -172,3 +172,48 @@ export const UpdateRoleSchema = z.object({
 		.trim()
 		.min(3, "Reason for change must be at least 3 characters"),
 });
+
+// Employee Schemas
+export const CreateEmployeeSchema = z.object({
+	name: z.string().trim().min(1, "Employee name is required"),
+	position: z.string().trim().min(1, "Position is required"),
+	base_salary: nonNegativeNumber("Base salary"),
+	hired_date: z.string().min(1, "Hired date is required"),
+	break_day: z
+		.enum([
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+			"Saturday",
+			"Sunday",
+		])
+		.nullable()
+		.optional()
+		.default(null),
+});
+
+export const UpdateEmployeeSchema = z.object({
+	name: z.string().trim().min(1, "Employee name is required").optional(),
+	position: z.string().trim().min(1, "Position is required").optional(),
+	base_salary: nonNegativeNumber("Base salary").optional(),
+	hired_date: z.string().optional(),
+	break_day: z
+		.enum([
+			"Monday",
+			"Tuesday",
+			"Wednesday",
+			"Thursday",
+			"Friday",
+			"Saturday",
+			"Sunday",
+		])
+		.nullable()
+		.optional(),
+	isActive: z.boolean().optional(),
+	editReason: z
+		.string()
+		.trim()
+		.min(3, "Reason for change must be at least 3 characters"),
+});
