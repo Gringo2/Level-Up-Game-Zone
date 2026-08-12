@@ -21,13 +21,6 @@ const positiveNumber = (fieldName: string) =>
 			message: `${fieldName} must be greater than 0`,
 		});
 
-// Common Audit Reason Schemas
-const EditReasonSchema = z.object({
-	editReason: z
-		.string()
-		.trim()
-		.min(3, "Reason for change must be at least 3 characters"),
-});
 
 export const DeleteReasonSchema = z.object({
 	deleteReason: z

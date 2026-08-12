@@ -12,9 +12,18 @@ import {
 import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
 
+export interface AuditLog {
+	id: string;
+	timestamp: string;
+	user_email: string;
+	action: string;
+	table_affected: string;
+	reason: string;
+	old_data?: Record<string, unknown>;
+}
+
 export function AuditLogs() {
-	// biome-ignore lint/suspicious/noExplicitAny: Firestore documents
-	const [logs, setLogs] = useState<any[]>([]);
+	const [logs, setLogs] = useState<AuditLog[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -36,7 +45,7 @@ export function AuditLogs() {
 					);
 				}
 
-				const data = await safeJson<any[]>(response);
+				const data = await safeJson<AuditLog[]>(response);
 				if (mounted) {
 					setLogs(data);
 					setLoading(false);

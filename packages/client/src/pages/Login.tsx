@@ -16,17 +16,18 @@ export function Login() {
 	const handleLogin = async () => {
 		try {
 			await signInWithPopup(auth, googleProvider);
-			// biome-ignore lint/suspicious/noExplicitAny: API error response
-		} catch (err: any) {
-			if (err?.code === "auth/popup-blocked") {
+		} catch (err: unknown) {
+			const error = err as { code?: string; message?: string };
+			if (error?.code === "auth/popup-blocked") {
 				try {
 					await signInWithRedirect(auth, googleProvider);
-				} catch (redirectError: any) {
-					setError(redirectError.message);
+				} catch (redirectError: unknown) {
+					const redirErr = redirectError as { message?: string };
+					setError(redirErr.message || "Failed to redirect");
 				}
 				return;
 			}
-			setError(err.message);
+			setError(error.message || "Login failed");
 		}
 	};
 
