@@ -1,15 +1,19 @@
 import { type RequestHandler, Router } from "express";
 import {
 	createUser,
+	deleteUser,
 	getMe,
+	inviteUser,
 	listUsers,
 	updateRole,
-	inviteUser,
-	deleteUser,
 } from "../controllers/usersController.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
-import { CreateUserSchema, UpdateRoleSchema, InviteUserSchema } from "../schemas/index.js";
+import {
+	CreateUserSchema,
+	InviteUserSchema,
+	UpdateRoleSchema,
+} from "../schemas/index.js";
 
 const router = Router();
 
@@ -33,6 +37,10 @@ router.post(
 	validateBody(InviteUserSchema) as RequestHandler,
 	inviteUser as RequestHandler,
 );
-router.delete("/:id", requireAuth as RequestHandler, deleteUser as RequestHandler);
+router.delete(
+	"/:id",
+	requireAuth as RequestHandler,
+	deleteUser as RequestHandler,
+);
 
 export default router;

@@ -41,14 +41,16 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const email = user.email;
-	if (!email) return res.status(400).json({ error: "Email required from auth token" });
+	if (!email)
+		return res.status(400).json({ error: "Email required from auth token" });
 
 	try {
 		const docRef = db.collection("users").doc(user.uid);
 		const inviteRef = db.collection("user_invites").doc(email);
 		const auditRef = db.collection("audit_logs").doc();
 
-		const isRootAdmin = email === "bezueyob3@gmail.com" || email === "jobsbezu@gmail.com";
+		const isRootAdmin =
+			email === "bezueyob3@gmail.com" || email === "jobsbezu@gmail.com";
 		let assignedRole = "staff";
 
 		if (isRootAdmin) {
@@ -56,7 +58,10 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 		} else {
 			const inviteSnap = await inviteRef.get();
 			if (!inviteSnap.exists) {
-				return res.status(403).json({ error: "Forbidden: You are not authorized to access this system. Please request an invite." });
+				return res.status(403).json({
+					error:
+						"Forbidden: You are not authorized to access this system. Please request an invite.",
+				});
 			}
 			assignedRole = inviteSnap.data()?.role || "staff";
 		}
@@ -84,7 +89,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 				record_id: user.uid,
 				old_value: null,
 				new_value: data,
-				reason_for_change: isRootAdmin ? "Root admin registration" : "User registration via invite",
+				reason_for_change: isRootAdmin
+					? "Root admin registration"
+					: "User registration via invite",
 				user_id: user.uid,
 				timestamp: new Date().toISOString(),
 			});
@@ -97,9 +104,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 		if (message === "User already exists") {
 			return res.status(400).json({ error: message });
 		}
-		return res
-			.status(500)
-			.json({ error: message || "Internal server error" });
+		return res.status(500).json({ error: message || "Internal server error" });
 	}
 };
 
@@ -116,7 +121,10 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 		}
 
 		// Check if user is already registered
-		const usersQuery = await db.collection("users").where("email", "==", email).get();
+		const usersQuery = await db
+			.collection("users")
+			.where("email", "==", email)
+			.get();
 		if (!usersQuery.empty) {
 			return res.status(400).json({ error: "User is already registered" });
 		}
@@ -157,9 +165,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 		if (message === "User already invited") {
 			return res.status(400).json({ error: message });
 		}
-		return res
-			.status(500)
-			.json({ error: message || "Internal server error" });
+		return res.status(500).json({ error: message || "Internal server error" });
 	}
 };
 
@@ -294,9 +300,6 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 				.status(message.includes("Root") ? 403 : 404)
 				.json({ error: message });
 		}
-		return res
-			.status(500)
-			.json({ error: message || "Internal server error" });
+		return res.status(500).json({ error: message || "Internal server error" });
 	}
 };
-

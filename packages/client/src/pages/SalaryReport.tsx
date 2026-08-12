@@ -137,82 +137,103 @@ export function SalaryReport() {
 						</Card>
 					) : (
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{payrollCards.map(({ emp, credits: empCredits, totalDeducted, netPayable }) => (
-								<Card key={emp.id} className="print:break-inside-avoid shadow-sm">
-									<CardHeader className="pb-3 border-b bg-zinc-50/50">
-										<div className="flex justify-between items-start">
-											<div>
-												<CardTitle className="text-lg font-bold text-zinc-900">
-													{emp.name}
-												</CardTitle>
-												<CardDescription className="text-xs mt-0.5">
-													{emp.position}
-												</CardDescription>
-											</div>
-											<span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 font-medium text-zinc-700">
-												{emp.break_day ? `Rest: ${emp.break_day}` : "Flexible Rest"}
-											</span>
-										</div>
-										<div className="text-xs text-zinc-400 mt-2">
-											Hired: {emp.hired_date ? format(new Date(emp.hired_date), "MMM d, yyyy") : "N/A"}
-										</div>
-									</CardHeader>
-
-									<CardContent className="pt-4 space-y-4">
-										{/* Financial Summary Box */}
-										<div className="bg-zinc-50 p-3 rounded-lg border space-y-1.5 text-sm">
-											<div className="flex justify-between text-zinc-600">
-												<span>Base Salary</span>
-												<span className="font-medium">${emp.base_salary.toFixed(2)}</span>
-											</div>
-											<div className="flex justify-between text-red-600">
-												<span>IOU Deductions</span>
-												<span className="font-medium">-${totalDeducted.toFixed(2)}</span>
-											</div>
-											<div className="border-t pt-1.5 flex justify-between font-bold text-base">
-												<span className="text-zinc-900">Net Payable</span>
-												<span className={netPayable >= 0 ? "text-emerald-600" : "text-red-600"}>
-													${netPayable.toFixed(2)}
+							{payrollCards.map(
+								({ emp, credits: empCredits, totalDeducted, netPayable }) => (
+									<Card
+										key={emp.id}
+										className="print:break-inside-avoid shadow-sm"
+									>
+										<CardHeader className="pb-3 border-b bg-zinc-50/50">
+											<div className="flex justify-between items-start">
+												<div>
+													<CardTitle className="text-lg font-bold text-zinc-900">
+														{emp.name}
+													</CardTitle>
+													<CardDescription className="text-xs mt-0.5">
+														{emp.position}
+													</CardDescription>
+												</div>
+												<span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 font-medium text-zinc-700">
+													{emp.break_day
+														? `Rest: ${emp.break_day}`
+														: "Flexible Rest"}
 												</span>
 											</div>
-										</div>
-
-										{/* Deduction History */}
-										<div>
-											<div className="text-xs font-semibold uppercase text-zinc-500 mb-2 flex items-center gap-1">
-												<Receipt className="h-3.5 w-3.5" /> Deduction History ({empCredits.length})
+											<div className="text-xs text-zinc-400 mt-2">
+												Hired:{" "}
+												{emp.hired_date
+													? format(new Date(emp.hired_date), "MMM d, yyyy")
+													: "N/A"}
 											</div>
-											{empCredits.length === 0 ? (
-												<div className="text-xs text-zinc-400 italic py-1">
-													No IOUs deducted this period.
+										</CardHeader>
+
+										<CardContent className="pt-4 space-y-4">
+											{/* Financial Summary Box */}
+											<div className="bg-zinc-50 p-3 rounded-lg border space-y-1.5 text-sm">
+												<div className="flex justify-between text-zinc-600">
+													<span>Base Salary</span>
+													<span className="font-medium">
+														${emp.base_salary.toFixed(2)}
+													</span>
 												</div>
-											) : (
-												<div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
-													{empCredits
-														.sort(
-															(a, b) =>
-																new Date(b.date).getTime() -
-																new Date(a.date).getTime(),
-														)
-														.map((c) => (
-															<div
-																key={c.id}
-																className="flex justify-between text-xs p-1.5 bg-red-50/50 rounded border border-red-100"
-															>
-																<span className="text-zinc-600">
-																	{format(new Date(c.date), "MMM d, yyyy")}
-																</span>
-																<span className="font-semibold text-red-600">
-																	-${c.amount.toFixed(2)}
-																</span>
-															</div>
-														))}
+												<div className="flex justify-between text-red-600">
+													<span>IOU Deductions</span>
+													<span className="font-medium">
+														-${totalDeducted.toFixed(2)}
+													</span>
 												</div>
-											)}
-										</div>
-									</CardContent>
-								</Card>
-							))}
+												<div className="border-t pt-1.5 flex justify-between font-bold text-base">
+													<span className="text-zinc-900">Net Payable</span>
+													<span
+														className={
+															netPayable >= 0
+																? "text-emerald-600"
+																: "text-red-600"
+														}
+													>
+														${netPayable.toFixed(2)}
+													</span>
+												</div>
+											</div>
+
+											{/* Deduction History */}
+											<div>
+												<div className="text-xs font-semibold uppercase text-zinc-500 mb-2 flex items-center gap-1">
+													<Receipt className="h-3.5 w-3.5" /> Deduction History
+													({empCredits.length})
+												</div>
+												{empCredits.length === 0 ? (
+													<div className="text-xs text-zinc-400 italic py-1">
+														No IOUs deducted this period.
+													</div>
+												) : (
+													<div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+														{empCredits
+															.sort(
+																(a, b) =>
+																	new Date(b.date).getTime() -
+																	new Date(a.date).getTime(),
+															)
+															.map((c) => (
+																<div
+																	key={c.id}
+																	className="flex justify-between text-xs p-1.5 bg-red-50/50 rounded border border-red-100"
+																>
+																	<span className="text-zinc-600">
+																		{format(new Date(c.date), "MMM d, yyyy")}
+																	</span>
+																	<span className="font-semibold text-red-600">
+																		-${c.amount.toFixed(2)}
+																	</span>
+																</div>
+															))}
+													</div>
+												)}
+											</div>
+										</CardContent>
+									</Card>
+								),
+							)}
 
 							{/* Unlinked Historical Deductions */}
 							{unlinkedKeys.map((key) => {
@@ -223,7 +244,10 @@ export function SalaryReport() {
 									0,
 								);
 								return (
-									<Card key={key} className="print:break-inside-avoid border-amber-200 bg-amber-50/30">
+									<Card
+										key={key}
+										className="print:break-inside-avoid border-amber-200 bg-amber-50/30"
+									>
 										<CardHeader className="pb-3 border-b">
 											<div className="flex justify-between items-center">
 												<CardTitle className="text-lg font-bold text-amber-900">
@@ -239,7 +263,9 @@ export function SalaryReport() {
 										</CardHeader>
 										<CardContent className="pt-4 space-y-4">
 											<div className="flex justify-between items-center text-sm p-3 bg-white rounded-md border border-amber-200">
-												<span className="text-zinc-600 font-medium">Total Deducted</span>
+												<span className="text-zinc-600 font-medium">
+													Total Deducted
+												</span>
 												<span className="text-lg font-bold text-red-600">
 													-${total.toFixed(2)}
 												</span>

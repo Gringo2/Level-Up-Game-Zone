@@ -76,7 +76,8 @@ export function AuditLogs() {
 				<CardHeader>
 					<CardTitle>System Audit History</CardTitle>
 					<CardDescription>
-						Immutable audit trail of all transactions, modifications, and deletions.
+						Immutable audit trail of all transactions, modifications, and
+						deletions.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -109,11 +110,16 @@ export function AuditLogs() {
 											<tr key={log.id} className="hover:bg-zinc-50">
 												<td className="px-4 py-3 whitespace-nowrap text-zinc-500 font-mono text-xs">
 													{log.timestamp
-														? format(new Date(log.timestamp), "MMM d, yyyy h:mm a")
+														? format(
+																new Date(log.timestamp),
+																"MMM d, yyyy h:mm a",
+															)
 														: "N/A"}
 												</td>
 												<td className="px-4 py-3 font-mono text-xs text-zinc-700">
-													{log.user_id ? `${log.user_id.slice(0, 8)}...` : "System"}
+													{log.user_id
+														? `${log.user_id.slice(0, 8)}...`
+														: "System"}
 												</td>
 												<td className="px-4 py-3">
 													<span

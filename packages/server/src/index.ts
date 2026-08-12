@@ -16,13 +16,13 @@ app.use(express.json());
 
 import auditLogsRoutes from "./routes/auditLogs.js";
 import creditsRoutes from "./routes/credits.js";
+import employeesRoutes from "./routes/employees.js";
 import expensesRoutes from "./routes/expenses.js";
 import kenoRoutes from "./routes/keno.js";
 import ratesRoutes from "./routes/rates.js";
 import salesRoutes from "./routes/sales.js";
 import shiftRoutes from "./routes/shifts.js";
 import usersRoutes from "./routes/users.js";
-import employeesRoutes from "./routes/employees.js";
 
 // Health check endpoint
 app.get("/api/health", (_req, res) => {

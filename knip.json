@@ -1,5 +1,5 @@
 {
-	"ignoreDependencies": ["@level-up/shared", "autoprefixer", "vite"],
-	"ignoreBinaries": ["semgrep"],
+	"ignoreDependencies": ["@level-up/shared", "autoprefixer", "vite", "@ast-grep/cli"],
+	"ignoreBinaries": ["semgrep", "ast-grep"],
 	"ignoreExportsUsedInFile": true
 }

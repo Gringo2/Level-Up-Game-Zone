@@ -10,13 +10,13 @@ import { Admin } from "./pages/Admin";
 import { AuditLogs } from "./pages/AuditLogs";
 import { Credits } from "./pages/Credits";
 import { Dashboard } from "./pages/Dashboard";
+import { EmployeeRoster } from "./pages/EmployeeRoster";
 import { Expenses } from "./pages/Expenses";
 import { GameSales } from "./pages/GameSales";
 import { Keno } from "./pages/Keno";
 import { Login } from "./pages/Login";
 import { Reports } from "./pages/Reports";
 import { SalaryReport } from "./pages/SalaryReport";
-import { EmployeeRoster } from "./pages/EmployeeRoster";
 
 function AppContent() {
 	const { user, loading } = useAuth();

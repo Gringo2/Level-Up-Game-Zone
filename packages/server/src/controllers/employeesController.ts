@@ -65,7 +65,15 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
-	const { name, position, base_salary, hired_date, break_day, isActive, editReason } = req.body;
+	const {
+		name,
+		position,
+		base_salary,
+		hired_date,
+		break_day,
+		isActive,
+		editReason,
+	} = req.body;
 
 	if (!editReason) {
 		return res.status(400).json({ error: "Edit reason is required" });
@@ -87,7 +95,8 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 
 			if (name !== undefined) newValues.name = name;
 			if (position !== undefined) newValues.position = position;
-			if (base_salary !== undefined) newValues.base_salary = parseFloat(base_salary);
+			if (base_salary !== undefined)
+				newValues.base_salary = parseFloat(base_salary);
 			if (hired_date !== undefined) newValues.hired_date = hired_date;
 			if (break_day !== undefined) newValues.break_day = break_day;
 			if (isActive !== undefined) newValues.isActive = isActive;

@@ -18,7 +18,9 @@ export function UserManagement() {
 	const [loading, setLoading] = useState(true);
 
 	const [inviteEmail, setInviteEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "staff">("staff");
+	const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "staff">(
+		"staff",
+	);
 	const [inviteLoading, setInviteLoading] = useState(false);
 
 	useEffect(() => {
@@ -144,7 +146,10 @@ export function UserManagement() {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${token}`,
 				},
-				body: JSON.stringify({ email: inviteEmail.toLowerCase(), role: inviteRole }),
+				body: JSON.stringify({
+					email: inviteEmail.toLowerCase(),
+					role: inviteRole,
+				}),
 			});
 
 			if (!response.ok) {
@@ -195,7 +200,11 @@ export function UserManagement() {
 							<div className="w-32">
 								<select
 									value={inviteRole}
-									onChange={(e) => setInviteRole(e.target.value as "admin" | "manager" | "staff")}
+									onChange={(e) =>
+										setInviteRole(
+											e.target.value as "admin" | "manager" | "staff",
+										)
+									}
 									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
 								>
 									<option value="admin">Admin</option>
@@ -204,7 +213,9 @@ export function UserManagement() {
 								</select>
 							</div>
 							<Button type="submit" disabled={inviteLoading || !inviteEmail}>
-								{inviteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+								{inviteLoading ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : null}
 								Invite
 							</Button>
 						</div>

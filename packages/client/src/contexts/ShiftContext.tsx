@@ -1,6 +1,12 @@
 import type { Shift } from "@level-up/shared";
 import type React from "react";
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
 import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
 import { useAuth } from "./AuthContext";

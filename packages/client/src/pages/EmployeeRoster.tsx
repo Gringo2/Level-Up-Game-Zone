@@ -67,9 +67,7 @@ export function EmployeeRoster() {
 
 				const data = (await safeJson(response)) as Employee[];
 				if (mounted) {
-					setEmployees(
-						data.sort((a, b) => a.name.localeCompare(b.name)),
-					);
+					setEmployees(data.sort((a, b) => a.name.localeCompare(b.name)));
 					setLoading(false);
 				}
 			} catch (err: unknown) {
@@ -273,7 +271,8 @@ export function EmployeeRoster() {
 						<CardHeader>
 							<CardTitle>Add Store Employee</CardTitle>
 							<CardDescription>
-								Register a staff member to enable clean credit logging and salary deduction reporting.
+								Register a staff member to enable clean credit logging and
+								salary deduction reporting.
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
@@ -342,7 +341,10 @@ export function EmployeeRoster() {
 									</select>
 								</div>
 							</div>
-							<Button type="submit" disabled={submitLoading || !name || !position}>
+							<Button
+								type="submit"
+								disabled={submitLoading || !name || !position}
+							>
 								{submitLoading ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
@@ -430,7 +432,8 @@ export function EmployeeRoster() {
 															s
 																? {
 																		...s,
-																		breakDay: (e.target.value as BreakDay) || null,
+																		breakDay:
+																			(e.target.value as BreakDay) || null,
 																	}
 																: s,
 														)
