@@ -137,6 +137,7 @@ export function GameSales() {
 				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Log deleted successfully!");
+			setLogs((prev) => prev.filter((l) => l.id !== id));
 			setDeletingId(null);
 			setDeleteReason("");
 		} catch (err: unknown) {
@@ -180,6 +181,20 @@ export function GameSales() {
 						(await safeJson(response)).error || "Failed to update",
 					);
 				toast.success("Game sale updated successfully!");
+				setLogs((prev) =>
+					prev.map((l) =>
+						l.id === editingId
+							? {
+									...l,
+									game_id: selectedRate.id,
+									game_name: selectedRate.game_name,
+									quantity_sold: parseFloat(quantity),
+									rate_applied: selectedRate.price_per_unit,
+									calculated_total: calculatedTotal,
+								}
+							: l,
+					),
+				);
 				cancelEdit();
 			} else {
 				const response = await fetch(`${API_BASE}/api/sales`, {
@@ -200,6 +215,8 @@ export function GameSales() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to log sale",
 					);
+				const newLog = await safeJson<GameSalesLog>(response);
+				setLogs((prev) => [newLog, ...prev]);
 				setQuantity("");
 				toast.success("Game sale logged successfully!");
 			}

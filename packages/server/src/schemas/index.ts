@@ -141,6 +141,15 @@ export const UpdateGameRateSchema = z.object({
 });
 
 // User Schemas
+export const InviteUserSchema = z.object({
+	email: z.string().email("Invalid email address").toLowerCase(),
+	role: z.enum(["admin", "manager", "staff"], {
+		errorMap: () => ({
+			message: "Role must be 'admin', 'manager', or 'staff'",
+		}),
+	}),
+});
+
 export const CreateUserSchema = z.object({
 	role: z
 		.enum(["admin", "manager", "staff"], {

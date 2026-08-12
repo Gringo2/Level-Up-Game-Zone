@@ -34,7 +34,7 @@ import { API_BASE, safeJson } from "../lib/api";
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
-	const { activeShift, loadingShift } = useShift();
+	const { activeShift, loadingShift, refetchShift } = useShift();
 	const location = useLocation();
 	const [openingFloat, setOpeningFloat] = useState("");
 
@@ -62,6 +62,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				);
 
 			setOpeningFloat("");
+			await refetchShift();
 			toast.success("Shift started!");
 		} catch (err: unknown) {
 			console.error(err);

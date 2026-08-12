@@ -116,6 +116,7 @@ export function Expenses() {
 				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Expense deleted successfully!");
+			setExpenses((prev) => prev.filter((e) => e.id !== id));
 			setDeletingId(null);
 			setDeleteReason("");
 		} catch (err: unknown) {
@@ -140,6 +141,9 @@ export function Expenses() {
 				throw new Error((await safeJson(response)).error || "Failed to verify");
 
 			toast.success("Expense verified!");
+			setExpenses((prev) =>
+				prev.map((e) => (e.id === id ? { ...e, verified: true } : e)),
+			);
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Failed to verify expense");
@@ -179,6 +183,18 @@ export function Expenses() {
 						(await safeJson(response)).error || "Failed to update",
 					);
 				toast.success("Expense updated successfully!");
+				setExpenses((prev) =>
+					prev.map((e) =>
+						e.id === editingId
+							? {
+									...e,
+									description: description,
+									amount: parseFloat(amount),
+									category: category,
+								}
+							: e,
+					),
+				);
 				cancelEdit();
 			} else {
 				const response = await fetch(`${API_BASE}/api/expenses`, {
@@ -197,6 +213,8 @@ export function Expenses() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to log expense",
 					);
+				const newExpense = await safeJson<Expense>(response);
+				setExpenses((prev) => [newExpense, ...prev]);
 				setDescription("");
 				setAmount("");
 				setCategory("Misc");

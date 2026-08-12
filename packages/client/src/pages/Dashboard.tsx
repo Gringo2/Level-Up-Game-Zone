@@ -20,7 +20,7 @@ import { API_BASE, safeJson } from "../lib/api";
 import { getShopStartOfDay } from "../lib/dateUtils";
 
 export function Dashboard() {
-	const { activeShift, loadingShift } = useShift();
+	const { activeShift, loadingShift, refetchShift } = useShift();
 
 	const [closingCash, setClosingCash] = useState("");
 	const [shortageReason, setShortageReason] = useState("");
@@ -165,6 +165,7 @@ export function Dashboard() {
 			setClosingCash("");
 			setShortageReason("");
 			setIsClosing(false);
+			await refetchShift();
 			toast.success("Shift closed successfully!");
 			// biome-ignore lint/suspicious/noExplicitAny: API error response
 		} catch (err: any) {

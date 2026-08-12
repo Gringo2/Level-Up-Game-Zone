@@ -44,15 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 						const meData = await safeJson<AppUser>(meResponse);
 						setUser(meData);
 					} else if (meResponse.status === 404) {
-						const role =
-							firebaseUser.email === "bezueyob3@gmail.com" ? "admin" : "staff";
 						const createResponse = await fetch(`${API_BASE}/api/users`, {
 							method: "POST",
 							headers: {
 								"Content-Type": "application/json",
 								Authorization: `Bearer ${token}`,
 							},
-							body: JSON.stringify({ role }),
 						});
 
 						if (createResponse.ok) {
@@ -62,9 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 						} else {
 							const errData = await safeJson(createResponse);
 							const errMsg = errData.error || createResponse.statusText;
-							toast.error(
-								`Backend Login Error: ${createResponse.status} ${errMsg}`,
-							);
+							if (createResponse.status === 403) {
+								toast.error(errMsg);
+							} else {
+								toast.error(
+									`Registration Error: ${createResponse.status} ${errMsg}`,
+								);
+							}
 							setUser(null);
 							signOut(auth);
 						}

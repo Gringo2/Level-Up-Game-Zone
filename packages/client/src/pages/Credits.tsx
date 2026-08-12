@@ -96,6 +96,9 @@ export function Credits() {
 				);
 
 			toast.success(`Credit marked as ${resolution}`);
+			setCredits((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, status: resolution } : c)),
+			);
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error(`Failed to mark credit as ${resolution}`);
@@ -137,6 +140,7 @@ export function Credits() {
 				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Credit deleted successfully!");
+			setCredits((prev) => prev.filter((c) => c.id !== id));
 			setDeletingId(null);
 			setDeleteReason("");
 		} catch (err: unknown) {
@@ -177,6 +181,17 @@ export function Credits() {
 						(await safeJson(response)).error || "Failed to update",
 					);
 				toast.success("Credit updated successfully!");
+				setCredits((prev) =>
+					prev.map((c) =>
+						c.id === editingId
+							? {
+									...c,
+									employee_name: employeeName,
+									amount: parseFloat(amount),
+								}
+							: c,
+					),
+				);
 				cancelEdit();
 			} else {
 				const response = await fetch(`${API_BASE}/api/credits`, {
@@ -194,6 +209,8 @@ export function Credits() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to log credit",
 					);
+				const newCredit = await safeJson<Credit>(response);
+				setCredits((prev) => [newCredit, ...prev]);
 				setEmployeeName("");
 				setAmount("");
 				toast.success("Credit logged successfully!");

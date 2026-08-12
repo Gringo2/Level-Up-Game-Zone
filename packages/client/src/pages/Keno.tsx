@@ -113,6 +113,7 @@ export function Keno() {
 				throw new Error((await safeJson(response)).error || "Failed to delete");
 
 			toast.success("Keno log deleted successfully!");
+			setLogs((prev) => prev.filter((l) => l.id !== id));
 			setDeletingId(null);
 			setDeleteReason("");
 		} catch (err: unknown) {
@@ -137,6 +138,9 @@ export function Keno() {
 				throw new Error((await safeJson(response)).error || "Failed to verify");
 
 			toast.success("Log verified!");
+			setLogs((prev) =>
+				prev.map((l) => (l.id === id ? { ...l, verified: true } : l)),
+			);
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Failed to verify keno log");
@@ -176,6 +180,18 @@ export function Keno() {
 						(await safeJson(response)).error || "Failed to update",
 					);
 				toast.success("Keno log updated successfully!");
+				setLogs((prev) =>
+					prev.map((l) =>
+						l.id === editingId
+							? {
+									...l,
+									sales: parseFloat(sales),
+									payouts: parseFloat(payouts),
+									net_profit: netProfit,
+								}
+							: l,
+					),
+				);
 				cancelEdit();
 			} else {
 				const response = await fetch(`${API_BASE}/api/keno`, {
@@ -194,6 +210,8 @@ export function Keno() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to log keno",
 					);
+				const newLog = await safeJson<KenoLog>(response);
+				setLogs((prev) => [newLog, ...prev]);
 				setSales("");
 				setPayouts("");
 				toast.success("Keno logged successfully!");

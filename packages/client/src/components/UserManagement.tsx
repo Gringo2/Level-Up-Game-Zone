@@ -17,6 +17,10 @@ export function UserManagement() {
 	const [users, setUsers] = useState<AppUser[]>([]);
 	const [loading, setLoading] = useState(true);
 
+	const [inviteEmail, setInviteEmail] = useState("");
+	const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "staff">("staff");
+	const [inviteLoading, setInviteLoading] = useState(false);
+
 	useEffect(() => {
 		let mounted = true;
 		const loadUsers = async () => {
@@ -82,9 +86,47 @@ export function UserManagement() {
 				);
 
 			toast.success("Role updated successfully!");
+			setUsers((prev) =>
+				prev.map((u) => (u.uid === user.uid ? { ...u, role: newRole } : u)),
+			);
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Failed to update role.");
+		}
+	};
+
+	const handleInvite = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!inviteEmail) return;
+
+		setInviteLoading(true);
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`${API_BASE}/api/users/invite`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ email: inviteEmail.toLowerCase(), role: inviteRole }),
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					(await safeJson(response)).error || "Failed to invite user",
+				);
+			}
+
+			toast.success(`User ${inviteEmail} invited as ${inviteRole}!`);
+			setInviteEmail("");
+			setInviteRole("staff");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error((err as Error).message || "Failed to invite user");
+		} finally {
+			setInviteLoading(false);
 		}
 	};
 
@@ -98,6 +140,44 @@ export function UserManagement() {
 	return (
 		<div className="space-y-6">
 			<h2 className="text-2xl font-bold tracking-tight">User Management</h2>
+
+			<Card className="max-w-xl">
+				<form onSubmit={handleInvite}>
+					<CardHeader>
+						<CardTitle>Invite Employee</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="flex gap-4">
+							<div className="flex-1">
+								<input
+									type="email"
+									placeholder="Email address"
+									required
+									value={inviteEmail}
+									onChange={(e) => setInviteEmail(e.target.value)}
+									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+								/>
+							</div>
+							<div className="w-32">
+								<select
+									value={inviteRole}
+									onChange={(e) => setInviteRole(e.target.value as "admin" | "manager" | "staff")}
+									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+								>
+									<option value="admin">Admin</option>
+									<option value="manager">Manager</option>
+									<option value="staff">Staff</option>
+								</select>
+							</div>
+							<Button type="submit" disabled={inviteLoading || !inviteEmail}>
+								{inviteLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+								Invite
+							</Button>
+						</div>
+					</CardContent>
+				</form>
+			</Card>
+
 			<Card>
 				<CardHeader>
 					<CardTitle>Staff Accounts</CardTitle>
