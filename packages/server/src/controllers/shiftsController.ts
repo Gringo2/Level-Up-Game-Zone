@@ -30,6 +30,15 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 	}
 
 	try {
+		const openShiftsSnap = await db
+			.collection("shifts")
+			.where("status", "==", "OPEN")
+			.get();
+
+		if (!openShiftsSnap.empty) {
+			return res.status(400).json({ error: "An active shift is already open" });
+		}
+
 		const newDocRef = db.collection("shifts").doc();
 		const auditRef = db.collection("audit_logs").doc();
 

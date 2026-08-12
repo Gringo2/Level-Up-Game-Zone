@@ -1,3 +1,4 @@
+import type { AuditLog } from "@level-up/shared";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,16 +12,6 @@ import {
 } from "../components/ui/card";
 import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
-
-export interface AuditLog {
-	id: string;
-	timestamp: string;
-	user_email: string;
-	action: string;
-	table_affected: string;
-	reason: string;
-	old_data?: Record<string, unknown>;
-}
 
 export function AuditLogs() {
 	const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -65,10 +56,16 @@ export function AuditLogs() {
 		};
 	}, []);
 
+	const getActionType = (log: AuditLog) => {
+		if (log.old_value && log.new_value) return "UPDATE";
+		if (log.old_value && !log.new_value) return "DELETE";
+		return "CREATE";
+	};
+
 	if (loading)
 		return (
 			<div className="p-8 text-center">
-				<Loader2 className="animate-spin mx-auto" />
+				<Loader2 className="animate-spin mx-auto text-zinc-400" />
 			</div>
 		);
 
@@ -77,9 +74,9 @@ export function AuditLogs() {
 			<h2 className="text-2xl font-bold tracking-tight">Activity Log</h2>
 			<Card>
 				<CardHeader>
-					<CardTitle>Recent Activity</CardTitle>
+					<CardTitle>System Audit History</CardTitle>
 					<CardDescription>
-						Track changes and deletions across the system.
+						Immutable audit trail of all transactions, modifications, and deletions.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -88,11 +85,11 @@ export function AuditLogs() {
 							<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
 								<tr>
 									<th className="px-4 py-3 font-medium">Time</th>
-									<th className="px-4 py-3 font-medium">User</th>
+									<th className="px-4 py-3 font-medium">Operator UID</th>
 									<th className="px-4 py-3 font-medium">Action</th>
-									<th className="px-4 py-3 font-medium">Table</th>
-									<th className="px-4 py-3 font-medium">Reason</th>
-									<th className="px-4 py-3 font-medium">Details</th>
+									<th className="px-4 py-3 font-medium">Table Affected</th>
+									<th className="px-4 py-3 font-medium">Reason for Change</th>
+									<th className="px-4 py-3 font-medium">Payload Data</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y">
@@ -102,45 +99,56 @@ export function AuditLogs() {
 											colSpan={6}
 											className="px-4 py-8 text-center text-zinc-500"
 										>
-											No activity logs found.
+											No activity logs recorded.
 										</td>
 									</tr>
 								) : (
-									logs.map((log) => (
-										<tr key={log.id} className="hover:bg-zinc-50">
-											<td className="px-4 py-3 whitespace-nowrap text-zinc-500">
-												{format(new Date(log.timestamp), "MMM d, yyyy h:mm a")}
-											</td>
-											<td className="px-4 py-3 font-medium">
-												{log.user_email}
-											</td>
-											<td className="px-4 py-3">
-												<span
-													className={`px-2 py-1 rounded-full text-xs font-medium ${
-														log.action === "UPDATE"
-															? "bg-blue-100 text-blue-800"
-															: log.action === "DELETE"
-																? "bg-red-100 text-red-800"
-																: "bg-zinc-100 text-zinc-800"
-													}`}
+									logs.map((log) => {
+										const action = getActionType(log);
+										return (
+											<tr key={log.id} className="hover:bg-zinc-50">
+												<td className="px-4 py-3 whitespace-nowrap text-zinc-500 font-mono text-xs">
+													{log.timestamp
+														? format(new Date(log.timestamp), "MMM d, yyyy h:mm a")
+														: "N/A"}
+												</td>
+												<td className="px-4 py-3 font-mono text-xs text-zinc-700">
+													{log.user_id ? `${log.user_id.slice(0, 8)}...` : "System"}
+												</td>
+												<td className="px-4 py-3">
+													<span
+														className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+															action === "UPDATE"
+																? "bg-blue-100 text-blue-800"
+																: action === "DELETE"
+																	? "bg-red-100 text-red-800"
+																	: "bg-emerald-100 text-emerald-800"
+														}`}
+													>
+														{action}
+													</span>
+												</td>
+												<td className="px-4 py-3 capitalize font-medium text-zinc-800">
+													{log.table_affected
+														? log.table_affected.replace(/_/g, " ")
+														: "General"}
+												</td>
+												<td className="px-4 py-3 text-zinc-600">
+													{log.reason_for_change || "N/A"}
+												</td>
+												<td
+													className="px-4 py-3 text-xs text-zinc-400 font-mono max-w-xs truncate cursor-help"
+													title={JSON.stringify(
+														{ old: log.old_value, new: log.new_value },
+														null,
+														2,
+													)}
 												>
-													{log.action}
-												</span>
-											</td>
-											<td className="px-4 py-3 capitalize">
-												{log.table_affected.replace("_", " ")}
-											</td>
-											<td className="px-4 py-3 text-zinc-600">{log.reason}</td>
-											<td
-												className="px-4 py-3 text-xs text-zinc-500 max-w-xs truncate"
-												title={JSON.stringify(log.old_data)}
-											>
-												{log.action === "UPDATE"
-													? "View changes"
-													: "View deleted data"}
-											</td>
-										</tr>
-									))
+													{JSON.stringify(log.new_value || log.old_value || {})}
+												</td>
+											</tr>
+										);
+									})
 								)}
 							</tbody>
 						</table>

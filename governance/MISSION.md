@@ -1,34 +1,23 @@
-# Active Mission: Mission 15 — Employee Roster & Salary Reconciliation
+# Active Mission: Mission 17 — Shift Guard & Audit Log Alignment
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Feature & Domain Alignment
+**Type:** Hardening & UI Field Alignment
 **Phase:** Phase 5 — Maturation
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Implement a managed Employee Roster capability (`/admin/employees`) for store staff members (including `hired_date` and nullable `break_day`). Connect this roster to `Credits.tsx` via a dropdown selector to guarantee accurate, typo-free salary reconciliation and deduction reports.
+1. Harden `shiftsController.ts` by rejecting `startShift` if an active `status === "OPEN"` shift already exists in Firestore.
+2. Refactor `AuditLogs.tsx` to consume the canonical `@level-up/shared` `AuditLog` interface (`user_id`, `reason_for_change`, `old_value`, `new_value`, `table_affected`, `timestamp`), restoring full rendering to system activity logs.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/shared/src/index.ts`
-  - `packages/server/src/schemas/index.ts`
-  - `packages/server/src/controllers/employeesController.ts`
-  - `packages/server/src/routes/employees.ts`
-  - `packages/server/src/index.ts`
-  - `packages/client/src/pages/EmployeeRoster.tsx`
-  - `packages/client/src/pages/Credits.tsx`
-  - `packages/client/src/layouts/Layout.tsx`
-  - `packages/client/src/App.tsx`
+  - `packages/server/src/controllers/shiftsController.ts`
+  - `packages/client/src/pages/AuditLogs.tsx`
 - **Out of Scope:**
-  - Changes to user authentication routes or Firestore rules.
+  - Database schema changes.
 
 ## Evidence Payload
-- `shared/src/index.ts`: Added `Employee` interface and `BreakDay` type definition.
-- `schemas/index.ts`: Added `CreateEmployeeSchema` and `UpdateEmployeeSchema` with validation for `hired_date` and nullable `break_day`.
-- `employeesController.ts`: Implemented `listEmployees`, `createEmployee`, and `updateEmployee` with mandatory audit logging.
-- `routes/employees.ts` & `server/src/index.ts`: Exposed and registered `/api/employees`.
-- `EmployeeRoster.tsx`: Built store employee management page (`/admin/employees`) with complete CRUD and local state mutation.
-- `App.tsx` & `Layout.tsx`: Registered `/admin/employees` route and added sidebar link for `admin` and `manager` roles.
-- `Credits.tsx`: Integrated Employee Roster dropdown selector to eliminate freeform name typos in IOUs.
+- `shiftsController.ts`: Added check in `startShift` querying `status === "OPEN"` shifts and rejecting duplicate start requests with HTTP 400.
+- `AuditLogs.tsx`: Refactored Activity Log UI to consume canonical `@level-up/shared` `AuditLog` interface (`user_id`, `reason_for_change`, `old_value`, `new_value`, `table_affected`, `timestamp`), restoring complete data rendering to audit logs.
 - **Verification:** All 23 vitest unit tests passed. Biome linter (83 files) and Knip dead-code checks clean. TypeScript typecheck clean.

@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 5 — Maturation
-**Current Mission:** Mission 15 — Employee Roster & Salary Reconciliation
+**Current Mission:** Mission 17 — Shift Guard & Audit Log Alignment
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0
