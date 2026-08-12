@@ -212,3 +212,91 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 			.json({ error: (error as Error).message || "Internal server error" });
 	}
 };
+
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+	const adminUser = req.user;
+	if (!adminUser) return res.status(401).json({ error: "Unauthorized" });
+
+	const { id } = req.params;
+
+	if (id === adminUser.uid) {
+		return res
+			.status(400)
+			.json({ error: "Cannot delete your own user account" });
+	}
+
+	try {
+		const adminDoc = await db.collection("users").doc(adminUser.uid).get();
+		if (adminDoc.data()?.role !== "admin") {
+			return res.status(403).json({ error: "Forbidden: Admins only" });
+		}
+
+		const userRef = db.collection("users").doc(id);
+		const inviteRef = db.collection("user_invites").doc(id);
+		const auditRef = db.collection("audit_logs").doc();
+
+		await db.runTransaction(async (transaction) => {
+			const userSnap = await transaction.get(userRef);
+			const inviteSnap = await transaction.get(inviteRef);
+
+			if (!userSnap.exists && !inviteSnap.exists) {
+				throw new Error("User or invitation not found");
+			}
+
+			if (userSnap.exists) {
+				const userData = userSnap.data();
+				const targetEmail = userData?.email;
+
+				if (
+					targetEmail === "bezueyob3@gmail.com" ||
+					targetEmail === "jobsbezu@gmail.com"
+				) {
+					throw new Error("Root admin accounts cannot be deleted");
+				}
+
+				const oldDoc = { uid: userSnap.id, ...userData };
+				transaction.delete(userRef);
+				transaction.set(auditRef, {
+					table_affected: "users",
+					record_id: id,
+					old_value: oldDoc,
+					new_value: null,
+					reason_for_change: "User deleted by admin",
+					user_id: adminUser.uid,
+					timestamp: new Date().toISOString(),
+				});
+			} else if (inviteSnap.exists) {
+				const oldInvite = { email: inviteSnap.id, ...inviteSnap.data() };
+				transaction.delete(inviteRef);
+				transaction.set(auditRef, {
+					table_affected: "user_invites",
+					record_id: id,
+					old_value: oldInvite,
+					new_value: null,
+					reason_for_change: "Invitation revoked by admin",
+					user_id: adminUser.uid,
+					timestamp: new Date().toISOString(),
+				});
+			}
+		});
+
+		return res
+			.status(200)
+			.json({ message: "User account or invitation removed successfully" });
+	} catch (error: unknown) {
+		console.error("Error deleting user:", error);
+		const message = (error as Error).message;
+		if (
+			message === "User or invitation not found" ||
+			message === "Root admin accounts cannot be deleted"
+		) {
+			return res
+				.status(message.includes("Root") ? 403 : 404)
+				.json({ error: message });
+		}
+		return res
+			.status(500)
+			.json({ error: message || "Internal server error" });
+	}
+};
+

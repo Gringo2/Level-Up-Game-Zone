@@ -5,6 +5,7 @@ import {
 	listUsers,
 	updateRole,
 	inviteUser,
+	deleteUser,
 } from "../controllers/usersController.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
@@ -32,5 +33,6 @@ router.post(
 	validateBody(InviteUserSchema) as RequestHandler,
 	inviteUser as RequestHandler,
 );
+router.delete("/:id", requireAuth as RequestHandler, deleteUser as RequestHandler);
 
 export default router;

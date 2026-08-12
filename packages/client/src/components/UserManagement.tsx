@@ -95,6 +95,40 @@ export function UserManagement() {
 		}
 	};
 
+	const handleDeleteUser = async (targetUser: AppUser) => {
+		if (
+			!window.confirm(
+				`Are you sure you want to delete user ${targetUser.displayName || targetUser.email}?`,
+			)
+		) {
+			return;
+		}
+
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`${API_BASE}/api/users/${targetUser.uid}`, {
+				method: "DELETE",
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					(await safeJson(response)).error || "Failed to delete user",
+				);
+			}
+
+			toast.success("User account deleted successfully!");
+			setUsers((prev) => prev.filter((u) => u.uid !== targetUser.uid));
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error((err as Error).message || "Failed to delete user");
+		}
+	};
+
 	const handleInvite = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!inviteEmail) return;
@@ -216,6 +250,8 @@ export function UserManagement() {
 											variant="ghost"
 											size="sm"
 											className="text-red-600 hover:text-red-800"
+											onClick={() => handleDeleteUser(user)}
+											title="Delete user account"
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>

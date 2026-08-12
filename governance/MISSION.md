@@ -1,23 +1,24 @@
-# Active Mission: Mission 17 — Shift Guard & Audit Log Alignment
+# Active Mission: Mission 18 — User Account Deletion & Invite Revocation
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Hardening & UI Field Alignment
+**Type:** Feature & Security Hardening
 **Phase:** Phase 5 — Maturation
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-1. Harden `shiftsController.ts` by rejecting `startShift` if an active `status === "OPEN"` shift already exists in Firestore.
-2. Refactor `AuditLogs.tsx` to consume the canonical `@level-up/shared` `AuditLog` interface (`user_id`, `reason_for_change`, `old_value`, `new_value`, `table_affected`, `timestamp`), restoring full rendering to system activity logs.
+Implement secure User Account Deletion & Invite Revocation (`DELETE /api/users/:id`), protecting root admins (`bezueyob3@gmail.com` / `jobsbezu@gmail.com`) and active self-sessions, and wire the Trash icon button in `UserManagement.tsx` with instant state reactivity.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/server/src/controllers/shiftsController.ts`
-  - `packages/client/src/pages/AuditLogs.tsx`
+  - `packages/server/src/controllers/usersController.ts`
+  - `packages/server/src/routes/users.ts`
+  - `packages/client/src/components/UserManagement.tsx`
 - **Out of Scope:**
   - Database schema changes.
 
 ## Evidence Payload
-- `shiftsController.ts`: Added check in `startShift` querying `status === "OPEN"` shifts and rejecting duplicate start requests with HTTP 400.
-- `AuditLogs.tsx`: Refactored Activity Log UI to consume canonical `@level-up/shared` `AuditLog` interface (`user_id`, `reason_for_change`, `old_value`, `new_value`, `table_affected`, `timestamp`), restoring complete data rendering to audit logs.
+- `usersController.ts`: Implemented `deleteUser` with dual deletion engine (deleting `users` doc or `user_invites` doc), self-deletion guard (`400`), and root admin immunity guard (`403` for `bezueyob3@gmail.com` / `jobsbezu@gmail.com`).
+- `routes/users.ts`: Registered `DELETE /api/users/:id` route protected by `requireAuth`.
+- `UserManagement.tsx`: Implemented `handleDeleteUser` with confirmation prompt, Bearer token auth, and pessimistic React state update (`setUsers`), wiring the Trash icon button.
 - **Verification:** All 23 vitest unit tests passed. Biome linter (83 files) and Knip dead-code checks clean. TypeScript typecheck clean.
