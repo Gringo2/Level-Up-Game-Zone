@@ -28,7 +28,8 @@ Proposals for future architectural and interface changes before they are accepte
 ## `.agents/docs/` - Zero-Trust Runtime Architecture
 Documents in this tier are exclusively dedicated to the Antigravity IDE interception layer. They define the structural bounds of the automated cage.
 
-*   **`ADR-*`**: Tooling and lifecycle decisions governing the interception physics (e.g., ADR-002, ADR-006).
+*   **`ADR-*`**: Tooling and lifecycle decisions governing the interception physics (e.g., ADR-002, ADR-006, ADR-007).
+*   **`ADR-007`**: Complete Google Antigravity Specification Hooks Lifecycle (PreInvocation, PreToolUse decision engine, PostInvocation, Stop).
 *   **`AVP-*`**: The mission lock gates and automated verification thresholds.
 *   **`ACP-*`**: Drift mechanics and future upgrades to the interception bash scripts.
 

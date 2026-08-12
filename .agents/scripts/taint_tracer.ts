@@ -66,7 +66,7 @@ export function runTaintTracer(targetFilePath: string) {
 		: [...parsedConfig.fileNames, absoluteTargetPath];
 
 	const program = ts.createProgram(fileNames, parsedConfig.options);
-	const checker = program.getTypeChecker();
+	const _checker = program.getTypeChecker();
 	const sourceFile = program.getSourceFile(absoluteTargetPath);
 
 	if (!sourceFile) {
@@ -190,7 +190,7 @@ export function runTaintTracer(targetFilePath: string) {
 }
 
 // CLI Execution Support
-if (process.argv[1] && process.argv[1].endsWith("taint_tracer.ts")) {
+if (process.argv[1]?.endsWith("taint_tracer.ts")) {
 	const targetArg = process.argv[2];
 	if (!targetArg) {
 		console.log(

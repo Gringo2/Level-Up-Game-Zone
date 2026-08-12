@@ -1,4 +1,4 @@
-# Active Mission: Mission 20 — Interprocedural Taint Tracking Engine
+# Active Mission: Mission 21 — Antigravity Hooks Specification Documentation
 
 ## 1. Mission Context
 **Status:** Locked
@@ -7,18 +7,17 @@
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Achieve 100% completion on **Capability 3 (Data Flow / Taint Tracking)** by building an interprocedural Source-to-Sink variable tracer script (`taint_tracer.ts`) using the native **TypeScript Compiler API** (`ts.createProgram`, `ts.TypeChecker`, and AST visitor), supporting object destructuring, cross-file argument-to-parameter mapping, property-leak tracking, and sanitizer interception.
+Document the complete Google Antigravity IDE Hooks Specification (`PreInvocation`, `PostInvocation`, `Stop`, Native JSON Decision Engine, and JSON Lines stdin/stdout schema) as an official Architecture Decision Record ([.agents/docs/ADR-007_Antigravity_Specification_Hooks_Lifecycle.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/.agents/docs/ADR-007_Antigravity_Specification_Hooks_Lifecycle.md)).
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `.agents/scripts/taint_tracer.ts`
-  - `.agents/scripts/code_graph_api.sh`
-  - `.agents/scripts/contradiction_detector.sh`
+  - `.agents/docs/ADR-007_Antigravity_Specification_Hooks_Lifecycle.md`
+  - `governance/GOVERNANCE_MAP.md`
 - **Out of Scope:**
   - Feature packages (`packages/client`, `packages/server`).
 
 ## Evidence Payload
-- [x] Functional Verification: All AST structural targets & edge cases tested and operational.
+- [x] Functional Verification: Created ADR-007 detailing all Antigravity Specification Hooks events & schemas.
 - [x] Architectural Verification (AVP-001): Passed full 6-gate lock suite.
 - [x] Dependency Graph Clean: Zero circular dependencies or forbidden imports.
 - [x] ADR Compliance: Conforms to ADR-002, ADR-006, and AVP-001.
