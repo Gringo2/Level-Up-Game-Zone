@@ -1,6 +1,6 @@
 #!/bin/bash
 # mission_gate.sh — Blocks source file edits if MISSION.md status is not Active
-# Phase 1: Architecture Gate enforcement & Guardrail Self-Protection
+# Phase 1: Architecture Gate enforcement & Guardrail Self-Protection (ADR-007)
 
 TARGET_FILE="$1"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -16,8 +16,7 @@ MISSION_FILE="$REPO_ROOT/governance/MISSION.md"
 # --- Phase 6: Anti-Littering Protocol Gate (ACP-003) ---
 if [[ -n "$RELATIVE_PATH" ]] && [[ ! "$RELATIVE_PATH" == */* ]]; then
   if [[ ! "$RELATIVE_PATH" =~ ^(package\.json|biome\.json|knip\.json|tsconfig\.json|sgconfig\.yml|README\.md|\.gitignore|\.dependency-cruiser\.js)$ ]]; then
-    echo "🚫 ANTI-LITTERING PROTOCOL BLOCKED: Unowned file [$RELATIVE_PATH] in repository root."
-    echo "   Rule 23 forbids persistent scratchpads. Use .agents/.scratch/ for temporary work."
+    node -e 'console.log(JSON.stringify({decision: "deny", reason: process.argv[1]}))' "🚫 ANTI-LITTERING PROTOCOL BLOCKED: Unowned file [$RELATIVE_PATH] in repository root. Rule 23 forbids persistent scratchpads. Use .agents/.scratch/ for temporary work."
     exit 1
   fi
 fi
@@ -42,12 +41,7 @@ if [ $IS_INFRA -eq 1 ]; then
   MISSION_TYPE=$(node -e 'const fs=require("fs"); const m=fs.readFileSync(process.argv[1],"utf8").match(/\*\*Type:\*\*\s*(\w+)/i); console.log(m?m[1]:"");' "$MISSION_FILE" 2>/dev/null)
   
   if [ "$MISSION_TYPE" != "Governance" ] && [ "$MISSION_TYPE" != "Infrastructure" ]; then
-    echo ""
-    echo "🚨 SECURITY VIOLATION: Guardrail Self-Protection Block!"
-    echo "   Target file [$RELATIVE_PATH] is protected infrastructure."
-    echo "   Modifications to infrastructure files are strictly forbidden during [${MISSION_TYPE:-Feature}] missions."
-    echo "   Requires an active Mission with **Type:** Governance or **Type:** Infrastructure."
-    echo ""
+    node -e 'console.log(JSON.stringify({decision: "deny", reason: process.argv[1]}))' "🚨 SECURITY VIOLATION: Guardrail Self-Protection Block! Target file [$RELATIVE_PATH] is protected infrastructure. Requires an active Mission with Type: Governance or Type: Infrastructure."
     exit 1
   fi
 fi
@@ -56,18 +50,18 @@ fi
 MISSION_STATUS=$(node -e 'const fs=require("fs"); const m=fs.readFileSync(process.argv[1],"utf8").match(/\*\*Status:\*\*\s*(\w+)/i); console.log(m?m[1]:"");' "$MISSION_FILE" 2>/dev/null)
 
 if [ "$MISSION_STATUS" != "Active" ]; then
-  echo "🚫 MISSION GATE BLOCKED: Mission status is [${MISSION_STATUS:-Draft}]. Must be [Active]."
+  node -e 'console.log(JSON.stringify({decision: "deny", reason: process.argv[1]}))' "🚫 MISSION GATE BLOCKED: Mission status is [${MISSION_STATUS:-Draft}]. Must be [Active]."
   exit 1
 fi
 
 # 4. Contradiction Detector Integration
 if [ -n "$TARGET_FILE" ] && [ -f "$REPO_ROOT/.agents/scripts/contradiction_detector.sh" ]; then
-  bash "$REPO_ROOT/.agents/scripts/contradiction_detector.sh" "$TARGET_FILE"
+  bash "$REPO_ROOT/.agents/scripts/contradiction_detector.sh" "$TARGET_FILE" >&2
   if [ $? -ne 0 ]; then
-    echo "🚫 MISSION GATE BLOCKED: Contradiction detected."
+    node -e 'console.log(JSON.stringify({decision: "deny", reason: "🚫 MISSION GATE BLOCKED: Contradiction detected in structural or taint analysis."}))'
     exit 1
   fi
 fi
 
-echo "✅ MISSION GATE: Status=Active. Edits permitted."
+node -e 'console.log(JSON.stringify({decision: "allow", reason: "✅ MISSION GATE: Status=Active. Edits permitted."}))'
 exit 0

@@ -1,5 +1,17 @@
 {
 	"wake-protocol": {
+		"PreInvocation": [
+			{
+				"matcher": "*",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/wake_summary.sh",
+						"timeout": 10
+					}
+				]
+			}
+		],
 		"PreAgentResponse": [
 			{
 				"matcher": "*",
@@ -216,6 +228,20 @@
 						"type": "command",
 						"command": "bash .agents/scripts/lock_gate.sh \"{{tool.args.TargetFile}}\"",
 						"timeout": 30
+					}
+				]
+			}
+		]
+	},
+	"stop-cleanup": {
+		"Stop": [
+			{
+				"matcher": "*",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/stop_cleanup.sh",
+						"timeout": 10
 					}
 				]
 			}
