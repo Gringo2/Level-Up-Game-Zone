@@ -172,6 +172,16 @@
 						"timeout": 15
 					}
 				]
+			},
+			{
+				"matcher": "run_command",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/post_edit_verify.sh \"{{tool.args.CommandLine}}\"",
+						"timeout": 15
+					}
+				]
 			}
 		]
 	},
@@ -228,6 +238,20 @@
 						"type": "command",
 						"command": "bash .agents/scripts/lock_gate.sh \"{{tool.args.TargetFile}}\"",
 						"timeout": 30
+					}
+				]
+			}
+		]
+	},
+	"post-invocation-guard": {
+		"PostInvocation": [
+			{
+				"matcher": "*",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/post_invocation_check.sh",
+						"timeout": 10
 					}
 				]
 			}

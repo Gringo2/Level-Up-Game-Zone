@@ -1,6 +1,6 @@
 #!/bin/bash
 # log_ledger.sh — Append-only Execution Ledger Logger
-# Component 10: Execution Ledger
+# Component 10: Execution Ledger (ADR-007 Stdin & CLI Ingestion)
 # Usage:
 #   bash .agents/scripts/log_ledger.sh "<event_type>" "<tool_name>" "<target_file>" "<status>" "<exit_code>"
 
@@ -27,16 +27,28 @@ node -e '
   const exitCode = parseInt(process.argv[5] || "0", 10);
   const ledgerPath = process.argv[6];
 
+  let stdinMeta = {};
+  try {
+    const raw = fs.readFileSync(0, "utf-8");
+    if (raw && raw.trim()) {
+      stdinMeta = JSON.parse(raw);
+    }
+  } catch (e) {}
+
   const entry = {
     timestamp: new Date().toISOString(),
     event: eventType,
-    tool: toolName,
-    target: targetFile,
+    tool: stdinMeta.toolCall?.name || toolName,
+    target: stdinMeta.toolCall?.args?.TargetFile || stdinMeta.toolCall?.args?.CommandLine || targetFile,
     status: status,
-    exitCode: exitCode
+    exitCode: exitCode,
+    conversationId: stdinMeta.conversationId || undefined,
+    stepIdx: stdinMeta.stepIdx !== undefined ? stdinMeta.stepIdx : undefined,
+    modelName: stdinMeta.modelName || undefined
   };
 
   fs.appendFileSync(ledgerPath, JSON.stringify(entry) + "\n");
 ' "$EVENT_TYPE" "$TOOL_NAME" "$TARGET_FILE" "$STATUS" "$EXIT_CODE" "$LEDGER_FILE" 2>/dev/null
 
+echo "{}"
 exit 0

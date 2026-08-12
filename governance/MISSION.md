@@ -1,4 +1,4 @@
-# Active Mission: Mission 22 — Antigravity Hooks Specification Maturation
+# Active Mission: Mission 23 — Complete End-to-End Specification Convergence
 
 ## 1. Mission Context
 **Status:** Locked
@@ -7,20 +7,20 @@
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Upgrade `.agents` interception scripts to support native Antigravity JSON decision payloads (`{"decision": "deny", "reason": "..."}`), `PreInvocation` trajectory injection (`injectSteps`), and `Stop` event cleanup.
+Achieve 100% full specification compliance for the `.agents` zero-trust framework by resolving the 4 identified gaps across `hooks.json`, `post_invocation_check.sh`, `post_edit_verify.sh`, `lock_gate.sh`, and `log_ledger.sh`.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
   - `.agents/hooks.json`
-  - `.agents/scripts/mission_gate.sh`
-  - `.agents/scripts/guard_run_command.sh`
-  - `.agents/scripts/wake_summary.sh`
-  - `.agents/scripts/stop_cleanup.sh` [NEW]
+  - `.agents/scripts/post_invocation_check.sh` [NEW]
+  - `.agents/scripts/post_edit_verify.sh`
+  - `.agents/scripts/lock_gate.sh`
+  - `.agents/scripts/log_ledger.sh`
 - **Out of Scope:**
   - Feature packages (`packages/client`, `packages/server`).
 
 ## Evidence Payload
-- [x] Functional Verification: Upgraded all hooks to native Antigravity JSON schemas.
+- [x] Functional Verification: Resolved all 4 specification gaps across hooks and scripts.
 - [x] Architectural Verification (AVP-001): Passed full 6-gate lock suite.
 - [x] Dependency Graph Clean: Zero circular dependencies or forbidden imports.
 - [x] ADR Compliance: Conforms to ADR-002, ADR-006, ADR-007, and AVP-001.
