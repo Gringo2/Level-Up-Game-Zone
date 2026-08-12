@@ -1,5 +1,11 @@
 {
-	"ignoreDependencies": ["@level-up/shared", "autoprefixer", "vite", "@ast-grep/cli"],
-	"ignoreBinaries": ["semgrep", "ast-grep"],
+	"ignoreDependencies": [
+		"@level-up/shared",
+		"autoprefixer",
+		"vite",
+		"@ast-grep/cli"
+	],
+	"ignore": [".agents/**"],
+	"ignoreBinaries": ["semgrep"],
 	"ignoreExportsUsedInFile": true
 }

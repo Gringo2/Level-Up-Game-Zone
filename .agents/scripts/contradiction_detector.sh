@@ -51,5 +51,15 @@ if [ -f "$REPO_ROOT/sgconfig.yml" ]; then
   fi
 fi
 
+# 4. Data Flow & Taint Violation Check via taint_tracer.ts
+if [ -f "$TARGET_FILE" ] && [ -f "$REPO_ROOT/.agents/scripts/taint_tracer.ts" ]; then
+  TAINT_RESULT=$(npx tsx "$REPO_ROOT/.agents/scripts/taint_tracer.ts" "$TARGET_FILE" 2>/dev/null)
+  if [ $? -ne 0 ]; then
+    echo "🚨 DATA FLOW & TAINT VIOLATION DETECTED!"
+    echo "   $TAINT_RESULT"
+    exit 1
+  fi
+fi
+
 echo "✅ CONTRADICTION DETECTOR: Zero contradictions found for [$RELATIVE_PATH]."
 exit 0

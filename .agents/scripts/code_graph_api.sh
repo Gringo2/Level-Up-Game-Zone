@@ -40,6 +40,14 @@ case "$COMMAND" in
     ' "$AST_OUTPUT" "$EXIT_CODE"
     ;;
 
+  trace-taint)
+    if [ -z "$TARGET_FILE" ]; then
+      echo '{"error": "Usage: code_graph_api.sh trace-taint <target_file>"}'
+      exit 1
+    fi
+    npx tsx "$REPO_ROOT/.agents/scripts/taint_tracer.ts" "$TARGET_FILE" 2>/dev/null
+    ;;
+
   audit-deadcode)
     KNIP_RAW=$(npx knip --reporter json 2>/dev/null)
     node -e '
