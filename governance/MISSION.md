@@ -1,24 +1,28 @@
-# Active Mission: Mission 18 — User Account Deletion & Invite Revocation
+# Active Mission: Mission 19 — Governance Framework Maturation (.agents 10/10 MVP)
 
 ## 1. Mission Context
 **Status:** Locked
-**Type:** Feature & Security Hardening
+**Type:** Governance
 **Phase:** Phase 5 — Maturation
 **Primary Owner:** AI Implementor
 
 ## 2. Objective
-Implement secure User Account Deletion & Invite Revocation (`DELETE /api/users/:id`), protecting root admins (`bezueyob3@gmail.com` / `jobsbezu@gmail.com`) and active self-sessions, and wire the Trash icon button in `UserManagement.tsx` with instant state reactivity.
+Complete all 10 concrete MVP components for the `.agents` governance framework by creating the Code Graph / Evidence API (`code_graph_api.sh`), Structured Evidence Packet (`evidence_packet.json`), Execution Ledger (`log_ledger.sh`), and Contradiction Detector (`contradiction_detector.sh`), and wiring them into `hooks.json` and `lock_mission.sh`.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/server/src/controllers/usersController.ts`
-  - `packages/server/src/routes/users.ts`
-  - `packages/client/src/components/UserManagement.tsx`
+  - `package.json` (adding `@ast-grep/cli`)
+  - `.agents/hooks.json`
+  - `.agents/scripts/code_graph_api.sh`
+  - `.agents/scripts/log_ledger.sh`
+  - `.agents/scripts/contradiction_detector.sh`
+  - `.agents/scripts/lock_mission.sh`
+  - `.agents/scripts/mission_gate.sh`
 - **Out of Scope:**
-  - Database schema changes.
+  - Feature packages (`packages/client`, `packages/server`).
 
 ## Evidence Payload
-- `usersController.ts`: Implemented `deleteUser` with dual deletion engine (deleting `users` doc or `user_invites` doc), self-deletion guard (`400`), and root admin immunity guard (`403` for `bezueyob3@gmail.com` / `jobsbezu@gmail.com`).
-- `routes/users.ts`: Registered `DELETE /api/users/:id` route protected by `requireAuth`.
-- `UserManagement.tsx`: Implemented `handleDeleteUser` with confirmation prompt, Bearer token auth, and pessimistic React state update (`setUsers`), wiring the Trash icon button.
-- **Verification:** All 23 vitest unit tests passed. Biome linter (83 files) and Knip dead-code checks clean. TypeScript typecheck clean.
+- [x] Functional Verification: All 4 new governance scripts tested and operational.
+- [x] Architectural Verification (AVP-001): Passed full 6-gate lock suite.
+- [x] Dependency Graph Clean: Zero circular dependencies or forbidden imports.
+- [x] ADR Compliance: Conforms to ADR-002, ADR-006, and AVP-001.

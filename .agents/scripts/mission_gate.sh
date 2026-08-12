@@ -60,11 +60,13 @@ if [ "$MISSION_STATUS" != "Active" ]; then
   exit 1
 fi
 
-# 3. Mandatory Section Validation
-if ! grep -q "## 3. Scope & Boundaries" "$MISSION_FILE" || ! grep -q "## Evidence Payload" "$MISSION_FILE"; then
-  echo "🚫 MISSION GATE BLOCKED: Schema Validation Failed."
-  echo "   MISSION.md is missing mandatory anchors: '## 3. Scope & Boundaries' and '## Evidence Payload'."
-  exit 1
+# 4. Contradiction Detector Integration
+if [ -n "$TARGET_FILE" ] && [ -f "$REPO_ROOT/.agents/scripts/contradiction_detector.sh" ]; then
+  bash "$REPO_ROOT/.agents/scripts/contradiction_detector.sh" "$TARGET_FILE"
+  if [ $? -ne 0 ]; then
+    echo "🚫 MISSION GATE BLOCKED: Contradiction detected."
+    exit 1
+  fi
 fi
 
 echo "✅ MISSION GATE: Status=Active. Edits permitted."

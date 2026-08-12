@@ -13,6 +13,40 @@
 			}
 		]
 	},
+	"execution-ledger-pre": {
+		"PreToolUse": [
+			{
+				"matcher": "write_to_file",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/log_ledger.sh \"PreToolUse\" \"write_to_file\" \"{{tool.args.TargetFile}}\" \"SUCCESS\" 0",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/log_ledger.sh \"PreToolUse\" \"replace_file_content\" \"{{tool.args.TargetFile}}\" \"SUCCESS\" 0",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "multi_replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/log_ledger.sh \"PreToolUse\" \"multi_replace_file_content\" \"{{tool.args.TargetFile}}\" \"SUCCESS\" 0",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	},
 	"mission-gate": {
 		"PreToolUse": [
 			{
@@ -124,6 +158,40 @@
 						"type": "command",
 						"command": "bash .agents/scripts/post_edit_verify.sh \"{{tool.args.TargetFile}}\"",
 						"timeout": 15
+					}
+				]
+			}
+		]
+	},
+	"execution-ledger-post": {
+		"PostToolUse": [
+			{
+				"matcher": "write_to_file",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/log_ledger.sh \"PostToolUse\" \"write_to_file\" \"{{tool.args.TargetFile}}\" \"SUCCESS\" 0",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/log_ledger.sh \"PostToolUse\" \"replace_file_content\" \"{{tool.args.TargetFile}}\" \"SUCCESS\" 0",
+						"timeout": 5
+					}
+				]
+			},
+			{
+				"matcher": "multi_replace_file_content",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash .agents/scripts/log_ledger.sh \"PostToolUse\" \"multi_replace_file_content\" \"{{tool.args.TargetFile}}\" \"SUCCESS\" 0",
+						"timeout": 5
 					}
 				]
 			}

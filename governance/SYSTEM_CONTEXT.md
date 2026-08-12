@@ -30,3 +30,4 @@ To provide a unified, secure, and robust platform for managing the physical stor
 *   `packages/client/src` -> `firebase-admin` (Forbidden)
 *   `packages/shared/src` -> `packages/client/src` (Forbidden)
 *   `packages/shared/src` -> `packages/server/src` (Forbidden)
+
