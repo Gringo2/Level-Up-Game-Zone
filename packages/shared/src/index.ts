@@ -88,7 +88,7 @@ export interface Shift {
 	expected_cash_calculated?: number;
 	variance?: number;
 	reason_for_shortage?: string;
-	status: "OPEN" | "CLOSED";
+	status: "OPEN" | "CLOSED" | "MISSED";
 }
 
 export interface AuditLog {
@@ -100,4 +100,17 @@ export interface AuditLog {
 	reason_for_change: string;
 	user_id: string;
 	timestamp: string;
+}
+
+export interface MissedDayResolution {
+	id: string;
+	date: string;
+	status: "SHOP_CLOSED" | "DATA_FILLED";
+	resolved_by_id: string;
+	resolved_by_name: string;
+	resolved_at: string;
+	notes?: string;
+	expected_cash_calculated?: number;
+	actual_cash_counted?: number;
+	variance?: number;
 }

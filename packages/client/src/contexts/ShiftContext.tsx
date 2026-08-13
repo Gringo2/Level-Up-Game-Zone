@@ -11,15 +11,23 @@ import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
 import { useAuth } from "./AuthContext";
 
+export interface MissedDataPayload {
+	missedShifts: Shift[];
+	gapDates: string[];
+	newlyOpenedShift?: Shift | null;
+}
+
 interface ShiftContextType {
 	activeShift: Shift | null;
 	loadingShift: boolean;
+	missedData: MissedDataPayload | null;
 	refetchShift: () => Promise<void>;
 }
 
 const ShiftContext = createContext<ShiftContextType>({
 	activeShift: null,
 	loadingShift: true,
+	missedData: null,
 	refetchShift: async () => {},
 });
 
@@ -27,10 +35,12 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
 	const [activeShift, setActiveShift] = useState<Shift | null>(null);
 	const [loadingShift, setLoadingShift] = useState(true);
+	const [missedData, setMissedData] = useState<MissedDataPayload | null>(null);
 
 	const loadActiveShift = useCallback(async () => {
 		if (!user) {
 			setActiveShift(null);
+			setMissedData(null);
 			setLoadingShift(false);
 			return;
 		}
@@ -39,17 +49,23 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(`${API_BASE}/api/shifts`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-			if (!response.ok) {
-				throw new Error("Failed to fetch shifts");
+			const [shiftsRes, missedRes] = await Promise.all([
+				fetch(`${API_BASE}/api/shifts`, {
+					headers: { Authorization: `Bearer ${token}` },
+				}),
+				fetch(`${API_BASE}/api/shifts/missed`, {
+					headers: { Authorization: `Bearer ${token}` },
+				}),
+			]);
+
+			if (!shiftsRes.ok || !missedRes.ok) {
+				throw new Error("Failed to fetch shifts data");
 			}
 
-			const data = (await safeJson(response)) as Shift[];
-			const openShift =
+			const data = (await safeJson(shiftsRes)) as Shift[];
+			const missedPayload = (await safeJson(missedRes)) as MissedDataPayload;
+
+			let openShift =
 				data
 					.filter((s) => s.status === "OPEN")
 					.sort(
@@ -58,11 +74,17 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 							new Date(a.start_time).getTime(),
 					)[0] || null;
 
+			if (missedPayload.newlyOpenedShift) {
+				openShift = missedPayload.newlyOpenedShift;
+			}
+
 			setActiveShift(openShift);
+			setMissedData(missedPayload);
 			setLoadingShift(false);
 		} catch (err) {
 			console.error("Error fetching shift:", err);
 			setActiveShift(null);
+			setMissedData(null);
 			setLoadingShift(false);
 		}
 	}, [user]);
@@ -73,7 +95,12 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 
 	return (
 		<ShiftContext.Provider
-			value={{ activeShift, loadingShift, refetchShift: loadActiveShift }}
+			value={{
+				activeShift,
+				loadingShift,
+				missedData,
+				refetchShift: loadActiveShift,
+			}}
 		>
 			{children}
 		</ShiftContext.Provider>

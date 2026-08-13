@@ -216,3 +216,16 @@ export const UpdateEmployeeSchema = z.object({
 		.trim()
 		.min(3, "Reason for change must be at least 3 characters"),
 });
+
+// Missed Day Resolution Schema
+export const ResolveMissedDaySchema = z.object({
+	date: z.string().trim().min(1, "Date is required"),
+	status: z.enum(["SHOP_CLOSED", "DATA_FILLED"], {
+		errorMap: () => ({
+			message: "Status must be 'SHOP_CLOSED' or 'DATA_FILLED'",
+		}),
+	}),
+	notes: z.string().optional(),
+	expected_cash_calculated: nonNegativeNumber("Expected cash").optional(),
+	actual_cash_counted: nonNegativeNumber("Actual cash counted").optional(),
+});

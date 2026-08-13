@@ -1,12 +1,19 @@
 import { type RequestHandler, Router } from "express";
 import {
 	closeShift,
+	getMissedData,
 	listShifts,
+	resolveMissedData,
 	startShift,
+	updateFloat,
 } from "../controllers/shiftsController.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
-import { CloseShiftSchema, StartShiftSchema } from "../schemas/index.js";
+import {
+	CloseShiftSchema,
+	ResolveMissedDaySchema,
+	StartShiftSchema,
+} from "../schemas/index.js";
 
 const router = Router();
 
@@ -23,6 +30,24 @@ router.post(
 	requireAuth as RequestHandler,
 	validateBody(CloseShiftSchema) as RequestHandler,
 	closeShift as RequestHandler,
+);
+
+router.put(
+	"/:id/float",
+	requireAuth as RequestHandler,
+	updateFloat as RequestHandler,
+);
+
+router.get(
+	"/missed",
+	requireAuth as RequestHandler,
+	getMissedData as RequestHandler,
+);
+router.post(
+	"/resolve-missed",
+	requireAuth as RequestHandler,
+	validateBody(ResolveMissedDaySchema) as RequestHandler,
+	resolveMissedData as RequestHandler,
 );
 
 export default router;

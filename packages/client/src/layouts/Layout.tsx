@@ -13,62 +13,15 @@ import {
 	Users,
 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { toast } from "sonner";
+import { MissedDataBlocker } from "../components/MissedDataBlocker";
 import { Button } from "../components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { useShift } from "../contexts/ShiftContext";
 import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
-	const { activeShift, loadingShift, refetchShift } = useShift();
 	const location = useLocation();
-	const [openingFloat, setOpeningFloat] = useState("");
-
-	const handleStartShift = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!openingFloat || !user) return;
-		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/shifts`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
-				},
-				body: JSON.stringify({
-					floatAmount: openingFloat,
-					managerName: user.displayName || user.email,
-				}),
-			});
-			if (!response.ok)
-				throw new Error(
-					(await safeJson(response)).error || "Failed to start shift",
-				);
-
-			setOpeningFloat("");
-			await refetchShift();
-			toast.success("Shift started!");
-		} catch (err: unknown) {
-			console.error(err);
-			toast.error("Failed to start shift");
-		}
-	};
 
 	const navItems = [
 		{
@@ -175,42 +128,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 			{/* Main Content */}
 			<main className="flex-1 p-4 md:p-8 overflow-y-auto relative">
-				{!loadingShift &&
-					!activeShift &&
-					(user?.role === "manager" || user?.role === "admin") && (
-						<div className="absolute inset-0 z-50 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-							<Card className="max-w-md w-full shadow-2xl">
-								<form onSubmit={handleStartShift}>
-									<CardHeader>
-										<CardTitle>Open Shift</CardTitle>
-										<CardDescription>
-											Enter the opening float (cash in drawer) to begin the day.
-										</CardDescription>
-									</CardHeader>
-									<CardContent>
-										<div className="space-y-2">
-											<Label htmlFor="modal-float">Opening Float ($)</Label>
-											<Input
-												id="modal-float"
-												type="number"
-												step="0.01"
-												min="0"
-												value={openingFloat}
-												onChange={(e) => setOpeningFloat(e.target.value)}
-												required
-												autoFocus
-											/>
-										</div>
-									</CardContent>
-									<CardFooter>
-										<Button type="submit" className="w-full">
-											Start Shift
-										</Button>
-									</CardFooter>
-								</form>
-							</Card>
-						</div>
-					)}
+				<MissedDataBlocker />
 				<div className="max-w-5xl mx-auto">{children}</div>
 			</main>
 		</div>

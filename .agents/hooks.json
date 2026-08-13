@@ -28,7 +28,7 @@
 	"execution-ledger-pre": {
 		"PreToolUse": [
 			{
-				"matcher": "write_to_file",
+				"matcher": "default_api:write_to_file",
 				"hooks": [
 					{
 						"type": "command",
@@ -38,7 +38,7 @@
 				]
 			},
 			{
-				"matcher": "replace_file_content",
+				"matcher": "default_api:replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -48,7 +48,7 @@
 				]
 			},
 			{
-				"matcher": "multi_replace_file_content",
+				"matcher": "default_api:multi_replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -62,7 +62,7 @@
 	"mission-gate": {
 		"PreToolUse": [
 			{
-				"matcher": "write_to_file",
+				"matcher": "default_api:write_to_file",
 				"hooks": [
 					{
 						"type": "command",
@@ -72,7 +72,7 @@
 				]
 			},
 			{
-				"matcher": "replace_file_content",
+				"matcher": "default_api:replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -82,7 +82,7 @@
 				]
 			},
 			{
-				"matcher": "multi_replace_file_content",
+				"matcher": "default_api:multi_replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -96,7 +96,7 @@
 	"pre-edit-backup": {
 		"PreToolUse": [
 			{
-				"matcher": "write_to_file",
+				"matcher": "default_api:write_to_file",
 				"hooks": [
 					{
 						"type": "command",
@@ -106,7 +106,7 @@
 				]
 			},
 			{
-				"matcher": "replace_file_content",
+				"matcher": "default_api:replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -116,7 +116,7 @@
 				]
 			},
 			{
-				"matcher": "multi_replace_file_content",
+				"matcher": "default_api:multi_replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -130,7 +130,7 @@
 	"guard-run-command": {
 		"PreToolUse": [
 			{
-				"matcher": "run_command",
+				"matcher": "default_api:run_command",
 				"hooks": [
 					{
 						"type": "command",
@@ -144,7 +144,7 @@
 	"post-edit-verify": {
 		"PostToolUse": [
 			{
-				"matcher": "write_to_file",
+				"matcher": "default_api:write_to_file",
 				"hooks": [
 					{
 						"type": "command",
@@ -154,7 +154,7 @@
 				]
 			},
 			{
-				"matcher": "replace_file_content",
+				"matcher": "default_api:replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -164,7 +164,7 @@
 				]
 			},
 			{
-				"matcher": "multi_replace_file_content",
+				"matcher": "default_api:multi_replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -174,7 +174,7 @@
 				]
 			},
 			{
-				"matcher": "run_command",
+				"matcher": "default_api:run_command",
 				"hooks": [
 					{
 						"type": "command",
@@ -188,7 +188,7 @@
 	"execution-ledger-post": {
 		"PostToolUse": [
 			{
-				"matcher": "write_to_file",
+				"matcher": "default_api:write_to_file",
 				"hooks": [
 					{
 						"type": "command",
@@ -198,7 +198,7 @@
 				]
 			},
 			{
-				"matcher": "replace_file_content",
+				"matcher": "default_api:replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -208,7 +208,7 @@
 				]
 			},
 			{
-				"matcher": "multi_replace_file_content",
+				"matcher": "default_api:multi_replace_file_content",
 				"hooks": [
 					{
 						"type": "command",
@@ -222,7 +222,7 @@
 	"mission-lock": {
 		"PostToolUse": [
 			{
-				"matcher": "write_to_file",
+				"matcher": "default_api:write_to_file",
 				"hooks": [
 					{
 						"type": "command",
@@ -232,7 +232,7 @@
 				]
 			},
 			{
-				"matcher": "replace_file_content",
+				"matcher": "default_api:replace_file_content",
 				"hooks": [
 					{
 						"type": "command",

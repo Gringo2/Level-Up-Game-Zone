@@ -25,6 +25,8 @@ export function Dashboard() {
 	const [closingCash, setClosingCash] = useState("");
 	const [shortageReason, setShortageReason] = useState("");
 	const [isClosing, setIsClosing] = useState(false);
+	const [isUpdatingFloat, setIsUpdatingFloat] = useState(false);
+	const [newFloat, setNewFloat] = useState("");
 
 	const [gameSales, setGameSales] = useState<GameSalesLog[]>([]);
 	const [kenoLogs, setKenoLogs] = useState<KenoLog[]>([]);
@@ -174,6 +176,36 @@ export function Dashboard() {
 		}
 	};
 
+	const handleUpdateFloat = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!activeShift || !newFloat) return;
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(
+				`${API_BASE}/api/shifts/${activeShift.id}/float`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ floatAmount: parseFloat(newFloat) }),
+				},
+			);
+			if (!response.ok) throw new Error("Failed to update float");
+
+			setNewFloat("");
+			setIsUpdatingFloat(false);
+			await refetchShift();
+			toast.success("Float updated successfully!");
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to update float");
+		}
+	};
+
 	if (loadingShift)
 		return (
 			<div className="p-8 text-center">
@@ -288,12 +320,65 @@ export function Dashboard() {
 						</CardHeader>
 						<CardContent>
 							{!isClosing ? (
-								<Button
-									onClick={() => setIsClosing(true)}
-									className="w-full bg-white text-black hover:bg-zinc-200"
-								>
-									Close Shift (Blind Count)
-								</Button>
+								<div className="space-y-4">
+									<div className="flex gap-2">
+										<Button
+											onClick={() => setIsClosing(true)}
+											className="flex-1 bg-white text-black hover:bg-zinc-200"
+										>
+											Close Shift (Blind Count)
+										</Button>
+										{!isUpdatingFloat && (
+											<Button
+												onClick={() => {
+													setNewFloat(activeShift.opening_float.toString());
+													setIsUpdatingFloat(true);
+												}}
+												variant="outline"
+												className="text-zinc-300 border-zinc-700 hover:bg-zinc-800"
+											>
+												Update Float
+											</Button>
+										)}
+									</div>
+
+									{isUpdatingFloat && (
+										<form
+											onSubmit={handleUpdateFloat}
+											className="flex items-end gap-2 bg-zinc-800 p-4 rounded-md"
+										>
+											<div className="flex-1 space-y-2">
+												<Label htmlFor="updateFloat" className="text-white">
+													New Float Amount ($)
+												</Label>
+												<Input
+													id="updateFloat"
+													type="number"
+													step="0.01"
+													min="0"
+													value={newFloat}
+													onChange={(e) => setNewFloat(e.target.value)}
+													className="bg-zinc-900 border-zinc-700 text-white"
+													required
+												/>
+											</div>
+											<Button
+												type="submit"
+												className="bg-emerald-600 hover:bg-emerald-700 text-white"
+											>
+												Save
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												onClick={() => setIsUpdatingFloat(false)}
+												className="text-zinc-400 hover:text-white hover:bg-zinc-700"
+											>
+												Cancel
+											</Button>
+										</form>
+									)}
+								</div>
 							) : (
 								<form
 									onSubmit={handleCloseShift}
