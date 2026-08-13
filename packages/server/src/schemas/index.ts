@@ -229,3 +229,8 @@ export const ResolveMissedDaySchema = z.object({
 	expected_cash_calculated: nonNegativeNumber("Expected cash").optional(),
 	actual_cash_counted: nonNegativeNumber("Actual cash counted").optional(),
 });
+
+// Update Float Schema
+export const UpdateFloatSchema = z.object({
+	floatAmount: nonNegativeNumber("Float amount"),
+});

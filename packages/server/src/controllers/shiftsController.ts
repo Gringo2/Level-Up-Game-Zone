@@ -202,21 +202,19 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 
 	try {
 		const shiftRef = db.collection("shifts").doc(id);
-		const shiftDoc = await shiftRef.get();
-
-		if (!shiftDoc.exists) {
-			return res.status(404).json({ error: "Shift not found" });
-		}
-
-		if (shiftDoc.data()?.status !== "OPEN") {
-			return res
-				.status(400)
-				.json({ error: "Only open shifts can have their float updated" });
-		}
-
 		const newFloat = parseFloat(floatAmount);
 
 		await db.runTransaction(async (transaction) => {
+			const shiftDoc = await transaction.get(shiftRef);
+
+			if (!shiftDoc.exists) {
+				throw new Error("Shift not found");
+			}
+
+			if (shiftDoc.data()?.status !== "OPEN") {
+				throw new Error("Only open shifts can have their float updated");
+			}
+
 			transaction.update(shiftRef, { opening_float: newFloat });
 
 			const auditRef = db.collection("audit_logs").doc();
@@ -236,6 +234,14 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 			.json({ message: "Float updated successfully", opening_float: newFloat });
 	} catch (error) {
 		console.error("Error updating float:", error);
+		if (error instanceof Error) {
+			if (error.message === "Shift not found") {
+				return res.status(404).json({ error: error.message });
+			}
+			if (error.message === "Only open shifts can have their float updated") {
+				return res.status(400).json({ error: error.message });
+			}
+		}
 		return res.status(500).json({ error: "Internal server error" });
 	}
 };
@@ -295,25 +301,25 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 
 		// AUTO-OPEN LOGIC
 		if (unresolvedGaps.length === 0 && missedShifts.length === 0) {
-			const openShiftsSnap = await db
-				.collection("shifts")
-				.where("status", "==", "OPEN")
-				.get();
+			await db.runTransaction(async (transaction) => {
+				const openShiftsQuery = db
+					.collection("shifts")
+					.where("status", "==", "OPEN");
+				const openShiftsSnap = await transaction.get(openShiftsQuery);
 
-			if (openShiftsSnap.empty) {
-				const newDocRef = db.collection("shifts").doc();
-				const auditRef = db.collection("audit_logs").doc();
+				if (openShiftsSnap.empty) {
+					const newDocRef = db.collection("shifts").doc();
+					const auditRef = db.collection("audit_logs").doc();
 
-				const user = req.user;
-				const data = {
-					manager_id: user?.uid || "system",
-					manager_name: user?.email || "System Auto-Open",
-					start_time: new Date().toISOString(),
-					opening_float: 0,
-					status: "OPEN",
-				};
+					const user = req.user;
+					const data = {
+						manager_id: user?.uid || "system",
+						manager_name: user?.email || "System Auto-Open",
+						start_time: new Date().toISOString(),
+						opening_float: 0,
+						status: "OPEN",
+					};
 
-				await db.runTransaction(async (transaction) => {
 					transaction.set(newDocRef, data);
 					transaction.set(auditRef, {
 						table_affected: "shifts",
@@ -324,10 +330,10 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 						user_id: user?.uid || "system",
 						timestamp: new Date().toISOString(),
 					});
-				});
 
-				newlyOpenedShift = { id: newDocRef.id, ...data };
-			}
+					newlyOpenedShift = { id: newDocRef.id, ...data };
+				}
+			});
 		}
 
 		return res.status(200).json({

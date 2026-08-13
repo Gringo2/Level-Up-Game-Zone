@@ -13,6 +13,7 @@ import {
 	CloseShiftSchema,
 	ResolveMissedDaySchema,
 	StartShiftSchema,
+	UpdateFloatSchema,
 } from "../schemas/index.js";
 
 const router = Router();
@@ -35,6 +36,7 @@ router.post(
 router.put(
 	"/:id/float",
 	requireAuth as RequestHandler,
+	validateBody(UpdateFloatSchema) as RequestHandler,
 	updateFloat as RequestHandler,
 );
 

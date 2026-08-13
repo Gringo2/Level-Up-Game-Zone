@@ -1,30 +1,26 @@
-# Active Mission: Mission 29 — Auto-Open Daily Shifts
+# Mission 30: Edge Case Concurrency & Validation Fixes
 
-## 1. Mission Context
 **Status:** Locked
-**Type:** Feature
-**Phase:** Phase 5 — Maturation
-**Primary Owner:** AI Implementor
+**Phase:** Execution
 
-## 2. Objective
-Automatically open a new shift for the current day (with a default float of $0) in two scenarios:
-1. When a user requests shift data and there are no existing gaps, missed shifts, or active open shifts for today.
-2. Immediately after a user resolves the final blocking gap/missed shift for the timeline.
-
-Additionally, provide a new backend endpoint and frontend mechanism for managers to manually update the "Opening Float" of an active shift, since the shift now starts automatically at $0.
+## Objective
+Resolve the critical race conditions and validation loopholes discovered in the M-29 auto-open and float update logic.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/server/src/controllers/shiftsController.ts` (Auto-open logic & float update logic)
-  - `packages/server/src/routes/shifts.ts` (New PUT route)
-  - `packages/client/src/contexts/ShiftContext.tsx` (Remove manual start block)
-  - `packages/client/src/pages/Dashboard.tsx` (Add Update Float UI)
+  - Fixing `getMissedData` auto-open race condition using Firestore transactions.
+  - Fixing `updateFloat` race condition using Firestore transactions.
+  - Adding Zod schema validation to `PUT /api/shifts/:id/float`.
 - **Out of Scope:**
-  - Changes to other financial calculation paradigms.
-  - Automated closing of shifts (this is strictly auto-open).
+  - Any UI modifications on the frontend.
+  - Changes to other endpoints outside of shift auto-open and float updates.
+
+## Architecture Constraints
+- All backend routes must validate input using Zod via `validateBody`.
+- Concurrency logic involving reads dependent on writes must occur strictly within `db.runTransaction()`.
 
 ## Evidence Payload
-- [x] Functional Verification: Shift auto-opens; Float can be updated dynamically.
+- [x] Functional Verification: Concurrent calls do not create multiple shifts or overwrite closed shifts.
 - [x] Architectural Verification (AVP-001): Passed full 6-gate lock suite.
 - [x] Dependency Graph Clean: Zero circular dependencies or forbidden imports.
 - [x] ADR Compliance: Conforms to existing frontend component paradigms and Express backend composition root.
