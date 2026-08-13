@@ -1,37 +1,31 @@
 # CURRENT MISSION
 
-**Mission ID:** M-31
+**Mission:** M-32 Backend Coverage Completion
 **Status:** Locked
-**Title:** Test Suite Compliance Refactoring
 
-## Description
-Refactor the backend testing architecture to comply with the Test-Negative Validation Protocol (Rule 28). Eliminate vacuous tests, replace isolated controller tests with true Express/Zod integration tests via `supertest`, and prove negative failure paths alongside true golden paths.
+## 1. Objective
+Achieve >60% test coverage across all Express controllers by implementing Rule-28 compliant Integration Tests (Golden & Negative Paths).
 
-## References
-- ACP-001 (Monorepo Architecture)
-- ADR-001 (Express Backend as single authoritative composition root)
-- AGENTS.md (Rule 28: Test-Negative Validation Protocol)
-- STABILITY_GAP_ANALYSIS.md
+## 2. Evidence Payload
+- `npx vitest run` -> 65 passing tests across 12 suites.
+- Coverage increased from ~5% on financial controllers to >60% (e.g. `employeesController` @ 84%).
+- Zod validation boundaries properly intercepting invalid input (verified via `Required` fallbacks).
+- Architecture Verify Protocol `AVP-001` passed.
 
 ## 3. Scope & Boundaries
 - **In Scope:** 
-  - Install `supertest`.
-  - Refactor Express `app` instantiation to decouple from listener (`app.ts` & `index.ts`).
-  - Create global unified Firebase mock for integration tests (`setupTests.ts`).
-  - Rewrite `shiftsController.test.ts` to test Express routes (Golden Path & Negative).
-  - Rewrite `usersController.test.ts` to test Express routes (Golden Path & Negative).
-  - Remove vacuous `baseline.test.ts` from `packages/shared`.
-- **Out of Scope:** 
-  - Modifying client package tests.
-  - Modifying internal logic of controllers (purely testing architecture changes).
-  - Adding tests for routes that currently lack tests entirely (focusing on existing controller tests).
+  - `auditLogsController.test.ts`
+  - `creditsController.test.ts`
+  - `employeesController.test.ts`
+  - `expensesController.test.ts`
+  - `gameRatesController.test.ts`
+  - `salesController.test.ts`
+  - `kenoController.test.ts`
+- **Out of Scope:** Frontend React tests.
 
-## Evidence Payload
-- `app.ts` created to properly export Express instance for `supertest`.
-- `setupTests.ts` created, injecting unified Firebase `db` and `auth` middleware mocks.
-- `shiftsController.test.ts` fully rebuilt, asserting golden paths (including auto-opening a missed shift) and 400 validations.
-- `usersController.test.ts` fully rebuilt, asserting full auth flow and admin-only role blocks.
-- **Fitness verification passed:** `vitest` suite executes perfectly with 100% pass rate and increased structural controller coverage (approaching 60%).
+## 4. Referenced Architecture
+- ADR-005: Global testing mock patterns.
+- AGENTS.md (Rule 28: Test-Negative Validation Protocol)
 - [x] Architectural Verification (AVP-001): Passed full 6-gate lock suite.
 - [x] Dependency Graph Clean: Zero circular dependencies or forbidden imports.
 - [x] ADR Compliance: Conforms to existing frontend component paradigms and Express backend composition root.
