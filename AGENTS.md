@@ -16,10 +16,9 @@ These are laws that cannot be changed without explicit approval:
 **Architecture Invariants:**
 - Observation precedes reasoning.
 - Reasoning never modifies observations.
-- Browser is deterministic.
-- Workers are deterministic.
-- Coordinator never performs deterministic computation.
-- Forge is a consumer of WIP.
+- Thin Client is UI-only and decoupled from database admin keys.
+- Express Backend is the single authoritative composition root for API & DB operations.
+- Shared Baseline package remains pure and decoupled from client/server implementation.
 - Observation Graph is immutable.
 - Validation is mandatory.
 - Specifications define capabilities, implementations realize capabilities, and no implementation may become the de facto specification.
@@ -58,7 +57,7 @@ The AI should know which documents are authoritative. Conflicts follow a determi
 
 **Tier 0 (Immutable)**
 1. **User Instructions** (Owner: Product Owner)
-2. **MANIFEST.yaml** (Owner: System)
+2. **governance/GOVERNANCE_MAP.md** (Owner: System Architecture)
 
 **Tier 1 (Architecture)**
 4. **governance/ARCHITECTURE_PLAN.md** (System architecture - Owner: Architecture)
@@ -114,7 +113,7 @@ Changing it requires: `Architecture Change Proposal (ACP)` → `Approval` → `M
 Require consistent terminology. Current stable terms:
 - Thin Client
 - Express Backend
-- Firestore Collections (Users, Shifts, Rates)
+- Firestore Collections (Users, Shifts, Expenses, GameSales, KenoTickets, Employees)
 - Transactions & Audit Logs
 - Composition Root
 - WAKE Protocol
@@ -235,31 +234,6 @@ The AI Implementor must **never** commit unowned, ad-hoc execution scripts (e.g.
 - If a temporary script is required for verification or probing (e.g., to test a calculation or simulate an output), it MUST be created in a transient location or explicitly deleted within the same execution turn.
 - Violating this rule breaches the "No unowned files" invariant (Rule 2). The workspace must remain pristine and reflect only the approved architecture.
 
-
-## 17. Version History
-**AGENTS.md**
-
-Version 1.8.4
-
-*   **Change History:**
-    *   **v1.8.4:** Added Rule 24 (Anti-Assumption Directory & ID Protocol) to explicitly forbid assuming artifact IDs and file paths without probing.
-    *   **v1.8.3:** Added Rule 23 (No Persistent Scratchpads) to explicitly forbid committing unowned, temporary execution scripts to the workspace.
-    *   **v1.8.2:** Delegated artifact routing to GOVERNANCE_MAP.md and added it to the Core Governance Set in WAKE protocol.
-    *   **v1.8.1:** Refactored AGENTS.md to act strictly as an Engineering Constitution. Moved architectural facts (Boundary Ownership, Forbidden Dependencies, Composition Root rules, AFR schema, and Fitness Functions) to SYSTEM_CONTEXT.md, AVP-001, AFR-001, and ADR-008.
-    *   **v1.8.0:** Added Architecture Friction Report (AFR), Boundary Ownership, Composition Roots, and Repository Fitness Functions. Replaced STRICTLY FORBIDDEN with must not. Updated Mission Completion gates to explicitly require AVP-001.
-    *   **v1.7.1:** Refined WAKE Protocol to use intent-based Governance Sets instead of hardcoded shell commands.
-    *   **v1.7.0:** Added Rule 18 (WAKE Protocol) to enforce context loading, and integrated AVP-001 (Architecture Integrity Verification Protocol).
-    *   **v1.6.0:** Added Rule 16 (Verification & Anti-Assumption - The Golden Rule) to enforce strict execution verification and anti-assumption protocols.
-
-
-    *   **v1.5.1:** Refined Git constraints to allow read-only observation commands (`git status`, `git log`, etc.) while strictly forbidding mutating commands.
-    *   **v1.5.0:** Added strict rule forbidding the AI Implementor from executing `git` commands. Source control is exclusively human-owned.
-    *   **v1.4.0:** Added the capability vs implementation principle to Architecture Invariants.
-    *   **v1.3.0:** Declared governance frozen. Added Document Tiers, Artifact Ownership, and Repository Invariants.
-    *   **v1.2.0:** Added AI Contribution Rules.
-    *   **v1.1.0:** Added Artifact Governance, Document Hierarchy, Stable Naming, Architecture Invariants, Evidence Chain, Proposal Lifecycle, Testing Constitution, and Repository Principle.
-    *   **v1.0.0:** Initial adoption of Engineering Constitution, replacing Implementation Workflow Protocol. Added strict constraints around explicit roles, scope protection, evidence-based authorization, and change control.
-
 ## 24. Anti-Assumption Directory & ID Protocol
 The AI Implementor must **never assume** file paths or the availability of numeric IDs for artifacts (ACPs, ADRs, AFRs).
 - Before creating a new proposal, the AI Implementor MUST list the contents of both `governance/proposals/` and `docs/adr/` to determine the correct next sequential ID.
@@ -292,3 +266,26 @@ The AI Implementor must never rely on tautological or "vacuous" tests. A test th
 - **Mandatory Red-Green Gating:** Before finalizing a test suite, the AI must prove that the tests can fail. It must run the tests against an incomplete or intentionally flawed implementation to generate a verified "Red" (Fail) state before achieving a "Green" (Pass) state.
 - **Negative Path Coverage:** Testing the "Happy Path" is insufficient. The AI must explicitly write negative tests that validate failure modes, error boundaries, and rejection of invalid state.
 - **No Over-Mocking:** The AI is forbidden from mocking internal module boundaries just to force a passing test. Mocks are reserved strictly for external side-effects (e.g., Network, Database, Time).
+
+## 17. Version History
+**AGENTS.md**
+
+Version 1.9.0
+
+*   **Change History:**
+    *   **v1.9.0:** Synchronized Engineering Constitution with monorepo architecture, updated active Firestore collection vocabulary, replaced MANIFEST.yaml reference with GOVERNANCE_MAP.md, and reordered Version History section to the bottom.
+    *   **v1.8.4:** Added Rule 24 (Anti-Assumption Directory & ID Protocol) to explicitly forbid assuming artifact IDs and file paths without probing.
+    *   **v1.8.3:** Added Rule 23 (No Persistent Scratchpads) to explicitly forbid committing unowned, temporary execution scripts to the workspace.
+    *   **v1.8.2:** Delegated artifact routing to GOVERNANCE_MAP.md and added it to the Core Governance Set in WAKE protocol.
+    *   **v1.8.1:** Refactored AGENTS.md to act strictly as an Engineering Constitution. Moved architectural facts (Boundary Ownership, Forbidden Dependencies, Composition Root rules, AFR schema, and Fitness Functions) to SYSTEM_CONTEXT.md, AVP-001, AFR-001, and ADR-007.
+    *   **v1.8.0:** Added Architecture Friction Report (AFR), Boundary Ownership, Composition Roots, and Repository Fitness Functions. Replaced STRICTLY FORBIDDEN with must not. Updated Mission Completion gates to explicitly require AVP-001.
+    *   **v1.7.1:** Refined WAKE Protocol to use intent-based Governance Sets instead of hardcoded shell commands.
+    *   **v1.7.0:** Added Rule 18 (WAKE Protocol) to enforce context loading, and integrated AVP-001 (Architecture Integrity Verification Protocol).
+    *   **v1.6.0:** Added Rule 16 (Verification & Anti-Assumption - The Golden Rule) to enforce strict execution verification and anti-assumption protocols.
+    *   **v1.5.1:** Refined Git constraints to allow read-only observation commands (`git status`, `git log`, etc.) while strictly forbidding mutating commands.
+    *   **v1.5.0:** Added strict rule forbidding the AI Implementor from executing `git` commands. Source control is exclusively human-owned.
+    *   **v1.4.0:** Added the capability vs implementation principle to Architecture Invariants.
+    *   **v1.3.0:** Declared governance frozen. Added Document Tiers, Artifact Ownership, and Repository Invariants.
+    *   **v1.2.0:** Added AI Contribution Rules.
+    *   **v1.1.0:** Added Artifact Governance, Document Hierarchy, Stable Naming, Architecture Invariants, Evidence Chain, Proposal Lifecycle, Testing Constitution, and Repository Principle.
+    *   **v1.0.0:** Initial adoption of Engineering Constitution, replacing Implementation Workflow Protocol. Added strict constraints around explicit roles, scope protection, evidence-based authorization, and change control.
