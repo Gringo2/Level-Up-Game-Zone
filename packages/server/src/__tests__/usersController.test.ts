@@ -1,100 +1,150 @@
-import type { Response } from "express";
-import { describe, expect, it, vi } from "vitest";
-import {
-	createUser,
-	getMe,
-	updateRole,
-} from "../controllers/usersController.js";
-import type { AuthRequest } from "../middleware/auth.js";
+import request from "supertest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import "./setupTests.js";
+import app from "../app.js";
 
-// Mock Firebase
-vi.mock("../firebase.js", () => ({
-	db: {
-		collection: vi.fn().mockReturnThis(),
-		doc: vi.fn().mockReturnThis(),
-		get: vi.fn().mockResolvedValue({
-			data: () => ({ role: "staff" }),
-			exists: true,
-		}),
-		runTransaction: vi.fn().mockResolvedValue(true),
-	},
-}));
+const { db } = await import("../firebase.js");
 
-describe("Users Controller - Negative Tests", () => {
-	it("getMe should return 401 if user is missing from request", async () => {
-		const req = {} as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
+describe("Users Integration Tests", () => {
+	const authHeader = "Bearer valid-mock-token";
 
-		await getMe(req, res);
-
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
-	});
-	it("createUser should return 401 if user is missing from request", async () => {
-		const req = {} as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
-
-		await createUser(req, res);
-
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+	beforeEach(() => {
+		vi.clearAllMocks();
 	});
 
-	it("updateRole should return 401 if admin user is missing", async () => {
-		const req = {
-			params: { id: "123" },
-			body: { role: "manager", editReason: "promoted" },
-		} as unknown as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
+	describe("Golden Path (Success Scenarios)", () => {
+		it("should allow an admin to successfully invite a new user", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						where: () => ({
+							get: vi.fn().mockResolvedValue({ empty: true }),
+						}),
+					} as any;
+				}
+				if (path === "user_invites") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+							set: vi.fn(),
+						}),
+					} as any;
+				}
+				return { doc: vi.fn().mockReturnThis(), set: vi.fn() } as any;
+			});
 
-		await updateRole(req, res);
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: false }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
 
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
-	});
+			const response = await request(app)
+				.post("/api/users/invite")
+				.set("Authorization", authHeader)
+				.send({ email: "newstaff@example.com", role: "staff" });
 
-	it("updateRole should return 400 if editReason is missing", async () => {
-		const req = {
-			user: { uid: "admin123" },
-			params: { id: "123" },
-			body: { role: "manager" },
-		} as unknown as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
+			expect(response.status).toBe(201);
+		});
 
-		await updateRole(req, res);
+		it("should allow a user to successfully create their account via invite", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "user_invites") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+							delete: vi.fn(),
+						}),
+					} as any;
+				}
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+							set: vi.fn(),
+						}),
+					} as any;
+				}
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
 
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith({
-			error: "Edit reason is required",
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: false }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/users")
+				.set("Authorization", authHeader) 
+				.send({});
+
+			expect(response.status).toBe(201);
 		});
 	});
 
-	it("updateRole should return 403 if requester is not an admin", async () => {
-		const req = {
-			user: { uid: "staff123" },
-			params: { id: "123" },
-			body: { role: "manager", editReason: "test" },
-		} as unknown as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
+	describe("Negative Path (Rejection Scenarios)", () => {
+		it("should return 401 if user is missing from request", async () => {
+			const response = await request(app).get("/api/users/me");
+			expect(response.status).toBe(401);
+		});
 
-		await updateRole(req, res);
+		it("updateRole should return 400 if editReason is missing or too short (Zod Validation)", async () => {
+			const response = await request(app)
+				.put("/api/users/user123/role")
+				.set("Authorization", authHeader)
+				.send({ role: "manager", editReason: "hi" }); 
+			expect(response.status).toBe(400);
+		});
 
-		expect(res.status).toHaveBeenCalledWith(403);
-		expect(res.json).toHaveBeenCalledWith({ error: "Forbidden: Admins only" });
+		it("updateRole should return 400 if role is invalid (Zod Validation)", async () => {
+			const response = await request(app)
+				.put("/api/users/user123/role")
+				.set("Authorization", authHeader)
+				.send({ role: "super_admin", editReason: "valid reason" }); 
+			expect(response.status).toBe(400);
+		});
+
+		it("updateRole should return 403 if requester is not an admin", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }), 
+							}),
+						}),
+					} as any;
+				}
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
+			const response = await request(app)
+				.put("/api/users/user123/role")
+				.set("Authorization", authHeader)
+				.send({ role: "manager", editReason: "valid reason" });
+
+			expect(response.status).toBe(403);
+		});
 	});
 });

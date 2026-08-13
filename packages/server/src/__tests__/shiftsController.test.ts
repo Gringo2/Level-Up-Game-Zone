@@ -1,121 +1,173 @@
-import type { Response } from "express";
-import { describe, expect, it, vi } from "vitest";
-import { closeShift, startShift } from "../controllers/shiftsController.js";
-import type { AuthRequest } from "../middleware/auth.js";
+import request from "supertest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import "./setupTests.js";
+import app from "../app.js";
 
-// Mock Firebase
-vi.mock("../firebase.js", () => {
-	const shiftData = {
-		exists: true,
-		data: () => ({
-			status: "OPEN",
-			start_time: "2026-08-01T10:00:00Z",
-			opening_float: 100,
-		}),
-	};
+const { db } = await import("../firebase.js");
 
-	return {
-		db: {
-			collection: vi.fn().mockReturnThis(),
-			doc: vi.fn().mockReturnThis(),
-			get: vi.fn().mockResolvedValue(shiftData),
-			where: vi.fn().mockReturnThis(),
-			runTransaction: vi.fn().mockResolvedValue(true),
-		},
-	};
-});
+describe("Shifts Integration Tests", () => {
+	const authHeader = "Bearer valid-mock-token";
 
-describe("Shifts Controller - Negative Tests", () => {
-	it("startShift should return 401 if user is missing", async () => {
-		const req = { body: { floatAmount: 100 } } as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
-
-		await startShift(req, res);
-
-		expect(res.status).toHaveBeenCalledWith(401);
-		expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+	beforeEach(() => {
+		vi.clearAllMocks();
 	});
 
-	it("startShift should return 400 if floatAmount is missing", async () => {
-		const req = {
-			user: { uid: "user123" },
-			body: {},
-		} as unknown as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
+	describe("Golden Path (Success Scenarios)", () => {
+		it("should successfully open a new shift", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "new-shift-123" }),
+					} as any;
+				}
+				return { doc: vi.fn().mockReturnValue({ id: "audit-123" }) } as any;
+			});
 
-		await startShift(req, res);
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Test Manager" });
 
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith({ error: "floatAmount is required" });
-	});
-
-	it("closeShift should return 400 if actualCashCounted is missing", async () => {
-		const req = {
-			params: { id: "shift123" },
-			body: {},
-		} as unknown as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
-
-		await closeShift(req, res);
-
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith({
-			error: "actualCashCounted is required",
+			expect(response.status).toBe(201);
 		});
-	});
 
-	it("closeShift should return 400 if variance > $2.00 and shortageReason is missing", async () => {
-		// Mock dynamic get() for the dependencies to simulate expected cash
-		const { db } = await import("../firebase.js");
-		vi.mocked(db.collection).mockImplementation((path: string) => {
-			if (path === "shifts") {
-				return {
-					doc: () => ({
-						get: vi.fn().mockResolvedValue({
-							exists: true,
-							data: () => ({
-								status: "OPEN",
-								start_time: "2026-08-01T10:00:00Z",
-								opening_float: 100, // expected cash base
+		it("should successfully update an opening float on an OPEN shift", async () => {
+			const response = await request(app)
+				.put("/api/shifts/shift-123/float")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 200 });
+
+			expect(response.status).toBe(200);
+		});
+
+		it("should successfully close a shift with valid variance calculation", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									status: "OPEN",
+									start_time: "2026-08-01T10:00:00Z",
+									opening_float: 100,
+								}),
 							}),
+							update: vi.fn(),
 						}),
-					}),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					where: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [] }),
 				} as any;
-			}
-			return {
-				where: () => ({
-					get: vi.fn().mockResolvedValue({ docs: [] }), // No sales, expected cash = 100
-				}),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-			} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/shift-123/close")
+				.set("Authorization", authHeader)
+				.send({ actualCashCounted: 100 });
+
+			expect(response.status).toBe(200);
 		});
 
-		// Actual cash is 50, variance is -50, > $2.00 threshold
-		const req = {
-			params: { id: "shift123" },
-			body: { actualCashCounted: 50 },
-		} as unknown as AuthRequest;
-		const res = {
-			status: vi.fn().mockReturnThis(),
-			json: vi.fn(),
-		} as unknown as Response;
+		it("should auto-generate a new OPEN shift in getMissedData if no gaps exist (M-29 behavior)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						limit: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "auto-opened-123" }),
+					} as any;
+				}
+				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
+			});
 
-		await closeShift(req, res);
+			// Override runTransaction specifically to yield empty for the openShiftsQuery
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ empty: true }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
 
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith({
-			error:
-				"Variance is greater than $2.00. Please provide a reason for the shortage.",
+			const response = await request(app)
+				.get("/api/shifts/missed")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body.newlyOpenedShift).toMatchObject({
+				id: "auto-opened-123",
+				status: "OPEN",
+			});
+		});
+	});
+
+	describe("Negative Path (Rejection Scenarios)", () => {
+		it("should return 401 if authorization header is missing", async () => {
+			const response = await request(app)
+				.post("/api/shifts")
+				.send({ floatAmount: 100 });
+			expect(response.status).toBe(401);
+		});
+
+		it("should return 400 when floatAmount is negative on shift start (Zod Validation)", async () => {
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: -50 });
+			expect(response.status).toBe(400);
+		});
+
+		it("should return 400 when floatAmount is missing on updateFloat (Zod Validation)", async () => {
+			const response = await request(app)
+				.put("/api/shifts/shift-123/float")
+				.set("Authorization", authHeader)
+				.send({}); 
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Float amount must be a valid number");
+		});
+
+		it("should return 400 if closing a shift with > $2 variance without a reason", async () => {
+			// Provide the necessary mock so closeShift can fetch dependencies
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									status: "OPEN",
+									start_time: "2026-08-01T10:00:00Z",
+									opening_float: 100,
+								}),
+							}),
+							update: vi.fn(),
+						}),
+					} as any;
+				}
+				return {
+					where: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/shift-123/close")
+				.set("Authorization", authHeader)
+				.send({ actualCashCounted: 50 }); // Variance = 50
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Variance is greater than $2.00");
 		});
 	});
 });
+
