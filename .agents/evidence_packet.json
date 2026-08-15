@@ -1,6 +1,6 @@
 {
-	"missionId": "M-33",
-	"timestamp": "2026-08-14T17:20:00.000Z",
+	"missionId": "M-36",
+	"timestamp": "2026-08-15T00:00:00.000Z",
 	"commitHash": "UNCOMMITTED",
 	"status": "LOCKED",
 	"gatesPassed": {
@@ -9,5 +9,5 @@
 		"gate3_unit_tests": true,
 		"gate5_evidence_payload": true
 	},
-	"verificationSummary": "M-33 Backend Coverage Completion — Shifts & Users. 125/125 vitest tests across 12 suites (up from 81). shiftsController statement coverage 55.6% -> 93.1%, usersController 38.2% -> 91.7% (both 100% funcs); all 9 Express controllers >= 62.9%. lint exit 0 (44 warnings, below prior 60 baseline), server tsc exit 0, client build exit 0, knip exit 0, depcruise 0 violations (733 modules). Rule 28 red-green proven: disabling the updateFloat non-OPEN guard made its test fail (red), then restored (green). Closed TD-003/004/005 in DEBT.md. Gate 4 (E2E) and Gate 6 (SSOT) carried from prior verification: no production code or dependency changes in this mission."
+	"verificationSummary": "M-36 Backend Coverage Completion — App Composition Root & Schemas. 181/181 vitest tests across 13 suites (up from 176). app.ts statement coverage 83.3% -> 100%, schemas/index.ts 91.2% -> 100% (both 0 zero-stmt lines remaining); overall stmts 91.9% -> 93.8%. Added 5 integration tests (app 0 -> 2, gameRates 13 -> 14, users 29 -> 31) covering GET /api/health, the global Express error handler (malformed-JSON SyntaxError -> 500), and the previously-uncovered zod errorMaps for UpdateGameRateSchema unit_type, InviteUserSchema role, and CreateUserSchema role. lint exit 0 (48 warnings, consistent with prior baselines), server tsc exit 0, client build exit 0, knip exit 0, depcruise 0 violations (39 modules). Rule 28 red-green proven: changing the global error handler status to 200 made the malformed-JSON test fail (red), then restored to 500 (green). No production code changed (git diff confirms app.ts and schemas/index.ts pristine). Resolved TD-008 in DEBT.md."
 }

@@ -410,6 +410,28 @@ describe("Users Integration Tests", () => {
 			expect(response.status).toBe(400);
 		});
 
+		it("inviteUser should return 400 if role is invalid (InviteUserSchema errorMap)", async () => {
+			const response = await request(app)
+				.post("/api/users/invite")
+				.set("Authorization", authHeader)
+				.send({ email: "new@example.com", role: "super_admin" });
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain(
+				"Role must be 'admin', 'manager', or 'staff'",
+			);
+		});
+
+		it("createUser should return 400 if role is invalid (CreateUserSchema errorMap)", async () => {
+			const response = await request(app)
+				.post("/api/users")
+				.set("Authorization", authHeader)
+				.send({ role: "super_admin" });
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain(
+				"Role must be 'admin', 'manager', or 'staff'",
+			);
+		});
+
 		it("updateRole should return 403 if requester is not an admin", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {

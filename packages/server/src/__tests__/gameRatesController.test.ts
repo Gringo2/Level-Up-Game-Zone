@@ -160,6 +160,16 @@ describe("Game Rates Integration Tests", () => {
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("at least 3 characters");
 		});
+
+		it("should return 400 when updating rate with invalid unit_type (UpdateGameRateSchema errorMap)", async () => {
+			const response = await request(app)
+				.put("/api/rates/rate-123")
+				.set("Authorization", authHeader)
+				.send({ unit_type: "Minute", editReason: "Price hike" });
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Unit type must be 'Hour' or 'Game'");
+		});
 	});
 
 	describe("Not Found Contract (non-existent documents)", () => {

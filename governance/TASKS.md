@@ -49,4 +49,6 @@ Atomic task breakdowns for Missions 10-32 were tracked per-mission in `MISSION.m
 | M-33 | Shifts/users coverage (2026-08-14); shifts 55.6% -> 93.1%, users 38.2% -> 91.7%; closes TD-003/004/005 |
 | M-34 | Expenses/auditLogs coverage (2026-08-14); expenses 62.9% -> 92.1% stmts/100% branch, auditLogs 72.7% -> 90.9% stmts/100% branch |
 | M-35 | Final-4 coverage (2026-08-14); sales 76.8% -> 91.3%, credits 75.6% -> 92.3%, gameRates 75.0% -> 92.9%, employees 73.3% -> 93.3% (all 100% branch) |
+| M-35 (errata) | Per-suite test-count correction (2026-08-15). M-35 MISSION.md recorded `credits 7 -> 14, gameRates 5 -> 10, employees 5 -> 10` (23 tests); committed tree `f5f2dd4` shows credits 17, gameRates 13, employees 13 — true deltas +10/+8/+8 = +36 tests (140 -> 176 total, verified). Coverage percentages unchanged and correct. |
+| M-36 | App composition root + schemas coverage (2026-08-15); app.ts 83.3% -> 100% stmts, schemas/index.ts 91.2% -> 100% stmts |
 

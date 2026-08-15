@@ -17,5 +17,6 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 | TD-005 | 500 DB-crash fallback tests added for every shifts and users controller operation, plus keno/expenses in M-32. | 2026-08-14 |
 | TD-006 | Branch-coverage gap closed on the two weakest controllers: expenses 62.5% -> 100% branch, auditLogs 50% -> 100% branch; verifyExpense fully covered (M-34). | 2026-08-14 |
 | TD-007 | Remaining branch-coverage gap closed on sales/credits/gameRates/employees (all -> 100% branch); every controller now >= 90.9% stmts / 100% funcs (M-35). | 2026-08-14 |
+| TD-008 | Last statement-coverage gap in the Express composition root + schemas closed: app.ts 83.3% -> 100% stmts, schemas/index.ts 91.2% -> 100% stmts; health endpoint, global error handler, and zod errorMaps covered (M-36). | 2026-08-15 |
 | TD-001 | Refactored `requireAuth` to use `makeRequireAuth` with injectable `TokenVerifier`. Added `auth.test.ts` with 4 unit tests (no-token, bad-header, invalid-token, valid-token). | 2026-08-11 |
 | TD-002 | Created `CHANGELOG.md` (Keep a Changelog format, seeded with Missions 1–7) and `CODEOWNERS` at repo root. | 2026-08-11 |

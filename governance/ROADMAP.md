@@ -42,5 +42,6 @@
 *   [x] **Mission 33:** Backend Coverage Completion — Shifts & Users Controllers (2026-08-14)
 *   [x] **Mission 34:** Backend Coverage Completion — Expenses & AuditLogs Controllers (2026-08-14)
 *   [x] **Mission 35:** Backend Coverage Completion — Final 4 Controllers (2026-08-14)
+*   [x] **Mission 36:** Backend Coverage Completion — App Composition Root & Schemas (2026-08-15)
 
 *Note: M-11 has no lock commit or mission-labeled commit anywhere in git history (branches, reflog, dangling objects, and full-text search were all probed on 2026-08-14). Its true scope is not recoverable from repository history without Product Owner clarification. M-19's title was extracted from its lock commit `859a428`.*
