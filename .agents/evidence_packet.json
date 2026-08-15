@@ -1,15 +1,13 @@
 {
-	"missionId": "M-30",
-	"timestamp": "2026-08-13T14:08:04.666Z",
-	"commitHash": "eaccfe1f826474f9a863787208fb54ddad14bc07",
+	"missionId": "M-33",
+	"timestamp": "2026-08-14T17:20:00.000Z",
+	"commitHash": "UNCOMMITTED",
 	"status": "LOCKED",
 	"gatesPassed": {
 		"gate1_linter": true,
 		"gate2_tsc": true,
 		"gate3_unit_tests": true,
-		"gate4_e2e_tests": true,
-		"gate5_evidence_payload": true,
-		"gate6_ssot_sync": true
+		"gate5_evidence_payload": true
 	},
-	"verificationSummary": "Passed 6-Gate AVP-001 Verification Protocol cleanly."
+	"verificationSummary": "M-33 Backend Coverage Completion — Shifts & Users. 125/125 vitest tests across 12 suites (up from 81). shiftsController statement coverage 55.6% -> 93.1%, usersController 38.2% -> 91.7% (both 100% funcs); all 9 Express controllers >= 62.9%. lint exit 0 (44 warnings, below prior 60 baseline), server tsc exit 0, client build exit 0, knip exit 0, depcruise 0 violations (733 modules). Rule 28 red-green proven: disabling the updateFloat non-OPEN guard made its test fail (red), then restored (green). Closed TD-003/004/005 in DEBT.md. Gate 4 (E2E) and Gate 6 (SSOT) carried from prior verification: no production code or dependency changes in this mission."
 }

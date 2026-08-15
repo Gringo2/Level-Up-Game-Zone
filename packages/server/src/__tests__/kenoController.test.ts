@@ -94,6 +94,53 @@ describe("Keno Integration Tests", () => {
 
 			expect(response.status).toBe(200);
 		});
+
+		it("should successfully create a keno log as staff (unverified)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: false,
+								data: () => undefined,
+							}),
+						}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "staff-keno-456" }),
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/keno")
+				.set("Authorization", authHeader)
+				.send({ sales: 100, payouts: 60, net_profit: 40 });
+
+			expect(response.status).toBe(201);
+			expect(response.body.verified).toBe(false);
+		});
+
+		it("should successfully delete a keno log", async () => {
+			const response = await request(app)
+				.delete("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Removed duplicate entry" });
+
+			expect(response.status).toBe(200);
+			expect(response.body.message).toBe("Deleted successfully");
+		});
+
+		it("should successfully verify a keno log", async () => {
+			const response = await request(app)
+				.put("/api/keno/keno-123/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body.message).toBe("Verified successfully");
+		});
 	});
 
 	describe("Negative Path (Rejection Scenarios)", () => {
@@ -115,6 +162,206 @@ describe("Keno Integration Tests", () => {
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
+		});
+
+		it("should return 400 when deleting keno without deleteReason (Zod)", async () => {
+			const response = await request(app)
+				.delete("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Required");
+		});
+
+		it("should return 400 when deleting keno with a too-short deleteReason (Zod)", async () => {
+			const response = await request(app)
+				.delete("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "x" });
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("at least 3 characters");
+		});
+	});
+
+	describe("Not Found Contract (non-existent documents)", () => {
+		const notFoundTransaction = () => {
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: false,
+						id: "missing-keno",
+						data: () => undefined,
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+		};
+
+		it("returns 500 when updating a non-existent keno log (documented contract)", async () => {
+			notFoundTransaction();
+
+			const response = await request(app)
+				.put("/api/keno/missing-keno")
+				.set("Authorization", authHeader)
+				.send({ sales: 300, editReason: "Corrected figures" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Keno log not found");
+		});
+
+		it("returns 500 when deleting a non-existent keno log (documented contract)", async () => {
+			notFoundTransaction();
+
+			const response = await request(app)
+				.delete("/api/keno/missing-keno")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Removing stale record" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Keno log not found");
+		});
+
+		it("returns 500 when verifying a non-existent keno log (documented contract)", async () => {
+			notFoundTransaction();
+
+			const response = await request(app)
+				.put("/api/keno/missing-keno/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Keno log not found");
+		});
+	});
+
+	describe("Database Crash (500 fallback)", () => {
+		const chainableCollection = () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "keno-123" }),
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+		};
+
+		it("returns 500 when listing keno logs crashes", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "keno_logs") {
+					return {
+						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.get("/api/keno")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("DB crashed");
+		});
+
+		it("returns 500 when creating keno crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.post("/api/keno")
+				.set("Authorization", authHeader)
+				.send({ sales: 200, payouts: 50, net_profit: 150 });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("Internal server error");
+		});
+
+		it("returns 500 when updating keno crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.put("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ sales: 300, editReason: "Corrected figures" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("DB crashed");
+		});
+
+		it("returns 500 when deleting keno crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.delete("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Removing stale record" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("DB crashed");
+		});
+
+		it("returns 500 when verifying keno crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.put("/api/keno/keno-123/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("DB crashed");
+		});
+	});
+
+	describe("Unauthorized (missing credentials)", () => {
+		it("returns 401 without a bearer token on GET", async () => {
+			const response = await request(app).get("/api/keno");
+
+			expect(response.status).toBe(401);
+			expect(response.body.error).toContain("No token provided");
+		});
+
+		it("returns 401 without a bearer token on POST", async () => {
+			const response = await request(app)
+				.post("/api/keno")
+				.send({ sales: 100, payouts: 50, net_profit: 50 });
+
+			expect(response.status).toBe(401);
+		});
+
+		it("returns 401 without a bearer token on DELETE", async () => {
+			const response = await request(app)
+				.delete("/api/keno/keno-123")
+				.send({ deleteReason: "Removing stale record" });
+
+			expect(response.status).toBe(401);
 		});
 	});
 });

@@ -63,42 +63,12 @@ service cloud.firestore {
     // ===============================================================
 
     // ===============================================================
-    // Helper Functions
-    // ===============================================================
-
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Role checks
-    function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
-    function isAdmin() {
-      return isAuthenticated() && (
-        getUserRole() == 'admin' ||
-        (request.auth.token.email in ["bezueyob3@gmail.com", "jobsbezu@gmail.com"] && request.auth.token.email_verified == true)
-      );
-    }
-
-    function isManagerOrAdmin() {
-      return isAdmin() || (isAuthenticated() && getUserRole() == 'manager');
-    }
-
-    function isStaffOrHigher() {
-      return isManagerOrAdmin() || (isAuthenticated() && getUserRole() == 'staff');
-    }
-
-    // ===============================================================
     // Rules (Zero-Trust Thin Client Architecture Lockdown)
     // ===============================================================
     // All data operations are mediated through the Express Backend API
     // using the firebase-admin SDK. Direct client access is disabled.
+    // No helper functions are declared: an unreferenced function emits
+    // an "Unused function" warning from the Firestore Rules compiler.
 
     match /{document=**} {
       allow read, write: if false;

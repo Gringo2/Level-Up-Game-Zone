@@ -26,8 +26,10 @@ describe("Audit Logs Integration Tests", () => {
 								},
 							],
 						}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
 			});
 
@@ -45,6 +47,29 @@ describe("Audit Logs Integration Tests", () => {
 		it("should return 401 if authorization header is missing", async () => {
 			const response = await request(app).get("/api/audit-logs");
 			expect(response.status).toBe(401);
+		});
+	});
+
+	describe("Database Crash (500 fallback)", () => {
+		it("returns 500 when listing audit logs crashes", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "audit_logs") {
+					return {
+						orderBy: vi.fn().mockReturnThis(),
+						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.get("/api/audit-logs")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("DB crashed");
 		});
 	});
 });

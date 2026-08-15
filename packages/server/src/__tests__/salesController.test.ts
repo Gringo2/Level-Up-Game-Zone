@@ -156,5 +156,169 @@ describe("Sales Integration Tests", () => {
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
 		});
+
+		it("should return 400 when deleting sale with a too-short deleteReason (Zod)", async () => {
+			const response = await request(app)
+				.delete("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "x" });
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("at least 3 characters");
+		});
+	});
+
+	describe("Not Found Contract (non-existent documents)", () => {
+		const notFoundTransaction = () => {
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: false,
+						id: "missing-sale",
+						data: () => undefined,
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+		};
+
+		it("returns 500 when updating a non-existent sale (documented contract)", async () => {
+			notFoundTransaction();
+
+			const response = await request(app)
+				.put("/api/sales/missing-sale")
+				.set("Authorization", authHeader)
+				.send({ quantity_sold: 3, editReason: "Corrected figures" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Sale not found");
+		});
+
+		it("returns 500 when deleting a non-existent sale (documented contract)", async () => {
+			notFoundTransaction();
+
+			const response = await request(app)
+				.delete("/api/sales/missing-sale")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Removing stale record" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Sale not found");
+		});
+	});
+
+	describe("Database Crash (500 fallback)", () => {
+		const chainableCollection = () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				return {
+					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+		};
+
+		it("returns 500 when listing sales crashes", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "game_sales_logs") {
+					return {
+						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.get("/api/sales")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("DB crashed");
+		});
+
+		it("returns 500 when creating sale crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.post("/api/sales")
+				.set("Authorization", authHeader)
+				.send({
+					game_name: "Pool",
+					quantity_sold: 2,
+					rate_applied: 10,
+					calculated_total: 20,
+				});
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("Internal server error");
+		});
+
+		it("returns 500 when updating sale crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.put("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({ quantity_sold: 3, editReason: "Corrected figures" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("DB crashed");
+		});
+
+		it("returns 500 when deleting sale crashes inside the transaction", async () => {
+			chainableCollection();
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.delete("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Removing stale record" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("DB crashed");
+		});
+	});
+
+	describe("Unauthorized (missing credentials)", () => {
+		it("returns 401 without a bearer token on GET", async () => {
+			const response = await request(app).get("/api/sales");
+
+			expect(response.status).toBe(401);
+			expect(response.body.error).toContain("No token provided");
+		});
+
+		it("returns 401 without a bearer token on POST", async () => {
+			const response = await request(app)
+				.post("/api/sales")
+				.send({
+					game_name: "Pool",
+					quantity_sold: 2,
+					rate_applied: 10,
+					calculated_total: 20,
+				});
+
+			expect(response.status).toBe(401);
+		});
+
+		it("returns 401 without a bearer token on DELETE", async () => {
+			const response = await request(app)
+				.delete("/api/sales/sale-123")
+				.send({ deleteReason: "Removing stale record" });
+
+			expect(response.status).toBe(401);
+		});
 	});
 });
