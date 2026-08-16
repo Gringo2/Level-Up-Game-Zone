@@ -1,30 +1,32 @@
 # CURRENT MISSION
 
-**Mission:** M-41 Governance Housekeeping II — Evidence-Packet Versioning & SSOT Pointer Automation
+**Type:** Governance
+**Mission:** M-42 Mission Record Standardization — AVP Checkbox Flip & Type-Field Convention
 **Status:** Locked
 
 ## 1. Objective
-Fix two governance-tooling defects surfaced during M-38/M-39/M-40 (root-cause fixes, AGENTS.md Rule 27):
-1. **Evidence-packet versioning:** `lock_mission.sh` currently overwrites `.agents/evidence_packet.json` on every lock (single slot). AFR-002 records that this already destroyed M-31/M-32 lock evidence. Fix: archive each mission's packet to `.agents/evidence_packets/<mission_id>.json` (mkdir -p + one additional `writeFileSync` reusing the `+ "\n"` trailing-newline fix so biome stays clean), keeping `.agents/evidence_packet.json` as the latest-pointer for backward compatibility. Zero code consumers of the packet were found by probe (2026-08-16) — blast radius is nil.
-2. **SSOT mission-pointer automation:** `governance/SYSTEM_CONTEXT.md` drifted to "Current Mission: Mission 33" (7 missions stale) because the pointer has no automated maintenance. Fix: extend Gate 6 (SSOT) to stamp `Current Mission` (extracted from the MISSION.md `**Mission:**` line) and `Mission Status: Locked` into SYSTEM_CONTEXT.md at every lock — fixing the mechanism rather than one-off patching.
+Close the review observations recorded at M-41 lock (2026-08-16):
+1. **AVP checkbox flip at lock:** `lock_mission.sh` stamps `**Status:** Locked
+2. **`**Type:**` field convention:** `mission_gate.sh` requires `**Type:** Governance|Infrastructure` before permitting `.agents/*` edits (line 41-47), but mission records never declare it — M-41's own `lock_mission.sh` edits would have been denied by the guardrail. Fix: document the mandatory field in ENGINEERING_LIFECYCLE.md (extending ACP-019, no new governance artifact per Frozen Governance), add a non-fatal lock-time warning when the field is absent, and model the convention in this M-42 record (`**Type:** Governance`).
+3. **Packet `commitHash` quirk (documented, no change):** the evidence packet records HEAD at lock time — before the Product Owner commits — so it always points at the prior commit. Inherent to the lock-before-commit workflow; consistent with all prior packets. Accepted.
 
 ## 2. Evidence Payload
-- [x] Functional — existing vitest integration suite (188) + 6 Playwright e2e re-verified by the AVP-001 gate run; success metric: packet written to both canonical + archive paths, pointer stamped by Gate 6, `biome check .` 0 warnings.
+- [x] Functional — existing vitest integration suite (188) + 6 Playwright e2e re-verified by the AVP-001 gate run; success metric: checkbox flipped at lock, no Type warning, `biome check .` 0 warnings.
 - [x] Architectural — zero architectural change; script/tooling-only; Proposal Gate (ACP-019) no-arch; AVP-001 depcruise 0 violations.
 - [x] Dependency — no packages touched; no new dependencies.
-- [x] ADR compliance — consistent with ADR-002 governance routing, AFR-002 remediation intent, and ENGINEERING_LIFECYCLE ACP-019 gates.
+- [x] ADR compliance — consistent with ADR-002 governance routing, ADR-007 guardrail intent (mission_gate Type enforcement), and ENGINEERING_LIFECYCLE ACP-019 gates.
 
 ## 3. Scope & Boundaries
-- **In Scope:** `.agents/scripts/lock_mission.sh` (packet archive write + Gate-6 pointer stamping); `.agents/evidence_packets/` archive (new); `governance/MISSION.md`, `governance/TASKS.md`, `governance/ROADMAP.md`; `governance/SYSTEM_CONTEXT.md` (pointer stamped by Gate 6 at lock).
-- **Out of Scope:** other script behavior; biome.json rule configuration; production source; test logic; backfilling historical packets (prior packets remain only in git history — accepted, documented).
+- **In Scope:** `.agents/scripts/lock_mission.sh` (AVP checkbox flip + Type-field warning); `governance/ENGINEERING_LIFECYCLE.md` (Type-field convention); `governance/MISSION.md`, `governance/TASKS.md`, `governance/ROADMAP.md`.
+- **Out of Scope:** retrofitting locked records (M-39/40/41 — committed and guardrail-blocked); packet commitHash design; other script behavior; production source.
 
 ## 4. Referenced Architecture
-- AGENTS.md Rule 27 (root-cause targeted fixes) and Rule 26 (blast-radius visibility: packet has zero code consumers — probed 2026-08-16).
-- AFR-002 (documented single-slot packet damage, lines 44-62).
+- AGENTS.md Rule 27 (root-cause targeted fixes) and Rule 3 (ENGINEERING_LIFECYCLE.md is not a frozen artifact — convention extends ACP-019).
+- ADR-007 (mission_gate guardrail Type enforcement).
 - ENGINEERING_LIFECYCLE.md ACP-019 gates; ADR-002 governance routing.
 
 ## 5. Verification Gates (Rule 11)
-- [x] Functional Verification: lock run → archive + canonical packets both written with trailing newline; SYSTEM_CONTEXT pointer stamped; vitest + e2e green.
-- [ ] AVP-001 Architecture Verification: pending.
-- [x] Evidence Package: this document + TASKS/ROADMAP rows + the archived M-41 packet itself.
+- [x] Functional Verification: lock run → §5 AVP checkbox flipped `[x]`; Type-field warning absent; vitest + e2e green.
+- [x] AVP-001 Architecture Verification: passed via lock gates.
+- [x] Evidence Package: this document + TASKS/ROADMAP rows + archived M-42 packet.
 - [x] User Approval — approved 2026-08-16.

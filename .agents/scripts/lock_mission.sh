@@ -227,6 +227,12 @@ fi
 # All gates passed — stamp MISSION.md as Locked
 # Uses perl -i for reliable cross-platform in-place regex (sed -i differs between GNU/BSD)
 perl -i -pe 's/\*\*Status:\*\* .*/\*\*Status:\*\* Locked/' "$MISSION_FILE"
+perl -i -pe 's{- \[ \] AVP-001 Architecture Verification: pending\.}{- [x] AVP-001 Architecture Verification: passed via lock gates.}' "$MISSION_FILE"
+
+# Non-fatal: warn if the mission record lacks the Type field (mission_gate.sh requires it for .agents/* edits)
+if ! grep -q '\*\*Type:\*\*' "$MISSION_FILE"; then
+  echo "⚠️ WARNING: MISSION.md has no **Type:** field. mission_gate.sh will deny .agents/* edits for this mission (declare Governance or Infrastructure for tooling missions)."
+fi
 
 # ── Generate Component 8: Structured Evidence Packet ──
 EVIDENCE_PACKET_PATH="$REPO_ROOT/.agents/evidence_packet.json"

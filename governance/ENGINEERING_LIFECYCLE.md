@@ -45,6 +45,8 @@ All future missions must pass five explicit gates before transitioning to `LOCKE
 4. **Evidence Payload Gate:** Documented test and compliance evidence in `MISSION.md`.
 5. **Approval Gate:** Explicit Product Owner approval before closing.
 
+**Mission Record Mandate (M-42):** every mission record in `governance/MISSION.md` MUST declare a `**Type:**` field. Tooling missions that edit `.agents/*` or repository infrastructure MUST use `**Type:** Governance` or `**Type:** Infrastructure`; otherwise `mission_gate.sh` will deny the edits (ADR-007 guardrail, line 41-47). The lock script warns at lock time if the field is absent.
+
 ## Request for Comments (RFC)
 
 Before architectural decisions are made (ADR), an RFC documents possible solutions.
