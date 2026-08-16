@@ -196,8 +196,22 @@ if (fs.existsSync(dcPath) && fs.existsSync(ctxPath)) {
   console.log("  ⚠️ Skipping SSOT Sync (missing dependency-cruiser.js or SYSTEM_CONTEXT.md)");
 }
 ' "$REPO_ROOT"
+NODE_STATUS=$?
 
-if [ $? -ne 0 ]; then
+# Extend SSOT: stamp the current mission pointer (root-cause fix for pointer staleness)
+SYSTEM_CONTEXT_FILE="$REPO_ROOT/governance/SYSTEM_CONTEXT.md"
+if [ -f "$SYSTEM_CONTEXT_FILE" ]; then
+  MISSION_TITLE=$(grep -m1 '\*\*Mission:\*\*' "$MISSION_FILE" | sed 's/\*\*Mission:\*\* //')
+  if [ -n "$MISSION_TITLE" ]; then
+    perl -i -pe "s{\*\*Current Mission:\*\* .*}{\*\*Current Mission:\*\* $MISSION_TITLE}" "$SYSTEM_CONTEXT_FILE"
+    perl -i -pe 's{\*\*Mission Status:\*\* .*}{\*\*Mission Status:\*\* Locked}' "$SYSTEM_CONTEXT_FILE"
+    echo "  ✅ SYSTEM_CONTEXT.md mission pointer stamped: $MISSION_TITLE"
+  else
+    echo "  ⚠️ Gate 6: Could not extract mission title from MISSION.md — pointer not stamped."
+  fi
+fi
+
+if [ $NODE_STATUS -ne 0 ]; then
   echo "❌ Gate 6 FAILED: SSOT Auto-generation crashed."
   FAIL=1
 fi
@@ -216,7 +230,10 @@ perl -i -pe 's/\*\*Status:\*\* .*/\*\*Status:\*\* Locked/' "$MISSION_FILE"
 
 # ── Generate Component 8: Structured Evidence Packet ──
 EVIDENCE_PACKET_PATH="$REPO_ROOT/.agents/evidence_packet.json"
+ARCHIVE_DIR="$REPO_ROOT/.agents/evidence_packets"
+ARCHIVE_PACKET_PATH="$ARCHIVE_DIR/$MISSION_ID.json"
 GIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+mkdir -p "$ARCHIVE_DIR"
 
 node -e '
   const fs = require("fs");
@@ -235,10 +252,13 @@ node -e '
     },
     verificationSummary: "Passed 6-Gate AVP-001 Verification Protocol cleanly."
   };
-  fs.writeFileSync(process.argv[3], JSON.stringify(packet, null, "\t") + "\n");
-' "$MISSION_ID" "$GIT_HASH" "$EVIDENCE_PACKET_PATH" 2>/dev/null
+  const content = JSON.stringify(packet, null, "\t") + "\n";
+  fs.writeFileSync(process.argv[3], content);
+  fs.writeFileSync(process.argv[4], content);
+' "$MISSION_ID" "$GIT_HASH" "$EVIDENCE_PACKET_PATH" "$ARCHIVE_PACKET_PATH" 2>/dev/null
 
 echo "📄 STRUCTURED EVIDENCE PACKET GENERATED: .agents/evidence_packet.json"
+echo "🗂️  EVIDENCE PACKET ARCHIVED: .agents/evidence_packets/$MISSION_ID.json"
 echo "✅ ALL 6 GATES PASSED. Mission $MISSION_ID is now LOCKED."
 echo "MISSION.md has been updated with status: Locked."
 echo "Notify the Product Owner for final Human Gate approval before archiving."
