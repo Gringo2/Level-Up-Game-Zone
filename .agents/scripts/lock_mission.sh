@@ -235,7 +235,7 @@ node -e '
     },
     verificationSummary: "Passed 6-Gate AVP-001 Verification Protocol cleanly."
   };
-  fs.writeFileSync(process.argv[3], JSON.stringify(packet, null, "\t"));
+  fs.writeFileSync(process.argv[3], JSON.stringify(packet, null, "\t") + "\n");
 ' "$MISSION_ID" "$GIT_HASH" "$EVIDENCE_PACKET_PATH" 2>/dev/null
 
 echo "📄 STRUCTURED EVIDENCE PACKET GENERATED: .agents/evidence_packet.json"

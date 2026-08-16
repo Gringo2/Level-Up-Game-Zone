@@ -51,6 +51,7 @@ Atomic task breakdowns for Missions 10-32 were tracked per-mission in `MISSION.m
 | M-35 | Final-4 coverage (2026-08-14); sales 76.8% -> 91.3%, credits 75.6% -> 92.3%, gameRates 75.0% -> 92.9%, employees 73.3% -> 93.3% (all 100% branch) |
 | M-35 (errata) | Per-suite test-count correction (2026-08-15). M-35 MISSION.md recorded `credits 7 -> 14, gameRates 5 -> 10, employees 5 -> 10` (23 tests); committed tree `f5f2dd4` shows credits 17, gameRates 13, employees 13 — true deltas +10/+8/+8 = +36 tests (140 -> 176 total, verified). Coverage percentages unchanged and correct. |
 | M-36 | App composition root + schemas coverage (2026-08-15); app.ts 83.3% -> 100% stmts, schemas/index.ts 91.2% -> 100% stmts |
-| M-37 | Shifts/users branch gaps (2026-08-15, Active); shifts branch 88.0%, users branch 97.6% |
+| M-37 | Shifts/users branch gaps (2026-08-16, Locked); shifts branch 88.0%, users branch 97.6%; coverage work shipped inside M-38 commit `5c5256d` |
 | M-38 | ACP-004 Dead Guard Removal (2026-08-16, Locked); removed 48 Zod-/auth-shadowed controller guards, `AuthRequest.user` non-optional via Express global augmentation, added `reason` to `UpdateCreditSchema` + `shift_id` to `ResolveMissedDaySchema` (restores stale-shift resolution + credit reason persistence); controllers now 100% stmts/lines, 185 tests pass |
+| M-39 | Governance Housekeeping (2026-08-16, Locked); M-37 closure, ROADMAP sync (M-37/M-38/M-39), TD-009 recorded in DEBT.md; `git rm --cached packages/shared/tsconfig.tsbuildinfo` delegated to Product Owner |
 
