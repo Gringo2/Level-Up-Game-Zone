@@ -47,6 +47,15 @@ All future missions must pass five explicit gates before transitioning to `LOCKE
 
 **Mission Record Mandate (M-42):** every mission record in `governance/MISSION.md` MUST declare a `**Type:**` field. Tooling missions that edit `.agents/*` or repository infrastructure MUST use `**Type:** Governance` or `**Type:** Infrastructure`; otherwise `mission_gate.sh` will deny the edits (ADR-007 guardrail, line 41-47). The lock script warns at lock time if the field is absent.
 
+## Enforced Pre-Commit Mission Lock (ACP-005)
+
+When a mission is complete (MISSION.md status `Active` with every Evidence Payload box checked), the **last job** of the pre-commit hook (`.agents/scripts/lock_guard.sh`) runs the full AVP-001 lock suite (`lock_mission.sh <MISSION_ID>`) **before the commit is accepted**:
+
+1. **Fast pre-check** (sub-second, text-only): reads `governance/MISSION.md`. If status is not `Active`, or any Evidence Payload box is unchecked, or no `M-<id>` is parseable → the guard exits silently and the commit proceeds normally.
+2. **Enforced path:** when all completion signals hold, the guard invokes `lock_mission.sh`. On gate failure the guard **blocks the commit** (exit 1) — a complete mission can never be committed in `Active` state. On success, `MISSION.md` is already flipped to `Locked` and the guard stages the lock artifacts (MISSION.md, SYSTEM_CONTEXT.md, `.agents/evidence_packet.json`, `.agents/evidence_packets/<id>.json`) into the in-flight commit.
+
+The commit itself is the Rule 11 User Approval moment: the operator chooses when to commit the completed mission; the hook guarantees it lands already `Locked`. There is no separate manual `lock_mission.sh` step for a normal final commit.
+
 ## Request for Comments (RFC)
 
 Before architectural decisions are made (ADR), an RFC documents possible solutions.

@@ -9,3 +9,6 @@ npx tsc -b packages/server
 
 echo "🔍 Running Knip..."
 npx knip
+
+echo "🔒 Running Mission Lock Guard (ACP-005)..."
+bash .agents/scripts/lock_guard.sh
