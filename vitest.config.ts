@@ -25,7 +25,7 @@ export default defineConfig({
 				// empirically from measured coverage after full suite runs.
 				"packages/client/src/lib/**": { lines: 95, functions: 95 },
 				"packages/client/src/contexts/**": { lines: 70, functions: 85 },
-				"packages/client/src/components/**": { lines: 30, functions: 30 },
+				"packages/client/src/components/**": { lines: 80, functions: 90 },
 				"packages/client/src/pages/**": { lines: 80, functions: 85 },
 				"packages/client/src/layouts/**": { lines: 90, functions: 100 },
 			},
