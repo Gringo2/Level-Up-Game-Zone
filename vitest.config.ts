@@ -21,13 +21,15 @@ export default defineConfig({
 				"**/__tests__/**",
 			],
 			thresholds: {
-				// Client coverage is gated per tested area. Pages and layouts are
-				// deliberately not unit-tested (covered by the Playwright e2e suite)
-				// and would dominate a global threshold, so they are excluded from
-				// gating. Thresholds set empirically from measured coverage (M-43).
+				// Client coverage is gated per tested area. Layouts are
+				// deliberately not unit-tested (covered by the Playwright e2e
+				// suite). Pages are gated at the M-45 cohort floor (5 of 10 pages
+				// covered; raised as the remaining pages are covered in later
+				// missions). Thresholds set empirically from measured coverage.
 				"packages/client/src/lib/**": { lines: 95, functions: 95 },
 				"packages/client/src/contexts/**": { lines: 70, functions: 85 },
 				"packages/client/src/components/**": { lines: 30, functions: 30 },
+				"packages/client/src/pages/**": { lines: 40, functions: 35 },
 			},
 		},
 	},

@@ -1,41 +1,45 @@
 # CURRENT MISSION
 
-**Type:** Governance
-**Mission:** M-44 Hook & Script Hardening — AVP-Flip Regex + Real lint-staged Gate
+**Type:** Infrastructure
+**Mission:** M-45 Client Page Unit Coverage — Cohort 1 (Dashboard, AuditLogs, Expenses, GameSales, Keno)
 **Status:** Locked
 
 ## 1. Objective
-Close two recorded deferrals from the M-43 review trail:
-1. **Harden the AVP checkbox flip regex** in `.agents/scripts/lock_mission.sh` (line 230) from the exact string `- [x] AVP-001 Architecture Verification: passed via lock gates.
-2. **Wire the dormant lint-staged gate:** `.husky/pre-commit` calls `npx lint-staged`, but `package.json` declares `"lint-staged": { "*.{ts,tsx,js,jsx,json}": [] }` — a no-op; only `tsc` + `knip` actually gate commits. Replace the empty command array with `["biome check --write --no-errors-on-unmatched"]` so every staged source file is linted/formatted to the M-40 zero-warning standard at commit time.
+Bring the first cohort of client pages under unit/component test coverage (src/pages currently at 1.34% overall — only Login tested; page coverage was explicitly deferred from M-43 by design):
+1. **Write 5 page suites:** `Dashboard`, `AuditLogs`, `Expenses`, `GameSales`, `Keno`. Each suite covers: loading state → data render → empty state → fetch-error toast (negative paths per Rule 28). `Dashboard` additionally covers the variance calculation, close-shift flow (variance > $2 requires reason), float-update flow, and the safe-slip print block.
+2. **Add a pages coverage gate:** extend the existing per-directory thresholds in `vitest.config.ts` with `packages/client/src/pages/**`, set empirically from measured coverage (untested pages drag the page-average down, so the floor starts conservative and is raised in M-46).
+3. **Red-proof the gate** (Rule 28): excluding the page suites must trip the pages threshold.
 
 ## 2. Evidence Payload
-- [x] Functional — hardened regex flips a deliberately non-canonical AVP line in a `/tmp` probe (variant flips to `[x]`; canonical `pending.` still flips); lint-staged executes biome on staged files (probe: `npx lint-staged` reports running biome on staged `vitest.config.ts`; command form verified against biome 2.5.6).
-- [x] Architectural — zero production-source change; tooling + governance only (lock_mission.sh, package.json, governance records); AVP-001 depcruise 0 violations; no new dependencies.
-- [x] Dependency — no packages added; lint-staged + @biomejs/biome already present in root devDependencies (Rule 25 — reuse, no reinvention).
-- [x] ADR compliance — ADR-007 guardrail intent (hook enforcement, not documentation-only); AGENTS.md Rule 28 (Red-Green gating for the regex fix), Rule 16 (verification by execution probes), Rule 27 (targeted root-cause fix).
+- [x] Functional — 5 new suites green; page coverage rises from 1.34% to a measured level ≥ the empirical threshold; Red-proof (page tests excluded) trips the pages threshold; success metric: `npx vitest run --coverage` passes at lock with the new threshold enforced.
+- [x] Architectural — zero production-source change; test-only + vitest config; AVP-001 depcruise 0 violations; no new dependencies.
+- [x] Dependency — no packages added; `@testing-library/react`, `@testing-library/jest-dom`, `jsdom` already present in client devDependencies (Rule 25 — reuse).
+- [x] ADR compliance — consistent with ADR-002 governance routing, ADR-007 guardrail intent, AGENTS.md Rule 28 (Test-Negative: Red-Green gating) and Rule 22 (AVP-001 fitness functions).
 
 ## 3. Scope & Boundaries
-- **In Scope:** `.agents/scripts/lock_mission.sh` (AVP-flip regex only); `package.json` (lint-staged biome command only); `governance/MISSION.md`, `governance/TASKS.md`, `governance/ROADMAP.md`.
-- **Out of Scope:** pre-commit additions beyond lint-staged (tsc/knip already present — unchanged); evidence-packet versioning follow-ups; SYSTEM_CONTEXT pointer work; production source; new dependencies; Playwright runs inside the hook; `.husky/pre-commit` content changes.
+- **In Scope:** `packages/client/src/__tests__/pages/{Dashboard,AuditLogs,Expenses,GameSales,Keno}.test.tsx` (new); `vitest.config.ts` (pages threshold); `governance/MISSION.md`, `governance/TASKS.md`, `governance/ROADMAP.md`.
+- **Out of Scope:** production source; Layout (0% — e2e-covered); Admin, Credits, EmployeeRoster, Reports, SalaryReport (deferred to M-46, ~2,500 lines); e2e changes; new dependencies.
+- **Test conventions applied:** real `Response` objects with JSON content-type for `fetch` mocks (M-43 headerless-mock lesson); `process.env.TZ = "UTC"` pinned where date-boundary assertions depend on shop-time boundaries (M-43 lesson); firebase/auth-context/shift-context modules mocked at module level.
 
 ## 4. Referenced Architecture
-- AGENTS.md Rule 10 (No Silent TODOs — closure of the recorded deferral), Rule 16 (Verification & Anti-Assumption), Rule 27 (Deterministic Debugging — targeted fix), Rule 28 (Test-Negative Validation — Red-proof of the regex), Rule 25 (Reusability — no new tooling).
-- ADR-007 (mission_gate guardrail — this mission declares `**Type:** Governance` per M-42 convention).
-- ENGINEERING_LIFECYCLE.md ACP-019 gates; M-42 Type-field convention; M-43 Deferred Decision record.
+- AGENTS.md Rule 28 (Test-Negative Validation — mandatory Red-Green gating and negative-path coverage), Rule 16 (Verification & Anti-Assumption — probes before/after), Rule 22 (AVP-001 fitness functions), Rule 25 (Reusability — no new tooling).
+- M-43 record (page coverage deferral + established client test conventions).
+- ADR-002 (governance routing); ADR-007 (mission_gate guardrail — this mission declares `**Type:** Infrastructure`).
 
 ## 5. Verification Gates (Rule 11)
-- [x] Functional Verification: regex Red-proof probe passes (variant flips, canonical flips); lint-staged biome command executes successfully against staged file; `biome check .` clean (0 warnings), `tsc -b` 0 errors, vitest suite green at lock.
+- [x] Functional Verification: 5 page suites green; pages coverage ≥ empirical threshold; Red-proof recorded (page suites excluded → threshold trips).
 - [x] AVP-001 Architecture Verification: passed via lock gates.
-- [x] Evidence Package: this document + TASKS/ROADMAP rows + archived M-44 packet.
-- [x] User Approval — approved 2026-08-16 (mission selection: "Hook & script hardening").
+- [x] Evidence Package: this document + TASKS/ROADMAP rows + archived M-45 packet.
+- [x] User Approval — approved 2026-08-16 (technical design review).
 
 ## Deferred Decision (Rule 10)
-- **Deferred:** none introduced by M-44. Prior deferrals resolved by this mission: (a) AVP-flip regex hardening (M-43 Deferred Decision — now implemented); (b) dormant lint-staged gate (review observation trail — now wired).
-- **Remaining deferred from prior records:** evidence-packet versioning follow-ups and SYSTEM_CONTEXT pointer items remain open for a future governance mission; page-level unit coverage remains out of scope by design (Playwright e2e covers pages).
+- **Deferred:** page coverage for Admin, Credits, EmployeeRoster, Reports, SalaryReport (≈2,500 lines) and Layout.
+- **Reason:** single-mission scope protection; the five CRUD/dashboard pages share one test pattern (fetch + toast) and are the highest-value first cohort.
+- **Impact:** pages threshold floor reflects the cohort average; remaining pages stay e2e-covered until M-46.
+- **Future Mission:** M-46 raises the pages threshold after covering the remaining five pages + Layout.
 
 ## Review Resolution (pre-commit, 2026-08-16)
-Post-lock review observations for M-44 resolved before the Product Owner commit:
-1. **First lock attempt failed Gate 1 (P1):** single-line lint-staged array `["biome check --write --no-errors-on-unmatched"]` is non-canonical under biome's JSON formatter (wants multi-line). Root cause identified from the Gate-1 boundary report and fixed with the canonical multi-line form; second lock run passed all 6 gates. No production effect.
-2. **Red-proof of the hardened regex:** `/tmp` probe proved the OLD regex leaves `pending (flipped by lock script).` un-flipped (M-43 failure mode) while the NEW prefix-anchored regex flips both the variant and canonical `pending.` lines and leaves already-`[x]` lines untouched. Probe file deleted (Rule 23).
-3. **lint-staged wiring verified:** config parses (`lint-staged` run), biome command form executes cleanly (`biome check --write --no-errors-on-unmatched` against real files), `--no-errors-on-unmatched` flag confirmed present in biome 2.5.6.
+Post-lock review observations for M-45 resolved before the Product Owner commit:
+1. **Two test failures on first run (P2):** AuditLogs "truncates uids" — duplicate truncated uid `01234567...` in two log rows caused `getByText` multi-match; resolved by giving `updateLog` a distinct uid (`ABCDEFGHIJ`). Expenses "logs a new POST" — POST mock echoed the fixture description instead of parsing the submitted body; resolved by parsing `init.body` and echoing submitted values.
+2. **tsc errors across all 5 suites (P1):** `AuthContextType` requires `loading: boolean`; `ShiftContextType` requires `missedData: MissedDataPayload | null`; module-level `managerUser` const widens `role` to `string`; `shift` const widens `status` to `string`. Resolved: added `loading: false` / `missedData: null` to every `useAuth`/`useShift` mockReturnValue, and applied `as const` to `role` and `status` literals.
+3. **biome formatting (P1):** all 5 test files emitted canonical reformats on first pass; resolved with `biome check --write` before the lock run. No production-source impact.

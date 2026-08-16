@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 5 — Maturation
-**Current Mission:** M-44 Hook & Script Hardening — AVP-Flip Regex + Real lint-staged Gate
+**Current Mission:** M-45 Client Page Unit Coverage — Cohort 1 (Dashboard, AuditLogs, Expenses, GameSales, Keno)
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0
