@@ -3,10 +3,7 @@ import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listShifts = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listShifts = async (_req: AuthRequest, res: Response) => {
 	try {
 		await autoLabelStaleShifts();
 		const snapshot = await db.collection("shifts").get();
@@ -46,13 +43,8 @@ const autoLabelStaleShifts = async () => {
 
 export const startShift = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { floatAmount, managerName } = req.body;
-
-	if (floatAmount === undefined || floatAmount === null) {
-		return res.status(400).json({ error: "floatAmount is required" });
-	}
 
 	try {
 		const openShiftsSnap = await db
@@ -101,10 +93,6 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 	try {
 		const { id } = req.params;
 		const { actualCashCounted, shortageReason } = req.body;
-
-		if (actualCashCounted === undefined || actualCashCounted === null) {
-			return res.status(400).json({ error: "actualCashCounted is required" });
-		}
 
 		const shiftRef = db.collection("shifts").doc(id);
 		const shiftDoc = await shiftRef.get();
@@ -191,14 +179,9 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 
 export const updateFloat = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { floatAmount } = req.body;
-
-	if (floatAmount === undefined || floatAmount === null) {
-		return res.status(400).json({ error: "floatAmount is required" });
-	}
 
 	try {
 		const shiftRef = db.collection("shifts").doc(id);
@@ -349,7 +332,6 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 
 export const resolveMissedData = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	try {
 		const {

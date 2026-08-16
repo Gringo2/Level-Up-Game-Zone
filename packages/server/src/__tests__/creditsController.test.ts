@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -86,6 +86,7 @@ describe("Credits Integration Tests", () => {
 		});
 
 		it("should successfully update a credit with status resolution (partial fields)", async () => {
+			const updateMock = vi.fn();
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "credit-123" }),
@@ -100,7 +101,7 @@ describe("Credits Integration Tests", () => {
 						data: () => ({ employee_name: "John", amount: 50 }),
 					}),
 					set: vi.fn(),
-					update: vi.fn(),
+					update: updateMock,
 					delete: vi.fn(),
 				};
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -118,6 +119,13 @@ describe("Credits Integration Tests", () => {
 				});
 
 			expect(response.status).toBe(200);
+			expect(updateMock).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "credit-123" }),
+				expect.objectContaining({
+					reason: "Salary advance",
+					status: "Resolved",
+				}),
+			);
 		});
 
 		it("should successfully delete a credit", async () => {
@@ -231,7 +239,7 @@ describe("Credits Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "credit-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 		};
@@ -241,7 +249,7 @@ describe("Credits Integration Tests", () => {
 				if (path === "credits") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listSales = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listSales = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("game_sales_logs").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -20,7 +17,6 @@ export const listSales = async (req: AuthRequest, res: Response) => {
 
 export const createSale = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { game_id, game_name, quantity_sold, rate_applied, calculated_total } =
 		req.body;
@@ -61,7 +57,6 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 
 export const updateSale = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const {
@@ -72,10 +67,6 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 		calculated_total,
 		editReason,
 	} = req.body;
-
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("game_sales_logs").doc(id);
@@ -121,14 +112,9 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 
 export const deleteSale = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { deleteReason } = req.body;
-
-	if (!deleteReason) {
-		return res.status(400).json({ error: "Delete reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("game_sales_logs").doc(id);

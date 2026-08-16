@@ -110,6 +110,7 @@ export const UpdateCreditSchema = z.object({
 		.min(1, "Employee name is required")
 		.optional(),
 	amount: positiveNumber("Amount").optional(),
+	reason: z.string().optional(),
 	status: z.enum(["Pending", "Resolved", "Deducted"]).optional(),
 	editReason: z.string().optional(),
 });
@@ -228,6 +229,7 @@ export const ResolveMissedDaySchema = z.object({
 	notes: z.string().optional(),
 	expected_cash_calculated: nonNegativeNumber("Expected cash").optional(),
 	actual_cash_counted: nonNegativeNumber("Actual cash counted").optional(),
+	shift_id: z.string().optional(),
 });
 
 // Update Float Schema

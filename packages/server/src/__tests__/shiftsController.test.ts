@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -21,7 +21,7 @@ describe("Shifts Integration Tests", () => {
 						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
 						doc: vi.fn().mockReturnValue({ id: "new-shift-123" }),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -62,14 +62,14 @@ describe("Shifts Integration Tests", () => {
 							update: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -97,7 +97,7 @@ describe("Shifts Integration Tests", () => {
 							update: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "game_sales_logs") {
@@ -108,7 +108,7 @@ describe("Shifts Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "keno_logs") {
@@ -119,7 +119,7 @@ describe("Shifts Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "credits") {
@@ -130,7 +130,7 @@ describe("Shifts Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "expenses") {
@@ -141,14 +141,14 @@ describe("Shifts Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -176,14 +176,14 @@ describe("Shifts Integration Tests", () => {
 							],
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -217,14 +217,14 @@ describe("Shifts Integration Tests", () => {
 						}),
 						get: vi.fn().mockResolvedValue({ docs: [] }),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -246,7 +246,7 @@ describe("Shifts Integration Tests", () => {
 						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
 						doc: vi.fn().mockReturnValue({ id: "auto-opened-123" }),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -294,22 +294,25 @@ describe("Shifts Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
 					return {
-						where: vi.fn().mockImplementation(
-							(_field: string, _op: string, value: string) => {
-							if (value === "MISSED") {
-								return {
-									get: vi.fn().mockResolvedValue({
-										docs: [
-											{
-												id: "missed-1",
-												data: () => ({ status: "MISSED" }),
-											},
-										],
-									}),
-								};
-							}
-							return { get: vi.fn().mockResolvedValue({ docs: [] }) };
-						}),
+						where: vi
+							.fn()
+							.mockImplementation(
+								(_field: string, _op: string, value: string) => {
+									if (value === "MISSED") {
+										return {
+											get: vi.fn().mockResolvedValue({
+												docs: [
+													{
+														id: "missed-1",
+														data: () => ({ status: "MISSED" }),
+													},
+												],
+											}),
+										};
+									}
+									return { get: vi.fn().mockResolvedValue({ docs: [] }) };
+								},
+							),
 						orderBy: vi.fn().mockReturnThis(),
 						limit: vi.fn().mockReturnThis(),
 						get: vi.fn().mockResolvedValue({
@@ -322,7 +325,7 @@ describe("Shifts Integration Tests", () => {
 							],
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "missed_day_resolutions") {
@@ -332,14 +335,14 @@ describe("Shifts Integration Tests", () => {
 							docs: [{ data: () => ({ date: expectedGaps[0] }) }],
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -358,9 +361,10 @@ describe("Shifts Integration Tests", () => {
 			const setMock = vi.fn().mockResolvedValue(true);
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "missed_day_resolutions") {
-
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					return { doc: vi.fn().mockReturnValue({ id: "res-1", set: setMock }) } as any;
+					return {
+						doc: vi.fn().mockReturnValue({ id: "res-1", set: setMock }),
+					} as any;
 				}
 
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -387,9 +391,10 @@ describe("Shifts Integration Tests", () => {
 			const setMock = vi.fn().mockResolvedValue(true);
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "missed_day_resolutions") {
-
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					return { doc: vi.fn().mockReturnValue({ id: "res-2", set: setMock }) } as any;
+					return {
+						doc: vi.fn().mockReturnValue({ id: "res-2", set: setMock }),
+					} as any;
 				}
 
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -409,6 +414,43 @@ describe("Shifts Integration Tests", () => {
 			expect(response.status).toBe(200);
 			expect(setMock).toHaveBeenCalledWith(
 				expect.objectContaining({ variance: 20 }),
+			);
+		});
+
+		it("should close a stale shift when resolving missed data with shift_id", async () => {
+			const updateMock = vi.fn().mockResolvedValue(true);
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					return {
+						doc: vi.fn().mockReturnValue({ update: updateMock }),
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/resolve-missed")
+				.set("Authorization", authHeader)
+				.send({
+					date: "2026-08-10",
+					status: "DATA_FILLED",
+					shift_id: "stale-shift-1",
+					expected_cash_calculated: 100,
+					actual_cash_counted: 120,
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body.message).toBe("Resolved successfully");
+			expect(updateMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					status: "CLOSED",
+					actual_cash_counted: 120,
+					expected_cash_calculated: 100,
+					variance: 20,
+				}),
 			);
 		});
 	});
@@ -435,7 +477,9 @@ describe("Shifts Integration Tests", () => {
 				.set("Authorization", authHeader)
 				.send({});
 			expect(response.status).toBe(400);
-			expect(response.body.error).toContain("Float amount must be a valid number");
+			expect(response.body.error).toContain(
+				"Float amount must be a valid number",
+			);
 		});
 
 		it("should return 400 if an active shift is already open", async () => {
@@ -448,7 +492,7 @@ describe("Shifts Integration Tests", () => {
 							docs: [{ id: "open-1" }],
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -481,14 +525,14 @@ describe("Shifts Integration Tests", () => {
 							update: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -501,6 +545,18 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body.error).toContain("Variance is greater than $2.00");
 		});
 
+		it("should return 400 when closing a shift without actualCashCounted", async () => {
+			const response = await request(app)
+				.post("/api/shifts/shift-1/close")
+				.set("Authorization", authHeader)
+				.send({});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain(
+				"Actual cash counted must be a valid number",
+			);
+		});
+
 		it("should return 404 when closing a non-existent shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
@@ -509,14 +565,14 @@ describe("Shifts Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ exists: false }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -540,14 +596,14 @@ describe("Shifts Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -560,12 +616,44 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body.error).toBe("Shift is already closed");
 		});
 
+		it("should return 404 when shift document exists but data is empty", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => null,
+							}),
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					where: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/empty-data/close")
+				.set("Authorization", authHeader)
+				.send({ actualCashCounted: 100 });
+
+			expect(response.status).toBe(404);
+			expect(response.body.error).toBe("Shift data empty");
+		});
+
 		it("should return 404 when updating float on a non-existent shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					return { doc: vi.fn().mockReturnValue({ id: "missing-shift" }) } as any;
+					return {
+						doc: vi.fn().mockReturnValue({ id: "missing-shift" }),
+					} as any;
 				}
 
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -595,9 +683,10 @@ describe("Shifts Integration Tests", () => {
 		it("should return 400 when updating float on a non-OPEN shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					return { doc: vi.fn().mockReturnValue({ id: "closed-shift" }) } as any;
+					return {
+						doc: vi.fn().mockReturnValue({ id: "closed-shift" }),
+					} as any;
 				}
 
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -624,7 +713,9 @@ describe("Shifts Integration Tests", () => {
 				.send({ floatAmount: 200 });
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toBe("Only open shifts can have their float updated");
+			expect(response.body.error).toBe(
+				"Only open shifts can have their float updated",
+			);
 		});
 
 		it("should return 400 for invalid missed-day status (Zod Validation)", async () => {
@@ -659,14 +750,14 @@ describe("Shifts Integration Tests", () => {
 						}),
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -686,14 +777,14 @@ describe("Shifts Integration Tests", () => {
 							get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -709,7 +800,6 @@ describe("Shifts Integration Tests", () => {
 		it("returns 500 when updateFloat crashes inside the transaction", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return { doc: vi.fn().mockReturnValue({ id: "shift-1" }) } as any;
 				}
@@ -740,14 +830,14 @@ describe("Shifts Integration Tests", () => {
 						limit: vi.fn().mockReturnThis(),
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					where: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -768,7 +858,7 @@ describe("Shifts Integration Tests", () => {
 							set: vi.fn().mockRejectedValue(new Error("DB crashed")),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -783,6 +873,59 @@ describe("Shifts Integration Tests", () => {
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toBe("Internal server error");
+		});
+
+		it("returns 500 when starting a shift crashes on the open-shift query", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnValue({ id: "audit-123" }) } as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Test Manager" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("DB crashed");
+		});
+
+		it("returns 500 when starting a shift crashes inside the transaction", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "new-shift-123" }),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnValue({ id: "audit-123" }) } as any;
+			});
+
+			vi.mocked(db.runTransaction).mockRejectedValueOnce(
+				new Error("DB crashed"),
+			);
+
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Test Manager" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("DB crashed");
 		});
 	});
 

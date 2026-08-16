@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listEmployees = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listEmployees = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("employees").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -20,7 +17,6 @@ export const listEmployees = async (req: AuthRequest, res: Response) => {
 
 export const createEmployee = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { name, position, base_salary, hired_date, break_day } = req.body;
 
@@ -62,7 +58,6 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 
 export const updateEmployee = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const {
@@ -74,10 +69,6 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 		isActive,
 		editReason,
 	} = req.body;
-
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("employees").doc(id);

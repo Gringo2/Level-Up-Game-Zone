@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listRates = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listRates = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("game_rates").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -20,7 +17,6 @@ export const listRates = async (req: AuthRequest, res: Response) => {
 
 export const createRate = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { game_name, price_per_unit, unit_type, isActive } = req.body;
 
@@ -59,15 +55,10 @@ export const createRate = async (req: AuthRequest, res: Response) => {
 
 export const updateRate = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { game_name, price_per_unit, unit_type, isActive, editReason } =
 		req.body;
-
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("game_rates").doc(id);

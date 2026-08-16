@@ -4,7 +4,6 @@ import type { AuthRequest } from "../middleware/auth.js";
 
 export const getMe = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	try {
 		const docSnap = await db.collection("users").doc(user.uid).get();
@@ -20,10 +19,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 	}
 };
 
-export const listUsers = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listUsers = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("users").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -38,7 +34,6 @@ export const listUsers = async (req: AuthRequest, res: Response) => {
 
 export const createUser = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const email = user.email;
 	if (!email)
@@ -110,7 +105,6 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
 export const inviteUser = async (req: AuthRequest, res: Response) => {
 	const adminUser = req.user;
-	if (!adminUser) return res.status(401).json({ error: "Unauthorized" });
 
 	const { email, role } = req.body;
 
@@ -171,14 +165,9 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 
 export const updateRole = async (req: AuthRequest, res: Response) => {
 	const adminUser = req.user;
-	if (!adminUser) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { role, editReason } = req.body;
-
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
 
 	try {
 		const adminDoc = await db.collection("users").doc(adminUser.uid).get();
@@ -221,7 +210,6 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 
 export const deleteUser = async (req: AuthRequest, res: Response) => {
 	const adminUser = req.user;
-	if (!adminUser) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 

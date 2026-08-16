@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listKenoLogs = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listKenoLogs = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("keno_logs").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -20,7 +17,6 @@ export const listKenoLogs = async (req: AuthRequest, res: Response) => {
 
 export const createKeno = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { sales, payouts, net_profit } = req.body;
 
@@ -62,14 +58,9 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 
 export const updateKeno = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { sales, payouts, net_profit, editReason } = req.body;
-
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("keno_logs").doc(id);
@@ -113,14 +104,9 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 
 export const deleteKeno = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { deleteReason } = req.body;
-
-	if (!deleteReason) {
-		return res.status(400).json({ error: "Delete reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("keno_logs").doc(id);
@@ -158,7 +144,6 @@ export const deleteKeno = async (req: AuthRequest, res: Response) => {
 
 export const verifyKeno = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 

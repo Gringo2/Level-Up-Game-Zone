@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listCredits = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listCredits = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("credits").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -20,7 +17,6 @@ export const listCredits = async (req: AuthRequest, res: Response) => {
 
 export const createCredit = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { employee_name, amount, reason } = req.body;
 
@@ -61,7 +57,6 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 
 export const updateCredit = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { employee_name, amount, reason, status, editReason } = req.body;
@@ -115,14 +110,9 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 
 export const deleteCredit = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { deleteReason } = req.body;
-
-	if (!deleteReason) {
-		return res.status(400).json({ error: "Delete reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("credits").doc(id);

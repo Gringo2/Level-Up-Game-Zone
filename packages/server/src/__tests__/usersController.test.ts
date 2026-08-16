@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -30,7 +30,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ empty: true }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "user_invites") {
@@ -40,7 +40,7 @@ describe("Users Integration Tests", () => {
 							set: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -79,7 +79,7 @@ describe("Users Integration Tests", () => {
 							delete: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "users") {
@@ -89,7 +89,7 @@ describe("Users Integration Tests", () => {
 							set: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -117,9 +117,10 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("should register a root admin account without an invite", async () => {
-
 			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(rootAdminToken as any);
+			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(
+				rootAdminToken as any,
+			);
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
@@ -129,7 +130,7 @@ describe("Users Integration Tests", () => {
 							set: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -173,7 +174,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -201,7 +202,7 @@ describe("Users Integration Tests", () => {
 							],
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -229,7 +230,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -273,7 +274,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -324,7 +325,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -362,6 +363,57 @@ describe("Users Integration Tests", () => {
 				"User account or invitation removed successfully",
 			);
 		});
+
+		it("should revoke an invitation when the user document does not exist yet", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							id: "pending@x.com",
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockImplementation((ref) => {
+						if (ref?.id === "pending@x.com") {
+							return Promise.resolve({ exists: false });
+						}
+						return Promise.resolve({
+							exists: true,
+							id: "pending@x.com",
+							data: () => ({ role: "staff" }),
+						});
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.delete("/api/users/pending@x.com")
+				.set("Authorization", authHeader)
+				.send({});
+
+			expect(response.status).toBe(200);
+			expect(response.body.message).toBe(
+				"User account or invitation removed successfully",
+			);
+		});
 	});
 
 	describe("Negative Path (Rejection Scenarios)", () => {
@@ -378,7 +430,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ exists: false }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -443,7 +495,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -470,7 +522,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -515,7 +567,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -546,7 +598,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ empty: true }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "user_invites") {
@@ -555,7 +607,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ exists: false }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -594,7 +646,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -612,7 +664,6 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("createUser should return 403 for a non-root user without an invite", async () => {
-
 			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(regularToken as any);
 
@@ -623,7 +674,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ exists: false }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -637,7 +688,24 @@ describe("Users Integration Tests", () => {
 				.send({});
 
 			expect(response.status).toBe(403);
-			expect(response.body.error).toContain("not authorized to access this system");
+			expect(response.body.error).toContain(
+				"not authorized to access this system",
+			);
+		});
+
+		it("createUser should return 400 if the auth token carries no email", async () => {
+			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce({
+				uid: "no-email-uid",
+				// biome-ignore lint/suspicious/noExplicitAny: Mock token omits email to exercise guard
+			} as any);
+
+			const response = await request(app)
+				.post("/api/users")
+				.set("Authorization", authHeader)
+				.send({});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toBe("Email required from auth token");
 		});
 
 		it("createUser should return 400 if the user already exists", async () => {
@@ -651,7 +719,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				if (path === "users") {
@@ -661,7 +729,7 @@ describe("Users Integration Tests", () => {
 							set: vi.fn(),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -710,7 +778,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -738,7 +806,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -778,7 +846,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -823,7 +891,7 @@ describe("Users Integration Tests", () => {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -847,7 +915,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -864,9 +932,10 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("returns 500 when createUser crashes inside the transaction", async () => {
-
 			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(rootAdminToken as any);
+			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(
+				rootAdminToken as any,
+			);
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
@@ -875,7 +944,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ exists: false }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -910,7 +979,7 @@ describe("Users Integration Tests", () => {
 							get: vi.fn().mockResolvedValue({ empty: true }),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -942,7 +1011,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -974,7 +1043,7 @@ describe("Users Integration Tests", () => {
 							}),
 						}),
 
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 

@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listAuditLogs = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listAuditLogs = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db
 			.collection("audit_logs")

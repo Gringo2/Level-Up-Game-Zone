@@ -3,7 +3,15 @@ import type { DecodedIdToken } from "firebase-admin/auth";
 import { auth } from "../firebase.js";
 
 export interface AuthRequest extends Request {
-	user?: DecodedIdToken;
+	user: DecodedIdToken;
+}
+
+declare global {
+	namespace Express {
+		interface Request {
+			user: DecodedIdToken;
+		}
+	}
 }
 
 export type TokenVerifier = (token: string) => Promise<DecodedIdToken>;

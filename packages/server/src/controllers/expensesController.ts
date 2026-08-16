@@ -2,10 +2,7 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listExpenses = async (req: AuthRequest, res: Response) => {
-	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
-
+export const listExpenses = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db.collection("expenses").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
@@ -20,7 +17,6 @@ export const listExpenses = async (req: AuthRequest, res: Response) => {
 
 export const createExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { description, amount, category } = req.body;
 
@@ -62,14 +58,9 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
 
 export const updateExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { description, amount, category, editReason } = req.body;
-
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("expenses").doc(id);
@@ -113,14 +104,9 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
 
 export const deleteExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 	const { deleteReason } = req.body;
-
-	if (!deleteReason) {
-		return res.status(400).json({ error: "Delete reason is required" });
-	}
 
 	try {
 		const docRef = db.collection("expenses").doc(id);
@@ -158,7 +144,6 @@ export const deleteExpense = async (req: AuthRequest, res: Response) => {
 
 export const verifyExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
-	if (!user) return res.status(401).json({ error: "Unauthorized" });
 
 	const { id } = req.params;
 
