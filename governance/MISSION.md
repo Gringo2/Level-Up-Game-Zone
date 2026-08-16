@@ -2,7 +2,7 @@
 
 **Type:** Infrastructure
 **Mission:** M-47 App & UserManagement Unit Coverage
-**Status:** Active
+**Status:** Locked
 
 ## 1. Objective
 Cover the two remaining 0%-coverage client files to raise the components threshold:
