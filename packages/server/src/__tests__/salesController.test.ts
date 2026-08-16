@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -134,14 +134,16 @@ describe("Sales Integration Tests", () => {
 				});
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toContain("Quantity sold must be greater than 0");
+			expect(response.body.error).toContain(
+				"Quantity sold must be greater than 0",
+			);
 		});
 
 		it("should return 400 when updating sale without editReason (Zod)", async () => {
 			const response = await request(app)
 				.put("/api/sales/sale-123")
 				.set("Authorization", authHeader)
-				.send({ quantity_sold: 3 }); 
+				.send({ quantity_sold: 3 });
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
@@ -151,7 +153,7 @@ describe("Sales Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/sales/sale-123")
 				.set("Authorization", authHeader)
-				.send({}); 
+				.send({});
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
@@ -216,7 +218,7 @@ describe("Sales Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 		};
@@ -226,7 +228,7 @@ describe("Sales Integration Tests", () => {
 				if (path === "game_sales_logs") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -301,14 +303,12 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("returns 401 without a bearer token on POST", async () => {
-			const response = await request(app)
-				.post("/api/sales")
-				.send({
-					game_name: "Pool",
-					quantity_sold: 2,
-					rate_applied: 10,
-					calculated_total: 20,
-				});
+			const response = await request(app).post("/api/sales").send({
+				game_name: "Pool",
+				quantity_sold: 2,
+				rate_applied: 10,
+				calculated_total: 20,
+			});
 
 			expect(response.status).toBe(401);
 		});

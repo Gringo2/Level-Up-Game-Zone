@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -25,7 +25,7 @@ describe("Expenses Integration Tests", () => {
 								},
 							],
 						}),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -51,12 +51,12 @@ describe("Expenses Integration Tests", () => {
 								data: () => ({ role: "admin" }),
 							}),
 						}),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-exp-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -80,12 +80,12 @@ describe("Expenses Integration Tests", () => {
 								data: () => undefined,
 							}),
 						}),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "staff-exp-456" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -102,7 +102,7 @@ describe("Expenses Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -131,11 +131,11 @@ describe("Expenses Integration Tests", () => {
 
 		it("should successfully delete an expense", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
-			return {
-				doc: vi.fn().mockReturnValue({ id: "exp-123" }),
-			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-			} as any;
-		});
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
 				const mockTx = {
@@ -162,11 +162,11 @@ describe("Expenses Integration Tests", () => {
 
 		it("should successfully verify an expense", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
-			return {
-				doc: vi.fn().mockReturnValue({ id: "exp-123" }),
-			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-			} as any;
-		});
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
 				const mockTx = {
@@ -301,11 +301,11 @@ describe("Expenses Integration Tests", () => {
 						}),
 					} as any;
 				}
-			return {
-				doc: vi.fn().mockReturnValue({ id: "exp-123" }),
-			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-			} as any;
-		});
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 		};
 
 		it("returns 500 when listing expenses crashes", async () => {
@@ -313,7 +313,7 @@ describe("Expenses Integration Tests", () => {
 				if (path === "expenses") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

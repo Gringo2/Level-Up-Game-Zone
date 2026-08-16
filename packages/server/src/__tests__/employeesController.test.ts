@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -201,7 +201,7 @@ describe("Employees Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 		};
@@ -211,7 +211,7 @@ describe("Employees Integration Tests", () => {
 				if (path === "employees") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -271,14 +271,12 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("returns 401 without a bearer token on POST", async () => {
-			const response = await request(app)
-				.post("/api/employees")
-				.send({
-					name: "Bob",
-					position: "Manager",
-					base_salary: 3000,
-					hired_date: "2026-01-01",
-				});
+			const response = await request(app).post("/api/employees").send({
+				name: "Bob",
+				position: "Manager",
+				base_salary: 3000,
+				hired_date: "2026-01-01",
+			});
 
 			expect(response.status).toBe(401);
 		});

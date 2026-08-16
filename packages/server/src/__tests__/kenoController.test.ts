@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -105,12 +105,12 @@ describe("Keno Integration Tests", () => {
 								data: () => undefined,
 							}),
 						}),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "staff-keno-456" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -158,7 +158,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.put("/api/keno/keno-123")
 				.set("Authorization", authHeader)
-				.send({ sales: 500 }); 
+				.send({ sales: 500 });
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
@@ -250,12 +250,12 @@ describe("Keno Integration Tests", () => {
 								data: () => ({ role: "admin" }),
 							}),
 						}),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "keno-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 		};
@@ -265,7 +265,7 @@ describe("Keno Integration Tests", () => {
 				if (path === "keno_logs") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

@@ -1,5 +1,5 @@
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
 
@@ -138,7 +138,9 @@ describe("Game Rates Integration Tests", () => {
 				});
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toContain("Unit type must be 'Hour' or 'Game'");
+			expect(response.body.error).toContain(
+				"Unit type must be 'Hour' or 'Game'",
+			);
 		});
 
 		it("should return 400 when updating rate without editReason (Zod)", async () => {
@@ -168,7 +170,9 @@ describe("Game Rates Integration Tests", () => {
 				.send({ unit_type: "Minute", editReason: "Price hike" });
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toContain("Unit type must be 'Hour' or 'Game'");
+			expect(response.body.error).toContain(
+				"Unit type must be 'Hour' or 'Game'",
+			);
 		});
 	});
 
@@ -208,7 +212,7 @@ describe("Game Rates Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "rate-123" }),
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 		};
@@ -218,7 +222,7 @@ describe("Game Rates Integration Tests", () => {
 				if (path === "game_rates") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -277,13 +281,11 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("returns 401 without a bearer token on POST", async () => {
-			const response = await request(app)
-				.post("/api/rates")
-				.send({
-					game_name: "Billiards",
-					price_per_unit: 15,
-					unit_type: "Hour",
-				});
+			const response = await request(app).post("/api/rates").send({
+				game_name: "Billiards",
+				price_per_unit: 15,
+				unit_type: "Hour",
+			});
 
 			expect(response.status).toBe(401);
 		});
