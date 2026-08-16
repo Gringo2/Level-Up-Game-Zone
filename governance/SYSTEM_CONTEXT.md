@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 5 — Maturation
-**Current Mission:** M-42 Mission Record Standardization — AVP Checkbox Flip & Type-Field Convention
+**Current Mission:** M-43 Client Coverage — Un-ghost .tsx Suites & Add Client Coverage Gate
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0

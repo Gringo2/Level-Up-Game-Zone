@@ -72,7 +72,7 @@ echo ""
 # ── GATE 3: Unit Test Suite ──
 echo "Gate 3/5: Unit Test Suite..."
 if [ "$HAS_VITEST" = "true" ]; then
-  npx vitest run 2>&1
+  npx vitest run --coverage 2>&1
 else
   echo "⚠️  Vitest not found in root. Skipping."
 fi
