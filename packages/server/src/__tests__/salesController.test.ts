@@ -25,8 +25,10 @@ describe("Sales Integration Tests", () => {
 								},
 							],
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
 			});
 
@@ -40,9 +42,10 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("should successfully create a sale", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-sale-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -61,9 +64,10 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("should successfully update a sale", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -91,9 +95,10 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("should successfully delete a sale", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -215,7 +220,7 @@ describe("Sales Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

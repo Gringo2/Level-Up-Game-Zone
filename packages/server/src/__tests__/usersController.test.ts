@@ -117,8 +117,8 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("should register a root admin account without an invite", async () => {
-			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				rootAdminToken as any,
 			);
 
@@ -932,8 +932,8 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("returns 500 when createUser crashes inside the transaction", async () => {
-			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce(
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				rootAdminToken as any,
 			);
 

@@ -361,9 +361,9 @@ describe("Shifts Integration Tests", () => {
 			const setMock = vi.fn().mockResolvedValue(true);
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "missed_day_resolutions") {
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return {
 						doc: vi.fn().mockReturnValue({ id: "res-1", set: setMock }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -391,9 +391,9 @@ describe("Shifts Integration Tests", () => {
 			const setMock = vi.fn().mockResolvedValue(true);
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "missed_day_resolutions") {
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return {
 						doc: vi.fn().mockReturnValue({ id: "res-2", set: setMock }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -421,9 +421,9 @@ describe("Shifts Integration Tests", () => {
 			const updateMock = vi.fn().mockResolvedValue(true);
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return {
 						doc: vi.fn().mockReturnValue({ update: updateMock }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -650,9 +650,9 @@ describe("Shifts Integration Tests", () => {
 		it("should return 404 when updating float on a non-existent shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return {
 						doc: vi.fn().mockReturnValue({ id: "missing-shift" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 
@@ -683,9 +683,9 @@ describe("Shifts Integration Tests", () => {
 		it("should return 400 when updating float on a non-OPEN shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return {
 						doc: vi.fn().mockReturnValue({ id: "closed-shift" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 

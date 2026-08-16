@@ -25,8 +25,10 @@ describe("Game Rates Integration Tests", () => {
 								},
 							],
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
 			});
 
@@ -40,9 +42,10 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("should successfully create a game rate", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-rate-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -60,9 +63,10 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("should successfully update a game rate", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "rate-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -90,9 +94,10 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("should successfully update a game rate with all partial fields", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "rate-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -209,7 +214,7 @@ describe("Game Rates Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "rate-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

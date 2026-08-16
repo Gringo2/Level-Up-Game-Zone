@@ -54,4 +54,5 @@ Atomic task breakdowns for Missions 10-32 were tracked per-mission in `MISSION.m
 | M-37 | Shifts/users branch gaps (2026-08-16, Locked); shifts branch 88.0%, users branch 97.6%; coverage work shipped inside M-38 commit `5c5256d` |
 | M-38 | ACP-004 Dead Guard Removal (2026-08-16, Locked); removed 48 Zod-/auth-shadowed controller guards, `AuthRequest.user` non-optional via Express global augmentation, added `reason` to `UpdateCreditSchema` + `shift_id` to `ResolveMissedDaySchema` (restores stale-shift resolution + credit reason persistence); controllers now 100% stmts/lines, 185 tests pass |
 | M-39 | Governance Housekeeping (2026-08-16, Locked); M-37 closure, ROADMAP sync (M-37/M-38/M-39), TD-009 recorded in DEBT.md; `git rm --cached packages/shared/tsconfig.tsbuildinfo` delegated to Product Owner |
+| M-40 | Zero-Lint-Warning Cleanup (2026-08-16, Locked); `biome check .` 62 → 0 warnings across 8 controller test files — 21 `path` → `_path` unused-param renames + 41 `as any` suppression comment placements (34 insertions + 7 relocations fixing co-located `suppressions/unused`) |
 

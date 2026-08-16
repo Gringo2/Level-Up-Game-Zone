@@ -25,8 +25,10 @@ describe("Employees Integration Tests", () => {
 								},
 							],
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
 			});
 
@@ -40,9 +42,10 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("should successfully create an employee", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -61,9 +64,10 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("should successfully update an employee", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -91,9 +95,10 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("should successfully update an employee with all partial fields", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -198,7 +203,7 @@ describe("Employees Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

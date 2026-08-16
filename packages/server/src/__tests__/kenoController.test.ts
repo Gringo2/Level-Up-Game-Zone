@@ -25,8 +25,10 @@ describe("Keno Integration Tests", () => {
 								},
 							],
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
 			});
 
@@ -49,10 +51,12 @@ describe("Keno Integration Tests", () => {
 								data: () => ({ role: "manager" }),
 							}),
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -66,9 +70,10 @@ describe("Keno Integration Tests", () => {
 		});
 
 		it("should successfully update a keno log", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
+			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
 					doc: vi.fn().mockReturnValue({ id: "keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
