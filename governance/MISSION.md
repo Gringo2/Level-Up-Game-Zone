@@ -1,45 +1,41 @@
 # CURRENT MISSION
 
-**Type:** Infrastructure
-**Mission:** M-43 Client Coverage — Un-ghost .tsx Suites & Add Client Coverage Gate
+**Type:** Governance
+**Mission:** M-44 Hook & Script Hardening — AVP-Flip Regex + Real lint-staged Gate
 **Status:** Locked
 
 ## 1. Objective
-Bring the client-side test surface under the vitest umbrella and add a client coverage gate to the AVP-001 lock pipeline:
-1. **Fix the vitest include glob:** `vitest.config.ts` currently declares `include: ["packages/**/*.test.ts", "packages/**/*.spec.ts"]`, which never matches `.tsx` — the existing `AuthContext.test.tsx` and `ShiftContext.test.tsx` suites are silently excluded from every gate run (verified: `vitest list` = 188 tests, all `.ts`/`.spec.ts`; the two context suites do not execute). Fix: `packages/**/*.{test,spec}.{ts,tsx}`.
-2. **Add client unit/component tests:** pure libs (`api.safeJson`, `dateUtils`, `utils.cn`), `ErrorBoundary`, `Login`, `MissedDataBlocker`, plus positive-path coverage for `AuthContext` and `ShiftContext` (currently negative-only).
-3. **Add a client coverage gate:** `@vitest/coverage-v8` is installed but unused. Add a coverage config (v8, include `packages/client/src`, exclude `.d.ts`/`main.tsx`/`firebase.ts`/`__tests__`) and run `npx vitest run --coverage` in lock Gate 3. Threshold set empirically after measurement, then Red-proofed per Rule 28.
+Close two recorded deferrals from the M-43 review trail:
+1. **Harden the AVP checkbox flip regex** in `.agents/scripts/lock_mission.sh` (line 230) from the exact string `- [x] AVP-001 Architecture Verification: passed via lock gates.
+2. **Wire the dormant lint-staged gate:** `.husky/pre-commit` calls `npx lint-staged`, but `package.json` declares `"lint-staged": { "*.{ts,tsx,js,jsx,json}": [] }` — a no-op; only `tsc` + `knip` actually gate commits. Replace the empty command array with `["biome check --write --no-errors-on-unmatched"]` so every staged source file is linted/formatted to the M-40 zero-warning standard at commit time.
 
 ## 2. Evidence Payload
-- [x] Functional — vitest suite grows from 188 to ~200 tests with the two previously-excluded `.tsx` context suites now executing; new lib/component/page suites green; success metric: all suites pass with `.tsx` included and client coverage threshold met.
-- [x] Architectural — zero production-source change; test-only + tooling-only (vitest config, lock Gate 3); AVP-001 depcruise 0 violations; no new dependencies (coverage-v8 already installed).
-- [x] Dependency — no packages added; `@vitest/coverage-v8` re-used from existing root devDependencies.
-- [x] ADR compliance — consistent with ADR-002 governance routing, ADR-007 guardrail intent, AGENTS.md Rule 28 (Test-Negative: Red-Green gating) and Rule 22 (AVP-001 fitness functions).
+- [x] Functional — hardened regex flips a deliberately non-canonical AVP line in a `/tmp` probe (variant flips to `[x]`; canonical `pending.` still flips); lint-staged executes biome on staged files (probe: `npx lint-staged` reports running biome on staged `vitest.config.ts`; command form verified against biome 2.5.6).
+- [x] Architectural — zero production-source change; tooling + governance only (lock_mission.sh, package.json, governance records); AVP-001 depcruise 0 violations; no new dependencies.
+- [x] Dependency — no packages added; lint-staged + @biomejs/biome already present in root devDependencies (Rule 25 — reuse, no reinvention).
+- [x] ADR compliance — ADR-007 guardrail intent (hook enforcement, not documentation-only); AGENTS.md Rule 28 (Red-Green gating for the regex fix), Rule 16 (verification by execution probes), Rule 27 (targeted root-cause fix).
 
 ## 3. Scope & Boundaries
-- **In Scope:** `vitest.config.ts` (include glob + coverage config); `.agents/scripts/lock_mission.sh` (Gate 3 coverage flag); new `packages/client/src/__tests__/lib/*`, `__tests__/components/*`, `__tests__/pages/Login.test.tsx`; extended `__tests__/contexts/AuthContext.test.tsx` and `ShiftContext.test.tsx`; `governance/MISSION.md`, `governance/TASKS.md`, `governance/ROADMAP.md`.
-- **Out of Scope:** page unit coverage (Admin, Dashboard, Reports, etc. — covered by the 6 existing Playwright e2e specs; recorded as deferred); server-side coverage gating; production source; new dependencies.
+- **In Scope:** `.agents/scripts/lock_mission.sh` (AVP-flip regex only); `package.json` (lint-staged biome command only); `governance/MISSION.md`, `governance/TASKS.md`, `governance/ROADMAP.md`.
+- **Out of Scope:** pre-commit additions beyond lint-staged (tsc/knip already present — unchanged); evidence-packet versioning follow-ups; SYSTEM_CONTEXT pointer work; production source; new dependencies; Playwright runs inside the hook; `.husky/pre-commit` content changes.
 
 ## 4. Referenced Architecture
-- AGENTS.md Rule 22 (AVP-001 fitness functions), Rule 28 (Test-Negative Validation — mandatory Red-Green gating), Rule 27 (root-cause targeted fixes), Rule 23 (no persistent scratchpads — mutation checks confined to `/tmp`).
-- ADR-007 (mission_gate guardrail); ADR-002 (governance routing).
-- ENGINEERING_LIFECYCLE.md ACP-019 gates; Type-field convention (M-42 mandate — this record declares `**Type:** Infrastructure`).
+- AGENTS.md Rule 10 (No Silent TODOs — closure of the recorded deferral), Rule 16 (Verification & Anti-Assumption), Rule 27 (Deterministic Debugging — targeted fix), Rule 28 (Test-Negative Validation — Red-proof of the regex), Rule 25 (Reusability — no new tooling).
+- ADR-007 (mission_gate guardrail — this mission declares `**Type:** Governance` per M-42 convention).
+- ENGINEERING_LIFECYCLE.md ACP-019 gates; M-42 Type-field convention; M-43 Deferred Decision record.
 
 ## 5. Verification Gates (Rule 11)
-- [x] Functional Verification: vitest all-green with `.tsx` included; coverage threshold passes; Red-proofs recorded for both test-failure and coverage-threshold-failure.
+- [x] Functional Verification: regex Red-proof probe passes (variant flips, canonical flips); lint-staged biome command executes successfully against staged file; `biome check .` clean (0 warnings), `tsc -b` 0 errors, vitest suite green at lock.
 - [x] AVP-001 Architecture Verification: passed via lock gates.
-- [x] Evidence Package: this document + TASKS/ROADMAP rows + archived M-43 packet.
-- [x] User Approval — approved 2026-08-16 (design review).
+- [x] Evidence Package: this document + TASKS/ROADMAP rows + archived M-44 packet.
+- [x] User Approval — approved 2026-08-16 (mission selection: "Hook & script hardening").
 
 ## Deferred Decision (Rule 10)
-- **Deferred:** Harden `lock_mission.sh` Gate-6 AVP checkbox flip regex (`line 230`) from the exact string `- [ ] AVP-001 Architecture Verification: pending.` to a prefix-anchored pattern.
-- **Reason:** M-43's own record wrote `pending (flipped by lock script).` (no trailing period), so the flip did not match and the checkbox required a manual correction. The canonical text is fragile against record-writer drift.
-- **Impact:** A future mission record that deviates from the exact `pending.` text will again leave the §5 checkbox un-flipped at lock; the record is corrected manually.
-- **Future Mission:** fold into the next tooling/governance mission (e.g., commit-hook or script-hardening mission) alongside the evidence-packet versioning and SYSTEM_CONTEXT pointer items already deferred.
+- **Deferred:** none introduced by M-44. Prior deferrals resolved by this mission: (a) AVP-flip regex hardening (M-43 Deferred Decision — now implemented); (b) dormant lint-staged gate (review observation trail — now wired).
+- **Remaining deferred from prior records:** evidence-packet versioning follow-ups and SYSTEM_CONTEXT pointer items remain open for a future governance mission; page-level unit coverage remains out of scope by design (Playwright e2e covers pages).
 
 ## Review Resolution (pre-commit, 2026-08-16)
-Post-lock review observations resolved in the M-43 change set before the Product Owner commit:
-1. **TZ-dependent date assertion (P2):** `MissedDataBlocker.test.tsx` now pins `process.env.TZ = "UTC"` at module top, making the `date: "2026-01-01"` payload assertion deterministic on any machine (verified: UTC-10 renders `2025-12-31` without the pin).
-2. **Headerless fetch mock (P3):** `AuthContext.test.tsx` negative test now uses real `Response` objects with JSON content-type headers and asserts `toast.error("Registration Error: 500 User already exists")` — proving the documented 404→creation→error branch executes instead of the generic catch path.
-3. **`window.location` leak (P3):** `ErrorBoundary.test.tsx` restores the original `window.location` descriptor in `afterEach`.
-4. **AVP-flip regex brittleness:** remains deferred as recorded above (not silently patched).
+Post-lock review observations for M-44 resolved before the Product Owner commit:
+1. **First lock attempt failed Gate 1 (P1):** single-line lint-staged array `["biome check --write --no-errors-on-unmatched"]` is non-canonical under biome's JSON formatter (wants multi-line). Root cause identified from the Gate-1 boundary report and fixed with the canonical multi-line form; second lock run passed all 6 gates. No production effect.
+2. **Red-proof of the hardened regex:** `/tmp` probe proved the OLD regex leaves `pending (flipped by lock script).` un-flipped (M-43 failure mode) while the NEW prefix-anchored regex flips both the variant and canonical `pending.` lines and leaves already-`[x]` lines untouched. Probe file deleted (Rule 23).
+3. **lint-staged wiring verified:** config parses (`lint-staged` run), biome command form executes cleanly (`biome check --write --no-errors-on-unmatched` against real files), `--no-errors-on-unmatched` flag confirmed present in biome 2.5.6.

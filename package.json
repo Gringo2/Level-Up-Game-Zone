@@ -32,6 +32,8 @@
 		"vitest": "^4.1.10"
 	},
 	"lint-staged": {
-		"*.{ts,tsx,js,jsx,json}": []
+		"*.{ts,tsx,js,jsx,json}": [
+			"biome check --write --no-errors-on-unmatched"
+		]
 	}
 }
