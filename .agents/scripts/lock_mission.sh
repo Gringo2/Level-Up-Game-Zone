@@ -103,7 +103,7 @@ echo ""
 echo "Gate 5/5: Evidence Payload Verification..."
 
 # Extract only the Evidence Payload section to prevent false positives from other sections
-EVIDENCE_SECTION=$(awk '/## Evidence/ {flag=1; next} /^## / {flag=0} flag' "$MISSION_FILE" 2>/dev/null)
+EVIDENCE_SECTION=$(awk '/## .*Evidence Payload/ {flag=1; next} /^## / {flag=0} flag' "$MISSION_FILE" 2>/dev/null)
 
 if [ -z "$EVIDENCE_SECTION" ]; then
   echo "❌ Gate 5 FAILED: No '## Evidence Payload' section found in MISSION.md."

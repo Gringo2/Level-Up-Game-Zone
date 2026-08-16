@@ -1,34 +1,41 @@
 # CURRENT MISSION
 
-**Mission:** M-36 Backend Coverage Completion — App Composition Root & Schemas
-**Status:** Locked (2026-08-15)
+**Mission:** M-38 ACP-004 Dead Guard Removal
+**Status:** Locked
 
 ## 1. Objective
-Close the remaining statement coverage gap in the Express composition root and its validation schemas by bringing `app.ts` (was 83.3% stmts) and `schemas/index.ts` (was 91.2%) to 100% statement coverage with Rule-28 compliant integration tests, exercising the health endpoint, the global Express error handler, and the previously-uncovered zod errorMap callbacks.
+Implement approved ACP-004 (Option a + 2.2b):
+1. Remove Zod-shadowed field guards (2.1).
+2. Remove auth-shadowed `if (!user)` / `if (!adminUser)` guards (2.2).
+3. Change `AuthRequest.user` to non-optional in `middleware/auth.ts` (2.2b).
+4. Add `reason` to `UpdateCreditSchema`; add `shift_id` to `ResolveMissedDaySchema` (2.3a) — restoring the stale-shift-resolution feature the Thin Client depends on, and making credit `reason` updates persist.
+5. Update affected test suites (Zod-path negative regressions + 2.3a positive tests); run full suite, coverage, `tsc`, biome.
 
 ## 2. Evidence Payload
-- `npx vitest run` -> 181 passing tests across 13 suites (up from 176).
-- Target file statement coverage (measured, `coverage/coverage-final.json`, 2026-08-15): app.ts 83.3% -> 100.0% stmts (0 zero-stmt lines remaining); schemas/index.ts 91.2% -> 100.0% stmts (0 zero-stmt lines remaining). Overall stmts 91.9% -> 93.8%.
-- Added 5 integration tests across 3 suites (app 0 -> 2, gameRates 13 -> 14, users 29 -> 31) covering:
-  - `GET /api/health` -> 200 `{ status: "ok", message: "Server is running properly!" }`.
-  - Global Express error handler via malformed JSON body (express.json() SyntaxError) -> 500 "Internal server error".
-  - `PUT /api/rates/:id` with invalid unit_type -> 400 "Unit type must be 'Hour' or 'Game'" (UpdateGameRateSchema errorMap, line 132).
-  - `POST /api/users/invite` with invalid role -> 400 "Role must be 'admin', 'manager', or 'staff'" (InviteUserSchema errorMap).
-  - `POST /api/users` with invalid role -> 400 "Role must be 'admin', 'manager', or 'staff'" (CreateUserSchema errorMap).
-- Rule 28 red-green proven: temporarily changing the global error handler status to 200 made the malformed-JSON test fail (red), then restored to 500 (green).
-- Architecture Verify Protocol `AVP-001` gates re-run clean: lint exit 0 (48 warnings, consistent with prior baselines), server `tsc` exit 0, client build exit 0, `knip` exit 0, `depcruise` 0 violations (39 modules), `vitest` 181/181.
+- ACP-004 (approved 2026-08-15) enumerates every dead guard with evidence chain (coverage-final.json, auth.ts, validate.ts, schemas/index.ts, MissedDataBlocker.tsx).
+- Verified: `ResolveMissedDaySchema` lacks `shift_id`; `MissedDataBlocker.tsx:59` sends `shift_id` → stale shifts never closed today.
+- Verified: `UpdateCreditSchema` lacks `reason`; `creditsController.ts:88` guard dead via Zod strip.
+- Verified: biome forbids `noNonNullAssertion`; `AuthRequest.user?` optional → 2.2b required for `tsc --strict`.
+- [x] Functional — 185/185 `packages/server` vitest pass (12 test files).
+- [x] Architectural — AVP-001 verification run 2026-08-16: controllers reach 100% stmts/lines with zero dead guard statements (branch gaps are pre-existing business-logic/catch paths).
+- [x] Dependency — only `packages/server` touched; routes keep `requireAuth`+`validateBody` composition, no new packages.
+- [x] ADR compliance — governed by ADR-002 composition-root invariants and ACP-004.
 
 ## 3. Scope & Boundaries
-- **In Scope:**
-  - `app.test.ts` (new, 2 tests: health endpoint + global error handler)
-  - `gameRatesController.test.ts` (expanded from 10 to 11 tests)
-  - `usersController.test.ts` (expanded from 24 to 26 tests)
-- **Out of Scope:** Frontend React tests; any production-code changes (none made; coverage achieved entirely via tests; `git diff` confirms app.ts and schemas/index.ts pristine after red-green revert).
+- **In Scope:** `middleware/auth.ts` (type only), 9 controllers (guard removal), `schemas/index.ts` (2 fields), affected `__tests__/*.test.ts`.
+- **Out of Scope:** Frontend React tests; route/middleware logic changes (only the `AuthRequest` type changes); changing Zod strip semantics in `validateBody`.
 
 ## 4. Referenced Architecture
-- ADR-005: Global testing mock patterns.
-- ADR-006: Test-Negative Gating (Red-Green proof).
-- AGENTS.md (Rule 28: Test-Negative Validation Protocol)
-- [x] Architectural Verification (AVP-001): Passed full gate suite.
-- [x] Dependency Graph Clean: Zero circular dependencies or forbidden imports.
-- [x] ADR Compliance: Conforms to existing Express backend composition root and keno test paradigms.
+- ACP-004 (approval document; supersedes M-37's "out of scope: production code" for this work).
+- ADR-003: Reusability & Anti-Reinvention Protocol (reuse existing middleware contract).
+- AGENTS.md Rule 6 (Interface Freeze — 2.2b justification recorded in ACP-004), Rule 27 (Deterministic Debugging), Rule 28 (Test-Negative Gating).
+- ADR-005 / ADR-006: mock patterns and negative-path gating.
+
+## 5. Verification Gates (Rule 11)
+- [x] Functional Verification: full `packages/server` vitest suite green — **185 tests pass (12 files)**.
+- [x] AVP-001 Architecture Verification: 6-gate protocol passed 2026-08-16 (biome check, tsc -b, vitest 188, playwright 6 e2e, evidence payload, SSOT sync).
+- [x] Evidence Package: this document + ACP-004 + test/coverage run output.
+- [x] User Approval (when required) — ACP-004 approved 2026-08-15 (option a + 2.2b).
+- [x] Coverage: all previously-dead guards gone (controllers 100% stmts/lines, 0 zero-hit statements); remaining branch gaps are pre-existing business-logic/catch branches.
+- [x] `tsc --noEmit -p packages/server` clean.
+- [x] `biome lint .` clean (exit 0; pre-existing `noExplicitAny` warnings tolerated repo-wide).

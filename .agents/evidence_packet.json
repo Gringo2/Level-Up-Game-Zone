@@ -1,13 +1,15 @@
 {
-	"missionId": "M-36",
-	"timestamp": "2026-08-15T00:00:00.000Z",
-	"commitHash": "UNCOMMITTED",
+	"missionId": "M-38",
+	"timestamp": "2026-08-16T13:24:26.961Z",
+	"commitHash": "f9b77879430ca6050f2d471f8c5b31bb8b43d72d",
 	"status": "LOCKED",
 	"gatesPassed": {
 		"gate1_linter": true,
 		"gate2_tsc": true,
 		"gate3_unit_tests": true,
-		"gate5_evidence_payload": true
+		"gate4_e2e_tests": true,
+		"gate5_evidence_payload": true,
+		"gate6_ssot_sync": true
 	},
-	"verificationSummary": "M-36 Backend Coverage Completion — App Composition Root & Schemas. 181/181 vitest tests across 13 suites (up from 176). app.ts statement coverage 83.3% -> 100%, schemas/index.ts 91.2% -> 100% (both 0 zero-stmt lines remaining); overall stmts 91.9% -> 93.8%. Added 5 integration tests (app 0 -> 2, gameRates 13 -> 14, users 29 -> 31) covering GET /api/health, the global Express error handler (malformed-JSON SyntaxError -> 500), and the previously-uncovered zod errorMaps for UpdateGameRateSchema unit_type, InviteUserSchema role, and CreateUserSchema role. lint exit 0 (48 warnings, consistent with prior baselines), server tsc exit 0, client build exit 0, knip exit 0, depcruise 0 violations (39 modules). Rule 28 red-green proven: changing the global error handler status to 200 made the malformed-JSON test fail (red), then restored to 500 (green). No production code changed (git diff confirms app.ts and schemas/index.ts pristine). Resolved TD-008 in DEBT.md."
+	"verificationSummary": "Passed 6-Gate AVP-001 Verification Protocol cleanly."
 }
