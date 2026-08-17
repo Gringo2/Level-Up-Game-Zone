@@ -192,4 +192,118 @@ describe("UserManagement", () => {
 			expect(toast.error).toHaveBeenCalled();
 		});
 	});
+
+	it("shows error toast when delete user returns non-OK response", async () => {
+		window.confirm = vi.fn().mockReturnValue(true);
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		mockFetch.mockResolvedValueOnce({ ok: false });
+		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+			error: "User not found",
+		});
+		const deleteButtons = screen.getAllByTitle("Delete user account");
+		fireEvent.click(deleteButtons[0]);
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalled();
+		});
+	});
+
+	it("shows error toast when delete user fetch rejects", async () => {
+		window.confirm = vi.fn().mockReturnValue(true);
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		mockFetch.mockRejectedValueOnce(new Error("Network error"));
+		const deleteButtons = screen.getAllByTitle("Delete user account");
+		fireEvent.click(deleteButtons[0]);
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalled();
+		});
+	});
+
+	it("shows error toast when role update fails", async () => {
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		mockFetch.mockResolvedValueOnce({ ok: false });
+		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+			error: "Permission denied",
+		});
+		const tableRows = screen.getAllByRole("row");
+		const dataRows = tableRows.filter((row) => row.querySelector("select"));
+		const firstDataRowSelect = dataRows[0].querySelector(
+			"select",
+		) as HTMLSelectElement;
+		fireEvent.change(firstDataRowSelect, {
+			target: { value: "manager" },
+		});
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalled();
+		});
+	});
+
+	it("shows error toast when role update fetch rejects", async () => {
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		mockFetch.mockRejectedValueOnce(new Error("Network down"));
+		const tableRows = screen.getAllByRole("row");
+		const dataRows = tableRows.filter((row) => row.querySelector("select"));
+		const firstDataRowSelect = dataRows[0].querySelector(
+			"select",
+		) as HTMLSelectElement;
+		fireEvent.change(firstDataRowSelect, {
+			target: { value: "manager" },
+		});
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalled();
+		});
+	});
+
+	it("sends selected role in POST when invite role dropdown is changed", async () => {
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		const inviteRoleSelect = screen.getAllByRole("combobox")[0];
+		fireEvent.change(inviteRoleSelect, { target: { value: "admin" } });
+		const emailInput = screen.getByPlaceholderText("Email address");
+		fireEvent.change(emailInput, { target: { value: "new@test.com" } });
+		fireEvent.click(screen.getByText("Invite"));
+
+		await waitFor(() => {
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringContaining("/api/users/invite"),
+				expect.objectContaining({
+					method: "POST",
+					body: JSON.stringify({ email: "new@test.com", role: "admin" }),
+				}),
+			);
+		});
+	});
+
+	it("shows error when fetch users returns non-OK", async () => {
+		mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+			error: "Server error",
+		});
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalled();
+		});
+	});
 });

@@ -284,4 +284,95 @@ describe("Dashboard", () => {
 
 		expect(window.print).toHaveBeenCalled();
 	});
+
+	it("shows error toast when update float PUT fails", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(screen.getByRole("button", { name: "Update Float" }));
+		fireEvent.change(screen.getByLabelText("New Float Amount ($)"), {
+			target: { value: "150" },
+		});
+
+		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
+
+		const form = screen.getByLabelText("New Float Amount ($)").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to update float"),
+		);
+	});
+
+	it("dismisses update float form when Cancel is clicked", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(screen.getByRole("button", { name: "Update Float" }));
+		expect(screen.getByLabelText("New Float Amount ($)")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+		expect(
+			screen.queryByLabelText("New Float Amount ($)"),
+		).not.toBeInTheDocument();
+	});
+
+	it("dismisses close shift form when Cancel is clicked", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
+		);
+		expect(
+			screen.getByLabelText("Actual Cash Counted ($)"),
+		).toBeInTheDocument();
+
+		const cancelButtons = screen.getAllByRole("button", { name: "Cancel" });
+		fireEvent.click(cancelButtons[cancelButtons.length - 1]);
+
+		expect(
+			screen.queryByLabelText("Actual Cash Counted ($)"),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
+		).toBeInTheDocument();
+	});
+
+	it("shows error toast when close shift POST fails", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
+		);
+		fireEvent.change(screen.getByLabelText("Actual Cash Counted ($)"), {
+			target: { value: "101" },
+		});
+
+		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
+
+		const form = screen
+			.getByLabelText("Actual Cash Counted ($)")
+			.closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() => expect(toast.error).toHaveBeenCalled());
+	});
+
+	it("calls window.print when Print Safe Slip is clicked", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
+		);
+		fireEvent.change(screen.getByLabelText("Actual Cash Counted ($)"), {
+			target: { value: "150" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Print Safe Slip" }));
+
+		expect(window.print).toHaveBeenCalled();
+	});
 });

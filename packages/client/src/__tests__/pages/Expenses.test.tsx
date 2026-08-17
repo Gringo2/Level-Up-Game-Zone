@@ -266,4 +266,156 @@ describe("Expenses", () => {
 		);
 		expect(posts).toHaveLength(0);
 	});
+
+	it("shows error toast when POST expense fails", async () => {
+		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((_url: string, init?: RequestInit) => {
+				if (init?.method === "POST") {
+					return Promise.reject(new Error("Server error"));
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.change(
+			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
+			{ target: { value: "New mop" } },
+		);
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "8" },
+		});
+		const form = screen.getByText("New Expense").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to save expense"),
+		);
+	});
+
+	it("shows error toast when PUT expense fails in edit mode", async () => {
+		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "PUT" && !url.endsWith("/verify")) {
+					return Promise.reject(new Error("Server error"));
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+			target: { value: "Correction" },
+		});
+		const form = screen.getByText("Update Expense").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to save expense"),
+		);
+	});
+
+	it("sends selected category in POST body", async () => {
+		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		fireEvent.change(
+			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
+			{ target: { value: "Payroll" } },
+		);
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "50" },
+		});
+		fireEvent.change(screen.getByLabelText("Category"), {
+			target: { value: "Wages" },
+		});
+		const form = screen.getByText("New Expense").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringMatching(/\/api\/expenses$/),
+				expect.objectContaining({ method: "POST" }),
+			),
+		);
+		const postCalls = mockFetch.mock.calls.filter(
+			([, init]) => (init as RequestInit | undefined)?.method === "POST",
+		);
+		const body = JSON.parse(String((postCalls[0][1] as RequestInit).body));
+		expect(body.category).toBe("Wages");
+	});
+
+	it("dismisses delete confirmation when Cancel is clicked", async () => {
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+		fireEvent.click(screen.getByRole("button", { name: "" }));
+
+		expect(
+			screen.getByPlaceholderText("Reason for deletion..."),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Confirm" })).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+		expect(
+			screen.queryByPlaceholderText("Reason for deletion..."),
+		).not.toBeInTheDocument();
+		expect(screen.getByText("Cleaning supplies")).toBeInTheDocument();
+	});
+
+	it("shows error toast when delete expense fails", async () => {
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+		fireEvent.click(screen.getByRole("button", { name: "" }));
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((_url: string, init?: RequestInit) => {
+				if (init?.method === "DELETE") {
+					return Promise.reject(new Error("Server error"));
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
+			target: { value: "Duplicate" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to delete expense"),
+		);
+	});
+
+	it("shows error toast when verify expense fails", async () => {
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "PUT" && url.endsWith("/verify")) {
+					return Promise.reject(new Error("Server error"));
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to verify expense"),
+		);
+	});
 });

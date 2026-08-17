@@ -8,11 +8,18 @@ process.env.TZ = "UTC";
 
 import "@testing-library/jest-dom/vitest";
 import type { Shift } from "@level-up/shared";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MissedDataBlocker } from "../../components/MissedDataBlocker.js";
 import { useShift } from "../../contexts/ShiftContext.js";
+import { safeJson } from "../../lib/api.js";
 
 vi.mock("../../contexts/ShiftContext.js", () => ({
 	useShift: vi.fn(),
@@ -26,6 +33,11 @@ vi.mock("../../firebase", () => ({
 
 vi.mock("sonner", () => ({
 	toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("../../lib/api.js", () => ({
+	API_BASE: "http://localhost:4000",
+	safeJson: vi.fn(),
 }));
 
 const staleShift: Shift = {
@@ -46,6 +58,10 @@ const okResponse = (body: unknown) =>
 
 beforeEach(() => {
 	vi.clearAllMocks();
+});
+
+afterEach(() => {
+	cleanup();
 });
 
 describe("MissedDataBlocker", () => {
@@ -169,5 +185,119 @@ describe("MissedDataBlocker", () => {
 			actual_cash_counted: 95.5,
 			shift_id: "shift1",
 		});
+	});
+
+	it("shows error toast when resolve API returns non-OK", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			missedData: { missedShifts: [staleShift], gapDates: [] },
+			refetchShift: vi.fn().mockResolvedValue(undefined),
+		});
+		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+			error: "Shift not found",
+		});
+		global.fetch = vi.fn().mockResolvedValue(
+			new Response(null, {
+				status: 500,
+				statusText: "Internal Server Error",
+			}),
+		);
+
+		render(<MissedDataBlocker />);
+		fireEvent.click(screen.getByRole("button", { name: "Resolve & Continue" }));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Shift not found");
+		});
+	});
+
+	it("shows fallback error when resolve API returns non-OK with no error field", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			missedData: { missedShifts: [staleShift], gapDates: [] },
+			refetchShift: vi.fn().mockResolvedValue(undefined),
+		});
+		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({});
+		global.fetch = vi.fn().mockResolvedValue(
+			new Response(null, {
+				status: 500,
+				statusText: "Internal Server Error",
+			}),
+		);
+
+		render(<MissedDataBlocker />);
+		fireEvent.click(screen.getByRole("button", { name: "Resolve & Continue" }));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to resolve missed data");
+		});
+	});
+
+	it("handles non-Error exception during resolve", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			missedData: { missedShifts: [staleShift], gapDates: [] },
+			refetchShift: vi.fn().mockResolvedValue(undefined),
+		});
+		global.fetch = vi.fn().mockRejectedValueOnce("something broke");
+
+		render(<MissedDataBlocker />);
+		fireEvent.click(screen.getByRole("button", { name: "Resolve & Continue" }));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to resolve.");
+		});
+	});
+
+	it("handles Error exception during resolve", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			missedData: { missedShifts: [staleShift], gapDates: [] },
+			refetchShift: vi.fn().mockResolvedValue(undefined),
+		});
+		global.fetch = vi.fn().mockRejectedValueOnce(new Error("timeout"));
+
+		render(<MissedDataBlocker />);
+		fireEvent.click(screen.getByRole("button", { name: "Resolve & Continue" }));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("timeout");
+		});
+	});
+
+	it("notes input updates state and is included in payload", async () => {
+		const refetchShift = vi.fn().mockResolvedValue(undefined);
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			missedData: { missedShifts: [staleShift], gapDates: [] },
+			refetchShift,
+		});
+		global.fetch = vi.fn().mockResolvedValue(okResponse({ success: true }));
+
+		render(<MissedDataBlocker />);
+		const notesInput = screen.getByPlaceholderText("Reason or context...");
+		fireEvent.change(notesInput, { target: { value: "forgot to close" } });
+		fireEvent.click(screen.getByRole("button", { name: "Resolve & Continue" }));
+
+		await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+		const [, init] = vi.mocked(global.fetch).mock.calls[0];
+		const body = JSON.parse((init as RequestInit).body as string);
+		expect(body).toMatchObject({ notes: "forgot to close" });
+	});
+
+	it("renders nothing when missedData has empty missedShifts and gapDates", () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			missedData: { missedShifts: [], gapDates: [] },
+			refetchShift: vi.fn().mockResolvedValue(undefined),
+		});
+		const { container } = render(<MissedDataBlocker />);
+		expect(container).toBeEmptyDOMElement();
 	});
 });

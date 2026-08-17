@@ -2,9 +2,15 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Admin } from "../../pages/Admin.js";
 
 vi.mock("../../firebase", () => ({
@@ -46,6 +52,10 @@ describe("Admin", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		window.scrollTo = vi.fn();
+	});
+
+	afterEach(() => {
+		cleanup();
 	});
 
 	it("loads and displays rates", async () => {
@@ -263,5 +273,162 @@ describe("Admin", () => {
 		await waitFor(() => {
 			expect(screen.queryByDisplayValue("PS4")).toBeNull();
 		});
+	});
+
+	it("shows error toast when add rate POST fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(rates))
+			.mockResolvedValueOnce(jsonResponse(null, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Admin />);
+
+		await waitFor(() => {
+			expect(screen.getByText("PS4")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByLabelText("Game Name"), {
+			target: { value: "Darts" },
+		});
+		fireEvent.change(screen.getByLabelText("Price ($)"), {
+			target: { value: "3" },
+		});
+		fireEvent.click(screen.getByText("Add Rate"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to add game rate");
+		});
+	});
+
+	it("shows error toast when save edit PUT fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(rates))
+			.mockResolvedValueOnce(jsonResponse(null, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Admin />);
+
+		await waitFor(() => {
+			expect(screen.getByText("PS4")).toBeDefined();
+		});
+
+		const editButtons = screen.getAllByText("Edit");
+		fireEvent.click(editButtons[0]);
+
+		const reasonInput = screen.getByPlaceholderText(/Price increase/);
+		fireEvent.change(reasonInput, { target: { value: "Updated pricing" } });
+
+		fireEvent.click(screen.getByText("Save Changes"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to update rate");
+		});
+	});
+
+	it("shows error toast when toggle status PUT fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(rates))
+			.mockResolvedValueOnce(jsonResponse(null, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Admin />);
+
+		await waitFor(() => {
+			expect(screen.getByText("PS4")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByText("Deactivate"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to update rate status");
+		});
+	});
+
+	it("sends unit_type Game when add form unit select is changed", async () => {
+		const newRate = {
+			id: "r3",
+			game_name: "Darts",
+			price_per_unit: 3,
+			unit_type: "Game" as const,
+			isActive: true,
+		};
+
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(rates))
+			.mockResolvedValueOnce(jsonResponse(newRate));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Admin />);
+
+		await waitFor(() => {
+			expect(screen.getByText("PS4")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByLabelText("Unit"), {
+			target: { value: "Game" },
+		});
+		fireEvent.change(screen.getByLabelText("Game Name"), {
+			target: { value: "Darts" },
+		});
+		fireEvent.change(screen.getByLabelText("Price ($)"), {
+			target: { value: "3" },
+		});
+		fireEvent.click(screen.getByText("Add Rate"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+		});
+
+		const [, postInit] = fetchMock.mock.calls[1];
+		const body = JSON.parse(postInit.body);
+		expect(body).toMatchObject({ unit_type: "Game" });
+	});
+
+	it("sends unit_type Game when edit form unit select is changed", async () => {
+		const updatedRate = { ...rate, unit_type: "Game" as const };
+
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(rates))
+			.mockResolvedValueOnce(jsonResponse(updatedRate));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Admin />);
+
+		await waitFor(() => {
+			expect(screen.getByText("PS4")).toBeDefined();
+		});
+
+		const editButtons = screen.getAllByText("Edit");
+		fireEvent.click(editButtons[0]);
+
+		const editUnitSelect = document.getElementById(
+			"edit-unit-r1",
+		) as HTMLSelectElement;
+		fireEvent.change(editUnitSelect, { target: { value: "Game" } });
+
+		const reasonInput = screen.getByPlaceholderText(/Price increase/);
+		fireEvent.change(reasonInput, {
+			target: { value: "Switching to per-game pricing" },
+		});
+
+		fireEvent.click(screen.getByText("Save Changes"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+		});
+
+		const [, putInit] = fetchMock.mock.calls[1];
+		const body = JSON.parse(putInit.body);
+		expect(body).toMatchObject({ unit_type: "Game" });
 	});
 });

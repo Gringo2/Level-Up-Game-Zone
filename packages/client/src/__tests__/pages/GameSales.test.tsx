@@ -244,4 +244,99 @@ describe("GameSales", () => {
 			expect(toast.error).toHaveBeenCalledWith("Failed to load sales data"),
 		);
 	});
+
+	it("shows error toast when POST sale fails", async () => {
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+
+		fireEvent.change(screen.getByLabelText("Game / Table"), {
+			target: { value: "rate-1" },
+		});
+		fireEvent.change(screen.getByLabelText("Quantity (Hours)"), {
+			target: { value: "2" },
+		});
+
+		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
+
+		const form = screen.getByText("New Entry").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to save sale"),
+		);
+	});
+
+	it("shows error toast when PUT sale fails in edit mode", async () => {
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+		fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+			target: { value: "Typo in quantity" },
+		});
+
+		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
+
+		const form = screen.getByText("Update Sale").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to save sale"),
+		);
+	});
+
+	it("shows error toast when Add Default Games fails", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (url.endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse([]));
+			}
+			return Promise.resolve(jsonResponse([]));
+		});
+		render(<GameSales />);
+		await screen.findByText("No games configured!");
+
+		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "+ Add Default Games" }),
+		);
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to configure games"),
+		);
+	});
+
+	it("dismisses delete confirmation when Cancel is clicked", async () => {
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+		fireEvent.click(screen.getByRole("button", { name: "" }));
+
+		expect(
+			screen.getByPlaceholderText("Reason for deletion..."),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+		expect(
+			screen.queryByPlaceholderText("Reason for deletion..."),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows error toast when delete sale fails", async () => {
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+		fireEvent.click(screen.getByRole("button", { name: "" }));
+
+		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
+			target: { value: "Wrong entry" },
+		});
+
+		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
+
+		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith("Failed to delete sale"),
+		);
+	});
 });
