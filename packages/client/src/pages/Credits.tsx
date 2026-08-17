@@ -23,6 +23,9 @@ export function Credits() {
 	const { user } = useAuth();
 	const [employeeName, setEmployeeName] = useState("");
 	const [amount, setAmount] = useState("");
+	const [entryDate, setEntryDate] = useState(() =>
+		new Date().toISOString().slice(0, 10),
+	);
 	const [loading, setLoading] = useState(false);
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [employeeRoster, setEmployeeRoster] = useState<Employee[]>([]);
@@ -215,6 +218,7 @@ export function Credits() {
 					body: JSON.stringify({
 						employee_name: employeeName,
 						amount: amount,
+						date: new Date(entryDate).toISOString(),
 					}),
 				});
 				if (!response.ok)
@@ -250,6 +254,16 @@ export function Credits() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Label htmlFor="entryDate">Date</Label>
+								<Input
+									id="entryDate"
+									type="date"
+									value={entryDate}
+									onChange={(e) => setEntryDate(e.target.value)}
+									required
+								/>
+							</div>
 							<div className="space-y-2">
 								<Label htmlFor="employee">Employee Name</Label>
 								{employeeRoster.length > 0 ? (

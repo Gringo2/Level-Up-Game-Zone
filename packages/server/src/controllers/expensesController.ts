@@ -18,7 +18,7 @@ export const listExpenses = async (_req: AuthRequest, res: Response) => {
 export const createExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { description, amount, category } = req.body;
+	const { description, amount, category, date } = req.body;
 
 	try {
 		const userDoc = await db.collection("users").doc(user.uid).get();
@@ -32,7 +32,7 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
 			amount: parseFloat(amount),
 			category,
 			user_id: user.uid,
-			date: new Date().toISOString(),
+			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 			verified: role === "manager" || role === "admin",
 		};
 

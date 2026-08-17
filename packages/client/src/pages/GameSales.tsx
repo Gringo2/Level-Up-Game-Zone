@@ -26,6 +26,9 @@ export function GameSales() {
 	const [logs, setLogs] = useState<GameSalesLog[]>([]);
 	const [selectedRateId, setSelectedRateId] = useState("");
 	const [quantity, setQuantity] = useState("");
+	const [entryDate, setEntryDate] = useState(() =>
+		new Date().toISOString().slice(0, 10),
+	);
 	const [loading, setLoading] = useState(false);
 	const [loadingRates, setLoadingRates] = useState(true);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -209,6 +212,7 @@ export function GameSales() {
 						quantity_sold: quantity,
 						rate_applied: selectedRate.price_per_unit,
 						calculated_total: calculatedTotal,
+						date: new Date(entryDate).toISOString(),
 					}),
 				});
 				if (!response.ok)
@@ -298,6 +302,16 @@ export function GameSales() {
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
+							<div className="space-y-2">
+								<Label htmlFor="entryDate">Date</Label>
+								<Input
+									id="entryDate"
+									type="date"
+									value={entryDate}
+									onChange={(e) => setEntryDate(e.target.value)}
+									required
+								/>
+							</div>
 							<div className="space-y-2">
 								<Label htmlFor="game">Game / Table</Label>
 								<select

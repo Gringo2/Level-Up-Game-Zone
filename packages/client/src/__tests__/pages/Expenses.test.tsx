@@ -143,6 +143,7 @@ describe("Expenses", () => {
 			description: "New mop",
 			amount: "8",
 			category: "Misc",
+			date: expect.any(String),
 		});
 		expect(await screen.findByText("New mop")).toBeInTheDocument();
 	});

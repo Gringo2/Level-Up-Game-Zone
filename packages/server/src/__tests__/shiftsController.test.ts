@@ -356,103 +356,6 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body.gapDates).toEqual(expectedGaps.slice(1));
 			expect(response.body.newlyOpenedShift).toBeNull();
 		});
-
-		it("should resolve a gap day as SHOP_CLOSED", async () => {
-			const setMock = vi.fn().mockResolvedValue(true);
-			vi.mocked(db.collection).mockImplementation((path: string) => {
-				if (path === "missed_day_resolutions") {
-					return {
-						doc: vi.fn().mockReturnValue({ id: "res-1", set: setMock }),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
-				}
-
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
-			});
-
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.set("Authorization", authHeader)
-				.send({ date: "2026-08-10", status: "SHOP_CLOSED" });
-
-			expect(response.status).toBe(200);
-			expect(response.body.message).toBe("Resolved successfully");
-			expect(setMock).toHaveBeenCalledWith(
-				expect.objectContaining({
-					status: "SHOP_CLOSED",
-					variance: 0,
-					resolved_by_id: "mock-admin-uid",
-				}),
-			);
-		});
-
-		it("should resolve a gap day as DATA_FILLED with computed variance", async () => {
-			const setMock = vi.fn().mockResolvedValue(true);
-			vi.mocked(db.collection).mockImplementation((path: string) => {
-				if (path === "missed_day_resolutions") {
-					return {
-						doc: vi.fn().mockReturnValue({ id: "res-2", set: setMock }),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
-				}
-
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
-			});
-
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.set("Authorization", authHeader)
-				.send({
-					date: "2026-08-11",
-					status: "DATA_FILLED",
-					expected_cash_calculated: 100,
-					actual_cash_counted: 120,
-				});
-
-			expect(response.status).toBe(200);
-			expect(setMock).toHaveBeenCalledWith(
-				expect.objectContaining({ variance: 20 }),
-			);
-		});
-
-		it("should close a stale shift when resolving missed data with shift_id", async () => {
-			const updateMock = vi.fn().mockResolvedValue(true);
-			vi.mocked(db.collection).mockImplementation((path: string) => {
-				if (path === "shifts") {
-					return {
-						doc: vi.fn().mockReturnValue({ update: updateMock }),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
-				}
-
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
-			});
-
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.set("Authorization", authHeader)
-				.send({
-					date: "2026-08-10",
-					status: "DATA_FILLED",
-					shift_id: "stale-shift-1",
-					expected_cash_calculated: 100,
-					actual_cash_counted: 120,
-				});
-
-			expect(response.status).toBe(200);
-			expect(response.body.message).toBe("Resolved successfully");
-			expect(updateMock).toHaveBeenCalledWith(
-				expect.objectContaining({
-					status: "CLOSED",
-					actual_cash_counted: 120,
-					expected_cash_calculated: 100,
-					variance: 20,
-				}),
-			);
-		});
 	});
 
 	describe("Negative Path (Rejection Scenarios)", () => {
@@ -717,27 +620,6 @@ describe("Shifts Integration Tests", () => {
 				"Only open shifts can have their float updated",
 			);
 		});
-
-		it("should return 400 for invalid missed-day status (Zod Validation)", async () => {
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.set("Authorization", authHeader)
-				.send({ date: "2026-08-10", status: "INVALID_STATUS" });
-
-			expect(response.status).toBe(400);
-			expect(response.body.error).toContain(
-				"Status must be 'SHOP_CLOSED' or 'DATA_FILLED'",
-			);
-		});
-
-		it("should return 400 when resolve-missed is missing the date (Zod Validation)", async () => {
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.set("Authorization", authHeader)
-				.send({ status: "SHOP_CLOSED" });
-
-			expect(response.status).toBe(400);
-		});
 	});
 
 	describe("Database Crash (500 fallback)", () => {
@@ -849,32 +731,6 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body.error).toBe("Internal server error");
 		});
 
-		it("returns 500 when resolving missed data crashes", async () => {
-			vi.mocked(db.collection).mockImplementation((path: string) => {
-				if (path === "missed_day_resolutions") {
-					return {
-						doc: vi.fn().mockReturnValue({
-							id: "res-1",
-							set: vi.fn().mockRejectedValue(new Error("DB crashed")),
-						}),
-
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
-				}
-
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
-			});
-
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.set("Authorization", authHeader)
-				.send({ date: "2026-08-10", status: "SHOP_CLOSED" });
-
-			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("Internal server error");
-		});
-
 		it("returns 500 when starting a shift crashes on the open-shift query", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
@@ -937,13 +793,6 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 401 without a bearer token on missed-data GET", async () => {
 			const response = await request(app).get("/api/shifts/missed");
-			expect(response.status).toBe(401);
-		});
-
-		it("returns 401 without a bearer token on resolve-missed POST", async () => {
-			const response = await request(app)
-				.post("/api/shifts/resolve-missed")
-				.send({ date: "2026-08-10", status: "SHOP_CLOSED" });
 			expect(response.status).toBe(401);
 		});
 	});

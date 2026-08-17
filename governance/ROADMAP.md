@@ -56,5 +56,6 @@
 *   [x] **Mission 47:** App & UserManagement Unit Coverage (2026-08-17)
 *   [x] **Mission 48:** ACP-005 Pre-Commit Mission Lock — enforced pre-commit lock guard (2026-08-17)
 *   [x] **Mission 49:** Client Coverage — close AuthContext/ShiftContext/Credits/EmployeeRoster gaps + raise contexts/pages thresholds (2026-08-17)
+*   [x] **Mission 50:** Shift Non-Blocking + Backdated Data Entry — remove MissedDataBlocker, add date pickers (2026-08-17)
 
 *Note: M-11 has no lock commit or mission-labeled commit anywhere in git history (branches, reflog, dangling objects, and full-text search were all probed on 2026-08-14). Its true scope is not recoverable from repository history without Product Owner clarification. M-19's title was extracted from its lock commit `859a428`.*

@@ -189,6 +189,7 @@ describe("GameSales", () => {
 			quantity_sold: "2",
 			rate_applied: 5,
 			calculated_total: 10,
+			date: expect.any(String),
 		});
 	});
 

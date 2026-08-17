@@ -127,6 +127,7 @@ describe("Keno", () => {
 			sales: "100",
 			payouts: "40",
 			net_profit: 60,
+			date: expect.any(String),
 		});
 	});
 

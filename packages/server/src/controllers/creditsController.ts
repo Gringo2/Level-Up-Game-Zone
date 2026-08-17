@@ -18,7 +18,7 @@ export const listCredits = async (_req: AuthRequest, res: Response) => {
 export const createCredit = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { employee_name, amount, reason } = req.body;
+	const { employee_name, amount, reason, date } = req.body;
 
 	try {
 		const newDocRef = db.collection("credits").doc();
@@ -30,7 +30,7 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 			reason,
 			status: "Pending",
 			user_id: user.uid,
-			date: new Date().toISOString(),
+			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 		};
 
 		await db.runTransaction(async (transaction) => {

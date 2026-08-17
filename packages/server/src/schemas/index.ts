@@ -46,6 +46,7 @@ export const CreateSaleSchema = z.object({
 	quantity_sold: positiveNumber("Quantity sold"),
 	rate_applied: positiveNumber("Rate applied"),
 	calculated_total: nonNegativeNumber("Calculated total"),
+	date: z.string().optional(),
 });
 
 export const UpdateSaleSchema = z
@@ -67,6 +68,7 @@ export const CreateKenoSchema = z.object({
 	sales: nonNegativeNumber("Sales"),
 	payouts: nonNegativeNumber("Payouts"),
 	net_profit: z.coerce.number(),
+	date: z.string().optional(),
 });
 
 export const UpdateKenoSchema = z.object({
@@ -84,6 +86,7 @@ export const CreateExpenseSchema = z.object({
 	description: z.string().trim().min(1, "Description is required"),
 	amount: positiveNumber("Amount"),
 	category: z.string().trim().optional().default("Misc"),
+	date: z.string().optional(),
 });
 
 export const UpdateExpenseSchema = z.object({
@@ -101,6 +104,7 @@ export const CreateCreditSchema = z.object({
 	employee_name: z.string().trim().min(1, "Employee name is required"),
 	amount: positiveNumber("Amount"),
 	reason: z.string().optional(),
+	date: z.string().optional(),
 });
 
 export const UpdateCreditSchema = z.object({
@@ -216,20 +220,6 @@ export const UpdateEmployeeSchema = z.object({
 		.string()
 		.trim()
 		.min(3, "Reason for change must be at least 3 characters"),
-});
-
-// Missed Day Resolution Schema
-export const ResolveMissedDaySchema = z.object({
-	date: z.string().trim().min(1, "Date is required"),
-	status: z.enum(["SHOP_CLOSED", "DATA_FILLED"], {
-		errorMap: () => ({
-			message: "Status must be 'SHOP_CLOSED' or 'DATA_FILLED'",
-		}),
-	}),
-	notes: z.string().optional(),
-	expected_cash_calculated: nonNegativeNumber("Expected cash").optional(),
-	actual_cash_counted: nonNegativeNumber("Actual cash counted").optional(),
-	shift_id: z.string().optional(),
 });
 
 // Update Float Schema

@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { MissedDataBlocker } from "../components/MissedDataBlocker";
 import { Button } from "../components/ui/button";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../firebase";
@@ -127,8 +126,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			</aside>
 
 			{/* Main Content */}
-			<main className="flex-1 p-4 md:p-8 overflow-y-auto relative">
-				<MissedDataBlocker />
+			<main className="flex-1 p-4 md:p-8 overflow-y-auto">
 				<div className="max-w-5xl mx-auto">{children}</div>
 			</main>
 		</div>

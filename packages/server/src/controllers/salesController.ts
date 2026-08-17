@@ -18,8 +18,14 @@ export const listSales = async (_req: AuthRequest, res: Response) => {
 export const createSale = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { game_id, game_name, quantity_sold, rate_applied, calculated_total } =
-		req.body;
+	const {
+		game_id,
+		game_name,
+		quantity_sold,
+		rate_applied,
+		calculated_total,
+		date,
+	} = req.body;
 
 	try {
 		const newDocRef = db.collection("game_sales_logs").doc();
@@ -32,7 +38,7 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 			rate_applied: parseFloat(rate_applied),
 			calculated_total: parseFloat(calculated_total),
 			user_id: user.uid,
-			date: new Date().toISOString(),
+			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 		};
 
 		await db.runTransaction(async (transaction) => {

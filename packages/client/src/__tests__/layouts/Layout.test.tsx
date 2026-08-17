@@ -37,10 +37,6 @@ vi.mock("react-router-dom", () => ({
 	),
 }));
 
-vi.mock("../../components/MissedDataBlocker", () => ({
-	MissedDataBlocker: () => <div data-testid="missed-data-blocker" />,
-}));
-
 import { signOut } from "firebase/auth";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext.js";
@@ -111,21 +107,6 @@ describe("Layout", () => {
 		);
 
 		expect(screen.getByText("Test child content")).toBeDefined();
-	});
-
-	it("renders MissedDataBlocker", () => {
-		mockUseAuth.mockReturnValue({
-			user: adminUser,
-			loading: false,
-		});
-
-		render(
-			<Layout>
-				<div>Content</div>
-			</Layout>,
-		);
-
-		expect(screen.getByTestId("missed-data-blocker")).toBeDefined();
 	});
 
 	it("shows all nav items for admin role", () => {

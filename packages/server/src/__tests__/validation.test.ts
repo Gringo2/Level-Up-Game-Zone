@@ -6,7 +6,6 @@ import {
 	CreateExpenseSchema,
 	CreateGameRateSchema,
 	CreateSaleSchema,
-	StartShiftSchema,
 	UpdateRoleSchema,
 } from "../schemas/index.js";
 
@@ -20,23 +19,6 @@ function makeRes() {
 }
 
 describe("Domain-Driven Schema Validation Middleware", () => {
-	it("rejects negative opening float on shift start", () => {
-		const middleware = validateBody(StartShiftSchema);
-		const req = {
-			body: { floatAmount: -50, managerName: "Manager" },
-		} as AuthRequest;
-		const res = makeRes();
-		const next = vi.fn() as unknown as NextFunction;
-
-		middleware(req, res, next);
-
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith({
-			error: "Opening float cannot be negative",
-		});
-		expect(next).not.toHaveBeenCalled();
-	});
-
 	it("rejects NaN quantity_sold on game sales logging", () => {
 		const middleware = validateBody(CreateSaleSchema);
 		const req = {

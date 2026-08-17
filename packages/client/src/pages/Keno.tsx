@@ -24,6 +24,9 @@ export function Keno() {
 	const { user } = useAuth();
 	const [sales, setSales] = useState("");
 	const [payouts, setPayouts] = useState("");
+	const [entryDate, setEntryDate] = useState(() =>
+		new Date().toISOString().slice(0, 10),
+	);
 	const [loading, setLoading] = useState(false);
 	const [logs, setLogs] = useState<KenoLog[]>([]);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -204,6 +207,7 @@ export function Keno() {
 						sales: sales,
 						payouts: payouts,
 						net_profit: netProfit,
+						date: new Date(entryDate).toISOString(),
 					}),
 				});
 				if (!response.ok)
@@ -236,6 +240,16 @@ export function Keno() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="entryDate">Date</Label>
+							<Input
+								id="entryDate"
+								type="date"
+								value={entryDate}
+								onChange={(e) => setEntryDate(e.target.value)}
+								required
+							/>
+						</div>
 						<div className="space-y-2">
 							<Label htmlFor="sales">Total Sales ($)</Label>
 							<Input

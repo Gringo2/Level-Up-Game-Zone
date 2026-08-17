@@ -25,6 +25,9 @@ export function Expenses() {
 	const [description, setDescription] = useState("");
 	const [amount, setAmount] = useState("");
 	const [category, setCategory] = useState("Misc");
+	const [entryDate, setEntryDate] = useState(() =>
+		new Date().toISOString().slice(0, 10),
+	);
 	const [loading, setLoading] = useState(false);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -207,6 +210,7 @@ export function Expenses() {
 						description: description,
 						amount: amount,
 						category: category,
+						date: new Date(entryDate).toISOString(),
 					}),
 				});
 				if (!response.ok)
@@ -240,6 +244,16 @@ export function Expenses() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
+						<div className="space-y-2">
+							<Label htmlFor="entryDate">Date</Label>
+							<Input
+								id="entryDate"
+								type="date"
+								value={entryDate}
+								onChange={(e) => setEntryDate(e.target.value)}
+								required
+							/>
+						</div>
 						<div className="space-y-2">
 							<Label htmlFor="description">
 								Description (e.g., Cleaning supplies)

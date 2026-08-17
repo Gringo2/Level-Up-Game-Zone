@@ -93,7 +93,6 @@ describe("Dashboard", () => {
 		vi.mocked(useShift).mockReturnValue({
 			activeShift: shift,
 			loadingShift: false,
-			missedData: null,
 			refetchShift: refetchShiftMock,
 		});
 		window.print = vi.fn();
@@ -131,7 +130,6 @@ describe("Dashboard", () => {
 		vi.mocked(useShift).mockReturnValue({
 			activeShift: null,
 			loadingShift: true,
-			missedData: null,
 			refetchShift: refetchShiftMock,
 		});
 		render(<Dashboard />);
@@ -143,7 +141,6 @@ describe("Dashboard", () => {
 		vi.mocked(useShift).mockReturnValue({
 			activeShift: null,
 			loadingShift: false,
-			missedData: null,
 			refetchShift: refetchShiftMock,
 		});
 		render(<Dashboard />);

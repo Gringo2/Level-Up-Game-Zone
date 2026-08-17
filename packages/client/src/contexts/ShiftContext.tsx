@@ -11,23 +11,15 @@ import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
 import { useAuth } from "./AuthContext";
 
-export interface MissedDataPayload {
-	missedShifts: Shift[];
-	gapDates: string[];
-	newlyOpenedShift?: Shift | null;
-}
-
 interface ShiftContextType {
 	activeShift: Shift | null;
 	loadingShift: boolean;
-	missedData: MissedDataPayload | null;
 	refetchShift: () => Promise<void>;
 }
 
 const ShiftContext = createContext<ShiftContextType>({
 	activeShift: null,
 	loadingShift: true,
-	missedData: null,
 	refetchShift: async () => {},
 });
 
@@ -35,12 +27,10 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
 	const [activeShift, setActiveShift] = useState<Shift | null>(null);
 	const [loadingShift, setLoadingShift] = useState(true);
-	const [missedData, setMissedData] = useState<MissedDataPayload | null>(null);
 
 	const loadActiveShift = useCallback(async () => {
 		if (!user) {
 			setActiveShift(null);
-			setMissedData(null);
 			setLoadingShift(false);
 			return;
 		}
@@ -63,7 +53,9 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 			}
 
 			const data = (await safeJson(shiftsRes)) as Shift[];
-			const missedPayload = (await safeJson(missedRes)) as MissedDataPayload;
+			const missedPayload = (await safeJson(missedRes)) as {
+				newlyOpenedShift?: Shift | null;
+			};
 
 			let openShift =
 				data
@@ -79,12 +71,10 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 			}
 
 			setActiveShift(openShift);
-			setMissedData(missedPayload);
 			setLoadingShift(false);
 		} catch (err) {
 			console.error("Error fetching shift:", err);
 			setActiveShift(null);
-			setMissedData(null);
 			setLoadingShift(false);
 		}
 	}, [user]);
@@ -98,7 +88,6 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 			value={{
 				activeShift,
 				loadingShift,
-				missedData,
 				refetchShift: loadActiveShift,
 			}}
 		>
