@@ -59,3 +59,15 @@
 *   [x] **Mission 50:** Shift Non-Blocking + Backdated Data Entry — remove MissedDataBlocker, add date pickers (2026-08-17)
 
 *Note: M-11 has no lock commit or mission-labeled commit anywhere in git history (branches, reflog, dangling objects, and full-text search were all probed on 2026-08-14). Its true scope is not recoverable from repository history without Product Owner clarification. M-19's title was extracted from its lock commit `859a428`.*
+
+## Phase 6 — Production Readiness (Planned)
+*   [ ] **Mission 51:** RBAC Enforcement — `requireRole()` middleware, server-side role checks on all 20+ endpoints, staff blocked from manager/admin routes (TD-025/037/043)
+*   [ ] **Mission 52:** Data Integrity — server-side total verification (GameSales, Keno), credit `reason` type fix, editReason schema fix (TD-026/028/029/035)
+*   [ ] **Mission 53:** Employee-User Model Unification — foreign key link, ID-based credit matching, shift-to-employee linkage, employee delete route (TD-038/039/040/041/042)
+*   [ ] **Mission 54:** Security Hardening — CORS lockdown, helmet, rate limiting, error message sanitization (TD-010/011/012/014)
+*   [ ] **Mission 55:** Dependency & Transport Security — npm audit fix, Vite/react-router-dom updates, HTTPS default, GEMINI_API_KEY proxy (TD-013/015/017)
+*   [ ] **Mission 56:** Deployment Infrastructure — Dockerfile, root build/start scripts, static file serving, Firebase config externalization (TD-016/018/019/021/022/023)
+*   [ ] **Mission 57:** Business Logic Fixes — Reports net profit, SalaryReport date filter, shift close audit log (TD-027/030/031)
+*   [ ] **Mission 58:** Scalability — server-side date filtering, pagination, Firestore index definitions (TD-032/033/034)
+*   [ ] **Mission 59:** Observability — structured logger, admin email externalization (TD-020/024)
+*   [ ] **Mission 60:** RBAC Test Coverage — E2E tests for staff API blocking, manager route restrictions, invite flow (TD-036)
