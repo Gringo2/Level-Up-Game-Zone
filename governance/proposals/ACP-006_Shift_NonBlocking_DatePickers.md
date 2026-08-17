@@ -90,5 +90,5 @@ The Product Owner directed: **make the shift system non-blocking** (remove Misse
 - [x] Add `date` field to 4 create schemas + 4 backend handlers
 - [x] Add date pickers to 4 frontend forms
 - [x] Update all affected test suites
-- [x] Verify: 381/381 tests passing, TypeScript clean, Biome clean
+- [x] Verify: 372/372 tests passing, TypeScript clean, Biome clean
 - [x] Document in ADR-008
