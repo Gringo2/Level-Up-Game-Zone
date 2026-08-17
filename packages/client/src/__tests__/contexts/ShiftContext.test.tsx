@@ -7,9 +7,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { ShiftProvider, useShift } from "../../contexts/ShiftContext.js";
 
+const { mockGetIdToken } = vi.hoisted(() => ({
+	mockGetIdToken: vi
+		.fn<() => Promise<string | null>>()
+		.mockResolvedValue("mock-token"),
+}));
+
 vi.mock("../../firebase", () => ({
 	auth: {
-		currentUser: { getIdToken: vi.fn().mockResolvedValue("mock-token") },
+		currentUser: { getIdToken: mockGetIdToken },
 	},
 }));
 
@@ -198,5 +204,54 @@ describe("ShiftContext - Positive Tests", () => {
 		await waitFor(() => {
 			expect(screen.getByTestId("no-shift")).toBeInTheDocument();
 		});
+	});
+});
+
+describe("ShiftContext - Auth Edge Cases", () => {
+	beforeEach(() => {
+		mockGetIdToken.mockResolvedValue("mock-token");
+		vi.mocked(useAuth).mockReturnValue({
+			user: {
+				uid: "123",
+				email: "manager@example.com",
+				displayName: "Manager",
+				role: "manager",
+			},
+			loading: false,
+		});
+	});
+
+	it("clears the shift state without fetching when no user is signed in", async () => {
+		vi.mocked(useAuth).mockReturnValue({ user: null, loading: false });
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(
+			<ShiftProvider>
+				<TestComponent />
+			</ShiftProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("no-shift")).toBeInTheDocument();
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("fails closed when the auth token cannot be obtained", async () => {
+		mockGetIdToken.mockResolvedValue(null);
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(
+			<ShiftProvider>
+				<TestComponent />
+			</ShiftProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("no-shift")).toBeInTheDocument();
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 });

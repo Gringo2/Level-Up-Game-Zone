@@ -8,9 +8,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { Credits } from "../../pages/Credits.js";
 
+const { mockGetIdToken } = vi.hoisted(() => ({
+	mockGetIdToken: vi
+		.fn<() => Promise<string | null>>()
+		.mockResolvedValue("mock-token"),
+}));
+
 vi.mock("../../firebase", () => ({
 	auth: {
-		currentUser: { getIdToken: vi.fn().mockResolvedValue("mock-token") },
+		currentUser: { getIdToken: mockGetIdToken },
 	},
 }));
 
@@ -63,6 +69,7 @@ const employees = [
 describe("Credits", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockGetIdToken.mockResolvedValue("mock-token");
 		vi.mocked(useAuth).mockReturnValue({
 			user: {
 				uid: "u1",
@@ -318,5 +325,255 @@ describe("Credits", () => {
 		await waitFor(() => {
 			expect(screen.queryByPlaceholderText("Reason...")).toBeNull();
 		});
+	});
+});
+
+describe("Credits - Edit & Failure Paths", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockGetIdToken.mockResolvedValue("mock-token");
+		vi.mocked(useAuth).mockReturnValue({
+			user: {
+				uid: "u1",
+				displayName: "Manager",
+				role: "manager",
+				email: "m@test.com",
+			},
+			loading: false,
+		});
+		window.scrollTo = vi.fn();
+	});
+
+	const findIconButton = (iconClass: string) =>
+		screen
+			.getAllByRole("button")
+			.filter((btn) => btn.querySelector("svg")?.classList.contains(iconClass));
+
+	const editButton = () => findIconButton("lucide-pen")[0];
+
+	it("edits a credit inline and updates it via PUT", async () => {
+		const updated = { ...credit, amount: 25 };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse(updated));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+
+		fireEvent.click(editButton());
+
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "25" },
+		});
+		fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+			target: { value: "Correct amount" },
+		});
+
+		fireEvent.click(screen.getByText("Update Credit"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/credits/c1"),
+				expect.objectContaining({ method: "PUT" }),
+			);
+		});
+		expect(toast.success).toHaveBeenCalledWith("Credit updated successfully!");
+		expect(screen.getByText("$25.00")).toBeDefined();
+	});
+
+	it("cancels an edit and resets the form", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([credit]))
+				.mockResolvedValueOnce(jsonResponse(employees)),
+		);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+
+		fireEvent.click(editButton());
+		expect(screen.getByText("Update Credit")).toBeDefined();
+
+		fireEvent.click(screen.getByText("Cancel"));
+		expect(screen.queryByText("Update Credit")).toBeNull();
+		expect(screen.getByText("Log Credit")).toBeDefined();
+	});
+
+	it("toasts save error when the edit PUT fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+
+		fireEvent.click(editButton());
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "25" },
+		});
+		fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+			target: { value: "Correct amount" },
+		});
+		fireEvent.click(screen.getByText("Update Credit"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to save credit");
+		});
+	});
+
+	it("toasts resolve error when the status PUT fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByText("Mark Paid"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith(
+				"Failed to mark credit as Resolved",
+			);
+		});
+	});
+
+	it("toasts delete error when the DELETE fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+
+		fireEvent.click(findIconButton("lucide-trash2")[0]);
+		fireEvent.change(screen.getByPlaceholderText("Reason..."), {
+			target: { value: "Duplicate entry" },
+		});
+		fireEvent.click(screen.getByText("Yes"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to delete credit");
+		});
+	});
+
+	it("toasts save error when the POST fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob (Cashier)")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByLabelText("Employee Name"), {
+			target: { value: "Bob" },
+		});
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "15" },
+		});
+		fireEvent.click(screen.getByText("Log Credit"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to save credit");
+		});
+	});
+
+	it("toasts load error when no token is available", async () => {
+		mockGetIdToken.mockResolvedValue(null);
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Failed to load credits");
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("types into the free-text employee input when roster is empty", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([])),
+		);
+
+		render(<Credits />);
+
+		const input = screen.getByPlaceholderText("Type employee name...");
+		await waitFor(() => {
+			expect(input).toBeDefined();
+		});
+
+		fireEvent.change(input, { target: { value: "Bob" } });
+		expect(input).toHaveValue("Bob");
+	});
+
+	it("does not submit when no user is signed in", async () => {
+		vi.mocked(useAuth).mockReturnValue({ user: null, loading: false });
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+		});
+		expect(screen.getByText("No credits logged yet.")).toBeDefined();
+
+		fireEvent.change(screen.getByPlaceholderText("Type employee name..."), {
+			target: { value: "Bob" },
+		});
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "15" },
+		});
+		fireEvent.click(screen.getByText("Log Credit"));
+
+		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 });

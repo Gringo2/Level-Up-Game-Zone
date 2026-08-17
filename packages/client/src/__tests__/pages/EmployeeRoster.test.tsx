@@ -8,9 +8,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { EmployeeRoster } from "../../pages/EmployeeRoster.js";
 
+const { mockGetIdToken } = vi.hoisted(() => ({
+	mockGetIdToken: vi
+		.fn<() => Promise<string | null>>()
+		.mockResolvedValue("mock-token"),
+}));
+
 vi.mock("../../firebase", () => ({
 	auth: {
-		currentUser: { getIdToken: vi.fn().mockResolvedValue("mock-token") },
+		currentUser: { getIdToken: mockGetIdToken },
 	},
 }));
 
@@ -56,6 +62,7 @@ const employees = [emp, emp2];
 describe("EmployeeRoster", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockGetIdToken.mockResolvedValue("mock-token");
 		vi.mocked(useAuth).mockReturnValue({
 			user: {
 				uid: "u1",
@@ -296,5 +303,289 @@ describe("EmployeeRoster", () => {
 		});
 
 		expect(screen.queryByText("Edit")).toBeNull();
+	});
+});
+
+describe("EmployeeRoster - Failure & Form Paths", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockGetIdToken.mockResolvedValue("mock-token");
+		vi.mocked(useAuth).mockReturnValue({
+			user: {
+				uid: "u1",
+				displayName: "Admin",
+				role: "admin",
+				email: "a@test.com",
+			},
+			loading: false,
+		});
+		window.scrollTo = vi.fn();
+	});
+
+	it("toasts load error when no token is available", async () => {
+		mockGetIdToken.mockResolvedValue(null);
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith(
+				"Failed to load employee roster",
+			);
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("skips the POST when salary is missing", async () => {
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(employees));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
+			target: { value: "Charlie" },
+		});
+		fireEvent.change(
+			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
+			{
+				target: { value: "Floor" },
+			},
+		);
+		fireEvent.click(screen.getByText("Add Employee"));
+
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("toasts add error when the POST fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
+			target: { value: "Charlie" },
+		});
+		fireEvent.change(
+			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
+			{
+				target: { value: "Floor" },
+			},
+		);
+		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
+			target: { value: "400" },
+		});
+		fireEvent.click(screen.getByText("Add Employee"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("boom");
+		});
+	});
+
+	it("adds an employee with a custom hire date and break day", async () => {
+		const newEmp = {
+			id: "e9",
+			name: "Dana",
+			position: "Cashier",
+			base_salary: 300,
+			hired_date: "2023-05-05",
+			break_day: "Wednesday",
+			isActive: true,
+			created_at: "",
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse(newEmp));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
+			target: { value: "Dana" },
+		});
+		fireEvent.change(
+			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
+			{
+				target: { value: "Cashier" },
+			},
+		);
+		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
+			target: { value: "300" },
+		});
+		fireEvent.change(screen.getByLabelText("Date of Hiring"), {
+			target: { value: "2023-05-05" },
+		});
+		fireEvent.change(screen.getByLabelText("Break Day (Rest Day)"), {
+			target: { value: "Wednesday" },
+		});
+		fireEvent.click(screen.getByText("Add Employee"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/employees"),
+				expect.objectContaining({ method: "POST" }),
+			);
+		});
+		expect(toast.success).toHaveBeenCalledWith(
+			"Employee Dana added to roster!",
+		);
+	});
+
+	it("toasts edit error when the save PUT fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Edit")[0]);
+		const reasonInput = screen.getByPlaceholderText(
+			"e.g. Salary adjustment / Promotion",
+		);
+		fireEvent.change(reasonInput, { target: { value: "Adjustment" } });
+		fireEvent.click(screen.getByText("Save Changes"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("boom");
+		});
+	});
+
+	it("toasts toggle error when the status PUT fails", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Deactivate")[0]);
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith(
+				"Failed to update active status",
+			);
+		});
+	});
+
+	it("cancels an inline edit and restores the read-only row", async () => {
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Edit")[0]);
+		expect(screen.getByText("Save Changes")).toBeDefined();
+
+		fireEvent.click(screen.getByText("Cancel"));
+		expect(screen.queryByText("Save Changes")).toBeNull();
+	});
+
+	it("updates position, salary, hire date and break day in edit mode", async () => {
+		const updated = {
+			...emp,
+			position: "Owner",
+			base_salary: 1200,
+			hired_date: "2024-01-01",
+			break_day: "Friday",
+		};
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse(updated));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Edit")[0]);
+
+		fireEvent.change(screen.getByDisplayValue("Manager"), {
+			target: { value: "Owner" },
+		});
+		fireEvent.change(screen.getByDisplayValue("1000"), {
+			target: { value: "1200" },
+		});
+		fireEvent.change(screen.getByDisplayValue("2025-01-01"), {
+			target: { value: "2024-01-01" },
+		});
+		fireEvent.change(screen.getByDisplayValue("Monday"), {
+			target: { value: "Friday" },
+		});
+		const reasonInput = screen.getByPlaceholderText(
+			"e.g. Salary adjustment / Promotion",
+		);
+		fireEvent.change(reasonInput, { target: { value: "Promotion" } });
+		fireEvent.click(screen.getByText("Save Changes"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/employees/e1"),
+				expect.objectContaining({ method: "PUT" }),
+			);
+		});
+		expect(toast.success).toHaveBeenCalledWith("Employee record updated!");
+	});
+
+	it("toasts add error when no token is available", async () => {
+		mockGetIdToken.mockResolvedValue(null);
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(employees));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Add Store Employee")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
+			target: { value: "Charlie" },
+		});
+		fireEvent.change(
+			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
+			{
+				target: { value: "Floor" },
+			},
+		);
+		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
+			target: { value: "400" },
+		});
+		fireEvent.click(screen.getByText("Add Employee"));
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith("Not authenticated");
+		});
 	});
 });

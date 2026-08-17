@@ -1,32 +1,36 @@
 # CURRENT MISSION
 
 **Type:** Infrastructure
-**Mission:** M-48 ACP-005 Pre-Commit Mission Lock
+**Mission:** M-49 Client Coverage — Close Gaps in AuthContext, ShiftContext, Credits, EmployeeRoster
 **Status:** Locked
 
 ## 1. Objective
-Implement the enforced pre-commit mission lock (ACP-005): a completed mission (MISSION.md `Active` + all Evidence Payload boxes checked) must be flipped to `Locked` by the last pre-commit job before the commit is accepted — eliminating the separate manual `lock_mission.sh` step and the "commit passes, lock fails" failure mode (proven in M-47's tsc Gate-2 failure).
+Close the remaining statement/branch coverage gaps in four client files by extending their existing suites (test-only change; no production source):
+1. **AuthContext.tsx** (61.36% stmts): `window.__E2E_USER__` short-circuit, 404→profile-creation success, 403 registration denial, backend-auth-error branch, catch branch, no-firebase-user branch.
+2. **ShiftContext.tsx** (86.11% stmts): `!user` early-return and `!token` throw paths.
+3. **Credits.tsx** (68.80% stmts): edit flow, cancel-edit, edit/resolve/delete/POST failure paths, no-token guard, free-text input handler, no-user submit guard.
+4. **EmployeeRoster.tsx** (77.24% stmts): no-token guards, missing-salary early return, add/edit/toggle failure paths, cancel-edit, and full add/edit form field handlers (hiredDate, breakDay, position, baseSalary).
+Raise per-directory coverage thresholds empirically to lock in the gains; Red-proof (Rule 28) by excluding the four suites and proving the thresholds trip.
 
 ## 2. Evidence Payload
-- [x] Functional — `.agents/scripts/lock_guard.sh` created and wired as the last `.husky/pre-commit` job; all 4 red-proof paths verified in a temp git repo with a stub lock script (ready-to-lock → triggers + stages Locked artifacts; unchecked box → silent; already Locked → silent; gate failure → commit blocked, exit 1, no partial staging).
-- [x] Architectural — ACP-005 approved (Product Owner, 2026-08-17); flow documented in `ENGINEERING_LIFECYCLE.md`; zero production-source change; guard derives mission id from MISSION.md, no new arguments.
-- [x] Dependency Graph Clean — no new imports or dependency changes; two new shell/governance files only.
-- [x] ADR compliance — ACP-005 lifecycle (Draft → Approved → Implemented), AGENTS.md Rules 4/11/28, M-42 `**Type:**` convention (Infrastructure for `.agents/*` edits), ADR-006 knip advisory preserved unchanged in `lock_mission.sh`.
+- [x] Functional — 4 suites extended by 26 tests (329 → 355 total); AuthContext.tsx 61.36% → 100% stmts/100% lines, ShiftContext.tsx 86.11% → 100% stmts/100% lines, Credits.tsx 68.80% → 93.6% stmts/95.65% lines, EmployeeRoster.tsx 77.24% → 95.12% stmts (funcs 100%); thresholds raised empirically: contexts {lines 70, functions 85} → {95, 90}, pages {lines 80, functions 85} → {85, 90}; Red-proofed (Rule 28): the 4 suites excluded → all four constraints trip — contexts lines 0% < 95, contexts funcs 0% < 90, pages lines 67.08% < 85, pages funcs 67.92% < 90 (vitest exit 1); the three no-token tests additionally assert `fetch` never called and were individually red-proven by temporary guard removal (each failed, then guards restored, 0 diff on production source).
+- [x] Architectural — no production source changed; test-only edits conform to M-43 conventions (real `Response` objects with JSON content-type, module-level firebase/sonner/context mocks, `vi.hoisted` token mocks, `Object.defineProperty` for `window.__E2E_USER__`).
+- [x] Dependency Graph Clean — no new imports/dependencies; only the 4 test suites and `vitest.config.ts` changed.
+- [x] ADR compliance — M-42 `**Type:**` convention (Infrastructure: vitest tooling edit), AGENTS.md Rules 28 (red-proof), 16 (verify), 23 (temp red-proof config lives in `/tmp` and is removed this turn).
 
 ## 3. Scope & Boundaries
-- **In Scope:** `.agents/scripts/lock_guard.sh` (new); `.husky/pre-commit` (append guard as last job); `governance/ENGINEERING_LIFECYCLE.md` (document flow); `governance/proposals/ACP-005_PreCommit_Mission_Lock.md` (status → Implemented).
-- **Out of Scope:** `lock_mission.sh` behavior changes (unchanged, remains standalone tool); Gate-5 keyword leniency fix (flagged for future mission); production source; new dependencies.
-- **Conventions:** guard is text-only fast pre-check (sub-second) before triggering the heavy 6-gate suite; `[x]`-anchored keyword matching (checked checkbox lines only).
+- **In Scope:** `packages/client/src/__tests__/contexts/AuthContext.test.tsx`, `.../contexts/ShiftContext.test.tsx`, `.../pages/Credits.test.tsx`, `.../pages/EmployeeRoster.test.tsx`; `vitest.config.ts` threshold raise; `MISSION.md`; `TASKS.md`; `ROADMAP.md`.
+- **Out of Scope:** production source; new dependencies; new suites; removal or modification of unreachable defensive guards (Credits delete-reason / edit-reason early returns are blocked by disabled buttons and remain intentionally uncovered — removal would require an ACP).
+- **Conventions:** empirical thresholds with headroom (M-43/M-45/M-46 pattern); `vi.hoisted` for per-test token mocks; failure mocks use `{ error }` bodies so `safeJson(...).error` exercises the intended branch.
 
 ## 4. Referenced Architecture
-- ACP-005 (this mission), AGENTS.md Rule 4 (Change Control & Proposal Lifecycle), Rule 11 (Mission Completion Gates — commit is the User Approval moment), Rule 28 (Test-Negative red-proof), Rule 16 (Verification & Anti-Assumption).
-- M-42 (`**Type:**` convention), M-44 (lint-staged hook hardening), ADR-006 (knip advisory), ADR-007 (hook lifecycle).
+M-43 (coverage-gate pattern), M-45/M-46 (page-suite conventions), M-42 (`**Type:**` convention), M-44 (hook hardening), ACP-005 (pre-commit lock), AGENTS.md Rules 11/16/23/28, AVP-001 (6-gate lock suite).
 
 ## 5. Verification Gates (Rule 11)
-- [ ] Functional Verification: 4 red-proof paths executed and logged in ACP-005 §6; biome/tsc/knip clean post-change.
+- [x] Functional Verification: `vitest --coverage` green at raised thresholds (355 tests); red-proof executed and logged in §2.
 - [x] AVP-001 Architecture Verification: passed via lock gates.
-- [ ] Evidence Package: this document + TASKS/ROADMAP rows + archived M-48 packet.
-- [ ] User Approval — approved (ACP-005 approval, 2026-08-17).
+- [x] Evidence Package: this document + TASKS/ROADMAP rows + M-49 evidence packet.
+- [ ] User Approval — commit is the Rule 11 approval moment (ACP-005).
 
 ## Deferred Decision (Rule 10)
-- `lock_mission.sh` Gate 5 uses a lenient bare-keyword match (`grep -qi "\[x\].*ADR\|Compliance"`) that counts an unchecked box as checked when the line contains e.g. "Compliance". The new guard anchors to `[x]`-checkbox lines; the standalone lock script retains the lenient check. Reason: scope discipline (guard correctness was in-scope; lock-script hardening was not). Impact: manual `lock_mission.sh` runs may over-approve the evidence gate. Future mission: harden Gate 5 to `[x]`-anchored matching.
+- Unreachable defensive guards in Credits.tsx remain uncovered by design: `handleDelete` requires `deleteReason` and `handleSubmit` edit mode requires `editReason`, but both submit buttons are `disabled` when the guard condition holds, so the guards cannot be reached via the UI. Reason: coverage discipline — do not test unreachable UI states; guards are cheap insurance. Impact: those statement branches (~6 lines) stay at 0% coverage. Future mission: evaluate guard removal via ACP if branch-100% is ever required.
