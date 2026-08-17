@@ -1,10 +1,11 @@
+import { COLLECTIONS, ROLES } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 export const listExpenses = async (_req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection("expenses").get();
+		const snapshot = await db.collection(COLLECTIONS.EXPENSES).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -18,23 +19,42 @@ export const listExpenses = async (_req: AuthRequest, res: Response) => {
 export const createExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { description, amount, category, date } = req.body;
+	const {
+		item_name,
+		description,
+		amount,
+		category,
+		date,
+		quantity,
+		unit_price,
+		unit,
+	} = req.body;
 
 	try {
-		const userDoc = await db.collection("users").doc(user.uid).get();
-		const role = userDoc.exists ? userDoc.data()?.role : "staff";
+		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
+		const role = userDoc.exists ? userDoc.data()?.role : ROLES.STAFF;
 
-		const newDocRef = db.collection("expenses").doc();
-		const auditRef = db.collection("audit_logs").doc();
+		const newDocRef = db.collection(COLLECTIONS.EXPENSES).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
-		const data = {
+		const computedAmount =
+			quantity !== undefined && unit_price !== undefined
+				? Math.round(quantity * unit_price * 100) / 100
+				: parseFloat(amount);
+
+		const data: Record<string, unknown> = {
+			item_name,
 			description,
-			amount: parseFloat(amount),
+			amount: computedAmount,
 			category,
 			user_id: user.uid,
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
-			verified: role === "manager" || role === "admin",
+			verified: role === ROLES.MANAGER || role === ROLES.ADMIN,
 		};
+
+		if (quantity !== undefined) data.quantity = quantity;
+		if (unit_price !== undefined) data.unit_price = unit_price;
+		if (unit) data.unit = unit;
 
 		await db.runTransaction(async (transaction) => {
 			transaction.set(newDocRef, data);
@@ -60,11 +80,22 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
 	const { id } = req.params;
-	const { description, amount, category, editReason } = req.body;
+	const {
+		item_name,
+		description,
+		amount,
+		category,
+		editReason,
+		quantity,
+		unit_price,
+		unit,
+	} = req.body;
 
 	try {
-		const docRef = db.collection("expenses").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.EXPENSES).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
+
+		let updatedData: Record<string, unknown> = {};
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -74,11 +105,20 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
 
 			const oldDoc = { id: docSnap.id, ...docSnap.data() };
 
-			const newValues = {
-				description,
-				amount: parseFloat(amount),
-				category,
-			};
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
+			const newValues: Record<string, any> = {};
+			if (item_name !== undefined) newValues.item_name = item_name;
+			if (description !== undefined) newValues.description = description;
+			if (category !== undefined) newValues.category = category;
+			if (quantity !== undefined) newValues.quantity = quantity;
+			if (unit_price !== undefined) newValues.unit_price = unit_price;
+			if (unit !== undefined) newValues.unit = unit;
+
+			if (amount !== undefined) {
+				newValues.amount = parseFloat(amount);
+			} else if (quantity !== undefined && unit_price !== undefined) {
+				newValues.amount = Math.round(quantity * unit_price * 100) / 100;
+			}
 
 			transaction.update(docRef, newValues);
 
@@ -91,9 +131,11 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
 				user_id: user.uid,
 				timestamp: new Date().toISOString(),
 			});
+
+			updatedData = { id: docSnap.id, ...docSnap.data(), ...newValues };
 		});
 
-		return res.status(200).json({ message: "Updated successfully" });
+		return res.status(200).json(updatedData);
 	} catch (error: unknown) {
 		console.error("Error updating expense:", error);
 		return res
@@ -109,8 +151,8 @@ export const deleteExpense = async (req: AuthRequest, res: Response) => {
 	const { deleteReason } = req.body;
 
 	try {
-		const docRef = db.collection("expenses").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.EXPENSES).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -148,8 +190,8 @@ export const verifyExpense = async (req: AuthRequest, res: Response) => {
 	const { id } = req.params;
 
 	try {
-		const docRef = db.collection("expenses").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.EXPENSES).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);

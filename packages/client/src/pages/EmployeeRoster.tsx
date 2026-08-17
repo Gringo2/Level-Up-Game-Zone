@@ -1,4 +1,5 @@
 import type { BreakDay, Employee } from "@level-up/shared";
+import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, UserCheck, UserX, X } from "lucide-react";
 import type React from "react";
@@ -265,7 +266,7 @@ export function EmployeeRoster() {
 			</div>
 
 			{/* Add Employee Form */}
-			{(user?.role === "admin" || user?.role === "manager") && (
+			{(user?.role === ROLES.ADMIN || user?.role === ROLES.MANAGER) && (
 				<Card className="max-w-2xl">
 					<form onSubmit={handleAddEmployee}>
 						<CardHeader>
@@ -515,7 +516,7 @@ export function EmployeeRoster() {
 												<span>Break Day: {emp.break_day || "None"}</span>
 											</div>
 										</div>
-										{user?.role === "admin" && (
+										{user?.role === ROLES.ADMIN && (
 											<div className="flex gap-2">
 												<Button
 													variant="outline"

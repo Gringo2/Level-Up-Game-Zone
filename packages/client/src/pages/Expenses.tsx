@@ -1,4 +1,5 @@
-import type { Expense } from "@level-up/shared";
+import type { Expense, ExpenseCategory } from "@level-up/shared";
+import { EXPENSE_CATEGORY_FALLBACKS, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -13,6 +14,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
@@ -22,14 +24,27 @@ import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function Expenses() {
 	const { user } = useAuth();
+	const [itemName, setItemName] = useState("");
 	const [description, setDescription] = useState("");
 	const [amount, setAmount] = useState("");
-	const [category, setCategory] = useState("Misc");
+	const [category, setCategory] = useState("");
+	const [quantity, setQuantity] = useState("");
+	const [unitPrice, setUnitPrice] = useState("");
+	const [unit, setUnit] = useState("");
 	const [entryDate, setEntryDate] = useState(() =>
 		new Date().toISOString().slice(0, 10),
 	);
 	const [loading, setLoading] = useState(false);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
+	const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
+	const [newCategoryName, setNewCategoryName] = useState("");
+	const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+		null,
+	);
+	const [editingCategoryName, setEditingCategoryName] = useState("");
+	const [categoryEditReason, setCategoryEditReason] = useState("");
+	const [categoryLoading, setCategoryLoading] = useState(false);
+	const categories = allCategories.filter((c) => c.isActive);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
@@ -43,20 +58,24 @@ export function Expenses() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
-				const response = await fetch(`${API_BASE}/api/expenses`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
-				if (!response.ok) {
+				const [expensesRes, categoriesRes] = await Promise.all([
+					fetch(`${API_BASE}/api/expenses`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+					fetch(`${API_BASE}/api/expense-categories`, {
+						headers: { Authorization: `Bearer ${token}` },
+					}),
+				]);
+
+				if (!expensesRes.ok) {
 					throw new Error(
-						(await safeJson(response)).error || "Failed to fetch expenses",
+						(await safeJson(expensesRes)).error || "Failed to fetch expenses",
 					);
 				}
 
 				const dayStart = getShopStartOfDay().toISOString();
 				const dayEnd = getShopEndOfDay().toISOString();
-				const data = (await safeJson(response)) as Expense[];
+				const data = (await safeJson(expensesRes)) as Expense[];
 				const fetched = data
 					.filter(
 						(expense) => expense.date >= dayStart && expense.date <= dayEnd,
@@ -67,6 +86,13 @@ export function Expenses() {
 
 				if (mounted) {
 					setExpenses(fetched);
+				}
+
+				if (categoriesRes.ok) {
+					const cats = (await safeJson(categoriesRes)) as ExpenseCategory[];
+					if (mounted) {
+						setAllCategories(cats);
+					}
 				}
 			} catch (err) {
 				console.error(err);
@@ -82,19 +108,39 @@ export function Expenses() {
 		};
 	}, []);
 
+	useEffect(() => {
+		if (
+			!editingId &&
+			categories.length > 0 &&
+			!categories.some((c) => c.name === category)
+		) {
+			setCategory(categories[0].name);
+		}
+	}, [categories, editingId, category]);
+
 	const handleEdit = (expense: Expense) => {
 		setEditingId(expense.id);
+		setItemName(expense.item_name || "");
 		setDescription(expense.description);
 		setAmount(expense.amount.toString());
-		setCategory(expense.category || "Misc");
+		setCategory(expense.category || categories[0]?.name || "");
+		setEntryDate(new Date(expense.date).toISOString().slice(0, 10));
+		setQuantity(expense.quantity?.toString() || "");
+		setUnitPrice(expense.unit_price?.toString() || "");
+		setUnit(expense.unit || "");
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	};
 
 	const cancelEdit = () => {
 		setEditingId(null);
+		setItemName("");
 		setDescription("");
 		setAmount("");
-		setCategory("Misc");
+		setCategory(categories[0]?.name || "");
+		setEntryDate(new Date().toISOString().slice(0, 10));
+		setQuantity("");
+		setUnitPrice("");
+		setUnit("");
 		setEditReason("");
 	};
 
@@ -168,50 +214,54 @@ export function Expenses() {
 					setLoading(false);
 					return;
 				}
+				const body: Record<string, unknown> = {
+					item_name: itemName,
+					description: description,
+					amount: amount,
+					category: category,
+					editReason,
+				};
+				if (quantity) body.quantity = parseFloat(quantity);
+				if (unitPrice) body.unit_price = parseFloat(unitPrice);
+				if (unit) body.unit = unit;
+
 				const response = await fetch(`${API_BASE}/api/expenses/${editingId}`, {
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${token}`,
 					},
-					body: JSON.stringify({
-						description: description,
-						amount: amount,
-						category: category,
-						editReason,
-					}),
+					body: JSON.stringify(body),
 				});
 				if (!response.ok)
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
 					);
+				const updated = await safeJson<Expense>(response);
 				toast.success("Expense updated successfully!");
 				setExpenses((prev) =>
-					prev.map((e) =>
-						e.id === editingId
-							? {
-									...e,
-									description: description,
-									amount: parseFloat(amount),
-									category: category,
-								}
-							: e,
-					),
+					prev.map((e) => (e.id === editingId ? updated : e)),
 				);
 				cancelEdit();
 			} else {
+				const body: Record<string, unknown> = {
+					item_name: itemName,
+					description: description,
+					amount: amount,
+					category: category,
+					date: new Date(entryDate).toISOString(),
+				};
+				if (quantity) body.quantity = parseFloat(quantity);
+				if (unitPrice) body.unit_price = parseFloat(unitPrice);
+				if (unit) body.unit = unit;
+
 				const response = await fetch(`${API_BASE}/api/expenses`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${token}`,
 					},
-					body: JSON.stringify({
-						description: description,
-						amount: amount,
-						category: category,
-						date: new Date(entryDate).toISOString(),
-					}),
+					body: JSON.stringify(body),
 				});
 				if (!response.ok)
 					throw new Error(
@@ -219,9 +269,13 @@ export function Expenses() {
 					);
 				const newExpense = await safeJson<Expense>(response);
 				setExpenses((prev) => [newExpense, ...prev]);
+				setItemName("");
 				setDescription("");
 				setAmount("");
-				setCategory("Misc");
+				setCategory(categories[0]?.name || "");
+				setQuantity("");
+				setUnitPrice("");
+				setUnit("");
 				toast.success("Expense logged successfully!");
 			}
 		} catch (err: unknown) {
@@ -232,13 +286,125 @@ export function Expenses() {
 		}
 	};
 
+	const handleCreateCategory = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!newCategoryName.trim()) return;
+
+		setCategoryLoading(true);
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`${API_BASE}/api/expense-categories`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ name: newCategoryName.trim() }),
+			});
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to create category");
+			}
+			const created = await safeJson<ExpenseCategory>(response);
+			setAllCategories((prev) => [...prev, created]);
+			setNewCategoryName("");
+			toast.success("Category created!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to create category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleUpdateCategory = async (id: string) => {
+		if (!editingCategoryName.trim() || !categoryEditReason.trim()) {
+			toast.error("Category name and reason are required.");
+			return;
+		}
+
+		setCategoryLoading(true);
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`${API_BASE}/api/expense-categories/${id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					name: editingCategoryName.trim(),
+					editReason: categoryEditReason.trim(),
+				}),
+			});
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to update category");
+			}
+			const updated = await safeJson<ExpenseCategory>(response);
+			setAllCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
+			setEditingCategoryId(null);
+			setEditingCategoryName("");
+			setCategoryEditReason("");
+			toast.success("Category updated!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to update category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleDeactivateCategory = async (id: string) => {
+		setCategoryLoading(true);
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`${API_BASE}/api/expense-categories/${id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					isActive: false,
+					editReason: "Deactivated by user",
+				}),
+			});
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to deactivate category");
+			}
+			setAllCategories((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, isActive: false } : c)),
+			);
+			toast.success("Category deactivated!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to deactivate category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
 	return (
 		<div className="space-y-6">
 			<h2 className="text-2xl font-bold tracking-tight">Log Expenses</h2>
 			<Card className="max-w-md">
 				<form onSubmit={handleSubmit}>
 					<CardHeader>
-						<CardTitle>New Expense</CardTitle>
+						<CardTitle>{editingId ? "Edit Expense" : "New Expense"}</CardTitle>
 						<CardDescription>
 							Log a daily expense. This will be deducted from the expected cash.
 						</CardDescription>
@@ -251,6 +417,17 @@ export function Expenses() {
 								type="date"
 								value={entryDate}
 								onChange={(e) => setEntryDate(e.target.value)}
+								required
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="itemName">Item Name</Label>
+							<Input
+								id="itemName"
+								type="text"
+								value={itemName}
+								onChange={(e) => setItemName(e.target.value)}
+								placeholder="e.g., Paper Towels, Light Bulbs"
 								required
 							/>
 						</div>
@@ -275,11 +452,17 @@ export function Expenses() {
 								className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
 								required
 							>
-								<option value="Maintenance">Maintenance</option>
-								<option value="Utilities">Utilities</option>
-								<option value="Supplies">Supplies</option>
-								<option value="Wages">Wages</option>
-								<option value="Misc">Misc</option>
+								{categories.length > 0
+									? categories.map((cat) => (
+											<option key={cat.id} value={cat.name}>
+												{cat.name}
+											</option>
+										))
+									: EXPENSE_CATEGORY_FALLBACKS.map((cat) => (
+											<option key={cat} value={cat}>
+												{cat}
+											</option>
+										))}
 							</select>
 						</div>
 						<div className="space-y-2">
@@ -291,8 +474,62 @@ export function Expenses() {
 								min="0.01"
 								value={amount}
 								onChange={(e) => setAmount(e.target.value)}
-								required
+								placeholder="Enter directly or compute from quantity × unit price"
 							/>
+						</div>
+						<div className="grid grid-cols-3 gap-2">
+							<div className="space-y-2">
+								<Label htmlFor="quantity">Qty</Label>
+								<Input
+									id="quantity"
+									type="number"
+									step="1"
+									min="1"
+									value={quantity}
+									onChange={(e) => {
+										setQuantity(e.target.value);
+										if (e.target.value && unitPrice) {
+											setAmount(
+												(
+													parseFloat(e.target.value) * parseFloat(unitPrice)
+												).toFixed(2),
+											);
+										}
+									}}
+									placeholder="Optional"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="unitPrice">Unit Price ($)</Label>
+								<Input
+									id="unitPrice"
+									type="number"
+									step="0.01"
+									min="0.01"
+									value={unitPrice}
+									onChange={(e) => {
+										setUnitPrice(e.target.value);
+										if (quantity && e.target.value) {
+											setAmount(
+												(
+													parseFloat(quantity) * parseFloat(e.target.value)
+												).toFixed(2),
+											);
+										}
+									}}
+									placeholder="Optional"
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="unit">Unit</Label>
+								<Input
+									id="unit"
+									type="text"
+									value={unit}
+									onChange={(e) => setUnit(e.target.value)}
+									placeholder="e.g., hrs, gal"
+								/>
+							</div>
 						</div>
 						{editingId && (
 							<div className="space-y-2">
@@ -316,8 +553,9 @@ export function Expenses() {
 							className="flex-1"
 							disabled={
 								loading ||
+								!itemName ||
 								!description ||
-								!amount ||
+								(!amount && (!quantity || !unitPrice)) ||
 								(!!editingId && !editReason)
 							}
 						>
@@ -353,11 +591,26 @@ export function Expenses() {
 									className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md bg-white gap-3"
 								>
 									<div>
-										<div className="font-medium">{expense.description}</div>
+										<div className="font-medium">
+											{expense.item_name || expense.description}
+										</div>
 										<div className="text-sm text-zinc-500">
 											${expense.amount.toFixed(2)} &bull;{" "}
 											{expense.category || "Misc"}
+											{expense.quantity && expense.unit_price && (
+												<>
+													{" "}
+													&bull; {expense.quantity} × $
+													{expense.unit_price.toFixed(2)}
+													{expense.unit ? `/${expense.unit}` : ""}
+												</>
+											)}
 										</div>
+										{expense.item_name && expense.description && (
+											<div className="text-xs text-zinc-400">
+												{expense.description}
+											</div>
+										)}
 										<div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
 											{format(new Date(expense.date), "h:mm a")}
 											{expense.verified ? (
@@ -373,72 +626,38 @@ export function Expenses() {
 									</div>
 
 									<div className="flex items-center gap-2 w-full sm:w-auto">
-										{deletingId === expense.id ? (
-											<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 bg-red-50 p-2 rounded-md border border-red-100 w-full sm:w-auto justify-end">
-												<Input
-													size={1}
-													className="h-8 w-full sm:w-40 text-xs bg-white"
-													placeholder="Reason for deletion..."
-													value={deleteReason}
-													onChange={(e) => setDeleteReason(e.target.value)}
-												/>
-												<div className="flex gap-1">
-													<Button
-														size="sm"
-														variant="destructive"
-														onClick={() => handleDelete(expense.id)}
-														disabled={!deleteReason}
-													>
-														Confirm
-													</Button>
-													<Button
-														size="sm"
-														variant="ghost"
-														onClick={() => {
-															setDeletingId(null);
-															setDeleteReason("");
-														}}
-													>
-														Cancel
-													</Button>
-												</div>
-											</div>
-										) : (
+										{!expense.verified &&
+											(user?.role === ROLES.MANAGER ||
+												user?.role === ROLES.ADMIN) && (
+												<Button
+													size="sm"
+													variant="outline"
+													className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+													onClick={() => handleVerify(expense.id)}
+												>
+													Verify
+												</Button>
+											)}
+										{(user?.role === ROLES.MANAGER ||
+											user?.role === ROLES.ADMIN) && (
 											<>
-												{!expense.verified &&
-													(user?.role === "manager" ||
-														user?.role === "admin") && (
-														<Button
-															size="sm"
-															variant="outline"
-															className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-															onClick={() => handleVerify(expense.id)}
-														>
-															Verify
-														</Button>
-													)}
-												{(user?.role === "manager" ||
-													user?.role === "admin") && (
-													<>
-														<Button
-															size="sm"
-															variant="outline"
-															onClick={() => handleEdit(expense)}
-															disabled={!!editingId}
-														>
-															<Edit2 className="h-4 w-4 mr-1" /> Edit
-														</Button>
-														<Button
-															size="sm"
-															variant="ghost"
-															className="text-red-600 hover:text-red-700 hover:bg-red-50"
-															onClick={() => setDeletingId(expense.id)}
-															disabled={!!editingId}
-														>
-															<Trash2 className="h-4 w-4" />
-														</Button>
-													</>
-												)}
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => handleEdit(expense)}
+													disabled={!!editingId}
+												>
+													<Edit2 className="h-4 w-4 mr-1" /> Edit
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													className="text-red-600 hover:text-red-700 hover:bg-red-50"
+													onClick={() => setDeletingId(expense.id)}
+													disabled={!!editingId}
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
 											</>
 										)}
 									</div>
@@ -448,6 +667,148 @@ export function Expenses() {
 					</div>
 				</CardContent>
 			</Card>
+
+			<Card className="max-w-2xl">
+				<CardHeader>
+					<CardTitle>Manage Categories</CardTitle>
+					<CardDescription>
+						Create, edit, or deactivate expense categories.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<form onSubmit={handleCreateCategory} className="flex gap-2">
+						<Input
+							type="text"
+							placeholder="New category name"
+							value={newCategoryName}
+							onChange={(e) => setNewCategoryName(e.target.value)}
+							disabled={categoryLoading}
+							className="flex-1"
+						/>
+						<Button
+							type="submit"
+							disabled={categoryLoading || !newCategoryName.trim()}
+						>
+							{categoryLoading ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								"Add"
+							)}
+						</Button>
+					</form>
+
+					<div className="space-y-2">
+						{allCategories.length === 0 ? (
+							<div className="text-center text-zinc-500 py-4">
+								No categories yet.
+							</div>
+						) : (
+							allCategories.map((cat) => (
+								<div
+									key={cat.id}
+									className="flex items-center gap-2 p-2 border rounded-md bg-white"
+								>
+									{editingCategoryId === cat.id ? (
+										<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+											<Input
+												type="text"
+												value={editingCategoryName}
+												onChange={(e) => setEditingCategoryName(e.target.value)}
+												className="flex-1 h-8 text-sm"
+												placeholder="Category name"
+											/>
+											<Input
+												type="text"
+												value={categoryEditReason}
+												onChange={(e) => setCategoryEditReason(e.target.value)}
+												className="flex-1 h-8 text-sm"
+												placeholder="Reason for change"
+											/>
+											<div className="flex gap-1">
+												<Button
+													size="sm"
+													onClick={() => handleUpdateCategory(cat.id)}
+													disabled={
+														categoryLoading ||
+														!editingCategoryName.trim() ||
+														!categoryEditReason.trim()
+													}
+												>
+													Save
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onClick={() => {
+														setEditingCategoryId(null);
+														setEditingCategoryName("");
+														setCategoryEditReason("");
+													}}
+												>
+													Cancel
+												</Button>
+											</div>
+										</div>
+									) : (
+										<>
+											<span className="flex-1 text-sm">{cat.name}</span>
+											<span
+												className={`text-xs px-1.5 py-0.5 rounded-sm ${
+													cat.isActive
+														? "text-emerald-600 bg-emerald-50"
+														: "text-zinc-500 bg-zinc-100"
+												}`}
+											>
+												{cat.isActive ? "Active" : "Inactive"}
+											</span>
+											{cat.isActive && (
+												<>
+													<Button
+														size="sm"
+														variant="ghost"
+														onClick={() => {
+															setEditingCategoryId(cat.id);
+															setEditingCategoryName(cat.name);
+															setCategoryEditReason("");
+														}}
+														disabled={categoryLoading}
+													>
+														<Edit2 className="h-4 w-4" />
+													</Button>
+													<Button
+														size="sm"
+														variant="ghost"
+														className="text-red-600 hover:text-red-700 hover:bg-red-50"
+														onClick={() => handleDeactivateCategory(cat.id)}
+														disabled={categoryLoading}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</>
+											)}
+										</>
+									)}
+								</div>
+							))
+						)}
+					</div>
+				</CardContent>
+			</Card>
+
+			<ConfirmDialog
+				open={!!deletingId}
+				title="Delete Expense"
+				message="Are you sure you want to delete this expense? This action cannot be undone."
+				reasonValue={deleteReason}
+				onReasonChange={setDeleteReason}
+				onConfirm={() => {
+					if (deletingId) handleDelete(deletingId);
+				}}
+				onCancel={() => {
+					setDeletingId(null);
+					setDeleteReason("");
+				}}
+			/>
 		</div>
 	);
 }

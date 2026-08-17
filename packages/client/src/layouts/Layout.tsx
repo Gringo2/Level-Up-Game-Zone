@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { signOut } from "firebase/auth";
 import {
 	BarChart,
@@ -27,58 +28,63 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			path: "/",
 			label: "Dashboard",
 			icon: LayoutDashboard,
-			roles: ["admin", "manager", "staff"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF],
 		},
 		{
 			path: "/games",
 			label: "Game Sales",
 			icon: Gamepad2,
-			roles: ["admin", "manager", "staff"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF],
 		},
-		{ path: "/keno", label: "Keno", icon: Coins, roles: ["admin", "manager"] },
+		{
+			path: "/keno",
+			label: "Keno",
+			icon: Coins,
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
+		},
 		{
 			path: "/credits",
 			label: "Credits (IOUs)",
 			icon: CreditCard,
-			roles: ["admin", "manager"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/expenses",
 			label: "Expenses",
 			icon: Receipt,
-			roles: ["admin", "manager"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/salary-report",
 			label: "Salary Report",
 			icon: Users,
-			roles: ["admin", "manager"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/reports",
 			label: "Reports",
 			icon: BarChart,
-			roles: ["admin", "manager"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/admin/employees",
 			label: "Employee Roster",
 			icon: UserCog,
-			roles: ["admin", "manager"],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/audit-logs",
 			label: "Activity Log",
 			icon: ClipboardList,
-			roles: ["admin"],
+			roles: [ROLES.ADMIN],
 		},
 		{
 			path: "/admin/users",
 			label: "User Management",
 			icon: UserCog,
-			roles: ["admin"],
+			roles: [ROLES.ADMIN],
 		},
-		{ path: "/admin", label: "Admin", icon: Settings, roles: ["admin"] },
+		{ path: "/admin", label: "Admin", icon: Settings, roles: [ROLES.ADMIN] },
 	];
 
 	return (
@@ -93,7 +99,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				</div>
 				<nav className="flex-1 p-4 space-y-1 overflow-y-auto">
 					{navItems
-						.filter((item) => item.roles.includes(user?.role || ""))
+						.filter((item) => user?.role && item.roles.includes(user.role))
 						.map((item) => {
 							const Icon = item.icon;
 							const isActive = location.pathname === item.path;

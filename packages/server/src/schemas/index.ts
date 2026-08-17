@@ -1,3 +1,9 @@
+import {
+	CREDIT_STATUSES,
+	DEFAULT_EXPENSE_CATEGORY,
+	ROLES,
+	UNIT_TYPES,
+} from "@level-up/shared";
 import { z } from "zod";
 
 // Helper for numeric coercion that rejects NaN and negative values
@@ -82,14 +88,43 @@ export const UpdateKenoSchema = z.object({
 });
 
 // Expense Schemas
-export const CreateExpenseSchema = z.object({
-	description: z.string().trim().min(1, "Description is required"),
-	amount: positiveNumber("Amount"),
-	category: z.string().trim().optional().default("Misc"),
-	date: z.string().optional(),
-});
+export const CreateExpenseSchema = z
+	.object({
+		item_name: z.string().trim().min(1, "Item name is required"),
+		description: z.string().trim().min(1, "Description is required"),
+		amount: positiveNumber("Amount").optional(),
+		category: z.string().trim().optional().default(DEFAULT_EXPENSE_CATEGORY),
+		date: z.string().optional(),
+		quantity: z.coerce
+			.number()
+			.positive("Quantity must be greater than 0")
+			.optional(),
+		unit_price: positiveNumber("Unit price").optional(),
+		unit: z.string().trim().optional(),
+	})
+	.superRefine((data, ctx) => {
+		const hasQuantity = data.quantity !== undefined;
+		const hasUnitPrice = data.unit_price !== undefined;
+		const hasAmount = data.amount !== undefined;
+
+		if (!hasAmount && !hasQuantity && !hasUnitPrice) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Either amount or quantity + unit_price is required",
+				path: ["amount"],
+			});
+		}
+		if (hasQuantity !== hasUnitPrice) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "quantity and unit_price must both be provided",
+				path: hasQuantity ? ["unit_price"] : ["quantity"],
+			});
+		}
+	});
 
 export const UpdateExpenseSchema = z.object({
+	item_name: z.string().trim().min(1, "Item name is required").optional(),
 	description: z.string().trim().min(1, "Description is required").optional(),
 	amount: positiveNumber("Amount").optional(),
 	category: z.string().trim().optional(),
@@ -97,6 +132,12 @@ export const UpdateExpenseSchema = z.object({
 		.string()
 		.trim()
 		.min(3, "Reason for change must be at least 3 characters"),
+	quantity: z.coerce
+		.number()
+		.positive("Quantity must be greater than 0")
+		.optional(),
+	unit_price: positiveNumber("Unit price").optional(),
+	unit: z.string().trim().optional(),
 });
 
 // Credit Schemas
@@ -115,15 +156,35 @@ export const UpdateCreditSchema = z.object({
 		.optional(),
 	amount: positiveNumber("Amount").optional(),
 	reason: z.string().optional(),
-	status: z.enum(["Pending", "Resolved", "Deducted"]).optional(),
+	status: z
+		.enum([
+			CREDIT_STATUSES.PENDING,
+			CREDIT_STATUSES.RESOLVED,
+			CREDIT_STATUSES.DEDUCTED,
+		])
+		.optional(),
 	editReason: z.string().optional(),
+});
+
+// Expense Category Schemas
+export const CreateExpenseCategorySchema = z.object({
+	name: z.string().trim().min(1, "Category name is required"),
+});
+
+export const UpdateExpenseCategorySchema = z.object({
+	name: z.string().trim().min(1, "Category name is required").optional(),
+	isActive: z.boolean().optional(),
+	editReason: z
+		.string()
+		.trim()
+		.min(3, "Reason for change must be at least 3 characters"),
 });
 
 // Game Rate Schemas
 export const CreateGameRateSchema = z.object({
 	game_name: z.string().trim().min(1, "Game name is required"),
 	price_per_unit: positiveNumber("Price per unit"),
-	unit_type: z.enum(["Hour", "Game"], {
+	unit_type: z.enum([UNIT_TYPES.HOUR, UNIT_TYPES.GAME], {
 		errorMap: () => ({ message: "Unit type must be 'Hour' or 'Game'" }),
 	}),
 	isActive: z.boolean().optional().default(true),
@@ -133,7 +194,7 @@ export const UpdateGameRateSchema = z.object({
 	game_name: z.string().trim().min(1, "Game name is required").optional(),
 	price_per_unit: positiveNumber("Price per unit").optional(),
 	unit_type: z
-		.enum(["Hour", "Game"], {
+		.enum([UNIT_TYPES.HOUR, UNIT_TYPES.GAME], {
 			errorMap: () => ({ message: "Unit type must be 'Hour' or 'Game'" }),
 		})
 		.optional(),
@@ -147,7 +208,7 @@ export const UpdateGameRateSchema = z.object({
 // User Schemas
 export const InviteUserSchema = z.object({
 	email: z.string().email("Invalid email address").toLowerCase(),
-	role: z.enum(["admin", "manager", "staff"], {
+	role: z.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {
 		errorMap: () => ({
 			message: "Role must be 'admin', 'manager', or 'staff'",
 		}),
@@ -156,17 +217,17 @@ export const InviteUserSchema = z.object({
 
 export const CreateUserSchema = z.object({
 	role: z
-		.enum(["admin", "manager", "staff"], {
+		.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {
 			errorMap: () => ({
 				message: "Role must be 'admin', 'manager', or 'staff'",
 			}),
 		})
 		.optional()
-		.default("staff"),
+		.default(ROLES.STAFF),
 });
 
 export const UpdateRoleSchema = z.object({
-	role: z.enum(["admin", "manager", "staff"], {
+	role: z.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {
 		errorMap: () => ({
 			message: "Role must be 'admin', 'manager', or 'staff'",
 		}),

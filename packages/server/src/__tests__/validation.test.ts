@@ -106,6 +106,7 @@ describe("Domain-Driven Schema Validation Middleware", () => {
 		const middleware = validateBody(CreateExpenseSchema);
 		const req = {
 			body: {
+				item_name: "Office Supplies",
 				description: "  Office Supplies  ",
 				amount: "45.50",
 				category: "Supplies",
@@ -118,6 +119,7 @@ describe("Domain-Driven Schema Validation Middleware", () => {
 
 		expect(next).toHaveBeenCalledOnce();
 		expect(req.body).toEqual({
+			item_name: "Office Supplies",
 			description: "Office Supplies",
 			amount: 45.5,
 			category: "Supplies",

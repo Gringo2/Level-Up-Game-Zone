@@ -1,4 +1,7 @@
-export type Role = "admin" | "manager" | "staff";
+export * from "./constants.js";
+
+import type { ROLES } from "./constants.js";
+export type Role = (typeof ROLES)[keyof typeof ROLES];
 
 export interface AppUser {
 	uid: string;
@@ -69,12 +72,23 @@ export interface Credit {
 
 export interface Expense {
 	id: string;
+	item_name: string;
 	description: string;
 	amount: number;
 	category?: string;
 	user_id: string;
 	date: string;
 	verified?: boolean;
+	quantity?: number;
+	unit_price?: number;
+	unit?: string;
+}
+
+export interface ExpenseCategory {
+	id: string;
+	name: string;
+	isActive: boolean;
+	created_at: string;
 }
 
 export interface Shift {

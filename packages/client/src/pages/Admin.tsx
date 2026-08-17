@@ -1,4 +1,5 @@
 import type { GameRate } from "@level-up/shared";
+import { UNIT_TYPES } from "@level-up/shared";
 import { Loader2, Pencil, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -21,7 +22,7 @@ interface EditState {
 	rateId: string;
 	gameName: string;
 	price: string;
-	unitType: "Hour" | "Game";
+	unitType: (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES];
 	editReason: string;
 }
 
@@ -29,7 +30,9 @@ export function Admin() {
 	const [rates, setRates] = useState<GameRate[]>([]);
 	const [gameName, setGameName] = useState("");
 	const [price, setPrice] = useState("");
-	const [unitType, setUnitType] = useState<"Hour" | "Game">("Hour");
+	const [unitType, setUnitType] = useState<
+		(typeof UNIT_TYPES)[keyof typeof UNIT_TYPES]
+	>(UNIT_TYPES.HOUR);
 	const [loading, setLoading] = useState(false);
 
 	// Inline edit state — null means no row is being edited
@@ -102,7 +105,7 @@ export function Admin() {
 			setRates((prev) => [...prev, newRate]);
 			setGameName("");
 			setPrice("");
-			setUnitType("Hour");
+			setUnitType(UNIT_TYPES.HOUR);
 			toast.success("Game rate added successfully!");
 		} catch (err: unknown) {
 			console.error(err);
@@ -117,7 +120,7 @@ export function Admin() {
 			rateId: rate.id,
 			gameName: rate.game_name,
 			price: String(rate.price_per_unit),
-			unitType: rate.unit_type as "Hour" | "Game",
+			unitType: rate.unit_type as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
 			editReason: "",
 		});
 	};
@@ -165,7 +168,8 @@ export function Admin() {
 								...r,
 								game_name: editState.gameName,
 								price_per_unit: parseFloat(editState.price),
-								unit_type: editState.unitType as "Hour" | "Game",
+								unit_type:
+									editState.unitType as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
 							}
 						: r,
 				),
@@ -256,11 +260,14 @@ export function Admin() {
 									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2"
 									value={unitType}
 									onChange={(e) =>
-										setUnitType(e.target.value as "Hour" | "Game")
+										setUnitType(
+											e.target
+												.value as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
+										)
 									}
 								>
-									<option value="Hour">Per Hour</option>
-									<option value="Game">Per Game</option>
+									<option value={UNIT_TYPES.HOUR}>Per Hour</option>
+									<option value={UNIT_TYPES.GAME}>Per Game</option>
 								</select>
 							</div>
 						</div>
@@ -335,14 +342,15 @@ export function Admin() {
 															s
 																? {
 																		...s,
-																		unitType: e.target.value as "Hour" | "Game",
+																		unitType: e.target
+																			.value as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
 																	}
 																: s,
 														)
 													}
 												>
-													<option value="Hour">Per Hour</option>
-													<option value="Game">Per Game</option>
+													<option value={UNIT_TYPES.HOUR}>Per Hour</option>
+													<option value={UNIT_TYPES.GAME}>Per Game</option>
 												</select>
 											</div>
 										</div>

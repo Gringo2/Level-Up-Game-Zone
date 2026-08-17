@@ -63,7 +63,11 @@ describe("Expenses Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/expenses")
 				.set("Authorization", authHeader)
-				.send({ description: "Cleaning", amount: 15.5 });
+				.send({
+					item_name: "Cleaning Supplies",
+					description: "Cleaning",
+					amount: 15.5,
+				});
 
 			expect(response.status).toBe(201);
 			expect(response.body.amount).toBe(15.5);
@@ -92,7 +96,11 @@ describe("Expenses Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/expenses")
 				.set("Authorization", authHeader)
-				.send({ description: "Cleaning", amount: 15.5 });
+				.send({
+					item_name: "Cleaning Supplies",
+					description: "Cleaning",
+					amount: 15.5,
+				});
 
 			expect(response.status).toBe(201);
 			expect(response.body.verified).toBe(false);
@@ -197,7 +205,11 @@ describe("Expenses Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/expenses")
 				.set("Authorization", authHeader)
-				.send({ description: "Cleaning", amount: -10 });
+				.send({
+					item_name: "Cleaning Supplies",
+					description: "Cleaning",
+					amount: -10,
+				});
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Amount must be greater than 0");
@@ -338,7 +350,11 @@ describe("Expenses Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/expenses")
 				.set("Authorization", authHeader)
-				.send({ description: "Cleaning", amount: 15.5 });
+				.send({
+					item_name: "Cleaning Supplies",
+					description: "Cleaning",
+					amount: 15.5,
+				});
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toBe("Internal server error");
@@ -400,7 +416,11 @@ describe("Expenses Integration Tests", () => {
 		it("returns 401 without a bearer token on POST", async () => {
 			const response = await request(app)
 				.post("/api/expenses")
-				.send({ description: "Cleaning", amount: 15.5 });
+				.send({
+					item_name: "Cleaning Supplies",
+					description: "Cleaning",
+					amount: 15.5,
+				});
 
 			expect(response.status).toBe(401);
 		});

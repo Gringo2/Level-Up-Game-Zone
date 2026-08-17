@@ -1,4 +1,5 @@
 import type { Credit, Employee } from "@level-up/shared";
+import { CREDIT_STATUSES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -13,6 +14,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
@@ -88,7 +90,9 @@ export function Credits() {
 
 	const handleResolve = async (
 		id: string,
-		resolution: "Resolved" | "Deducted",
+		resolution:
+			| typeof CREDIT_STATUSES.RESOLVED
+			| typeof CREDIT_STATUSES.DEDUCTED,
 	) => {
 		try {
 			const token = await auth.currentUser?.getIdToken();
@@ -378,44 +382,16 @@ export function Credits() {
 											<div className="flex items-center gap-2">
 												<span
 													className={`text-xs font-semibold px-2 py-1 rounded-full ${
-														credit.status === "Pending"
+														credit.status === CREDIT_STATUSES.PENDING
 															? "bg-amber-100 text-amber-800"
-															: credit.status === "Resolved"
+															: credit.status === CREDIT_STATUSES.RESOLVED
 																? "bg-emerald-100 text-emerald-800"
 																: "bg-zinc-100 text-zinc-800"
 													}`}
 												>
 													{credit.status}
 												</span>
-												{deletingId === credit.id ? (
-													<div className="flex items-center gap-2 bg-red-50 p-1 rounded-md border border-red-100">
-														<Input
-															size={1}
-															className="h-8 w-32 text-xs bg-white"
-															placeholder="Reason..."
-															value={deleteReason}
-															onChange={(e) => setDeleteReason(e.target.value)}
-														/>
-														<Button
-															size="sm"
-															variant="destructive"
-															onClick={() => handleDelete(credit.id)}
-															disabled={!deleteReason}
-														>
-															Yes
-														</Button>
-														<Button
-															size="sm"
-															variant="ghost"
-															onClick={() => {
-																setDeletingId(null);
-																setDeleteReason("");
-															}}
-														>
-															No
-														</Button>
-													</div>
-												) : (
+												{deletingId === credit.id ? null : (
 													<>
 														<Button
 															size="icon"
@@ -438,13 +414,15 @@ export function Credits() {
 													</>
 												)}
 											</div>
-											{credit.status === "Pending" && (
+											{credit.status === CREDIT_STATUSES.PENDING && (
 												<div className="flex gap-2 mt-1">
 													<Button
 														size="sm"
 														variant="outline"
 														className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-														onClick={() => handleResolve(credit.id, "Resolved")}
+														onClick={() =>
+															handleResolve(credit.id, CREDIT_STATUSES.RESOLVED)
+														}
 													>
 														Mark Paid
 													</Button>
@@ -452,7 +430,9 @@ export function Credits() {
 														size="sm"
 														variant="outline"
 														className="text-zinc-600 hover:bg-zinc-50"
-														onClick={() => handleResolve(credit.id, "Deducted")}
+														onClick={() =>
+															handleResolve(credit.id, CREDIT_STATUSES.DEDUCTED)
+														}
 													>
 														Deduct
 													</Button>
@@ -466,6 +446,21 @@ export function Credits() {
 					</CardContent>
 				</Card>
 			</div>
+
+			<ConfirmDialog
+				open={!!deletingId}
+				title="Delete Credit"
+				message="Are you sure you want to delete this credit? This action cannot be undone."
+				reasonValue={deleteReason}
+				onReasonChange={setDeleteReason}
+				onConfirm={() => {
+					if (deletingId) handleDelete(deletingId);
+				}}
+				onCancel={() => {
+					setDeletingId(null);
+					setDeleteReason("");
+				}}
+			/>
 		</div>
 	);
 }

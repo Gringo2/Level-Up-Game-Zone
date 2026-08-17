@@ -38,6 +38,7 @@ const managerUser = {
 
 const expense = {
 	id: "exp-1",
+	item_name: "Paper Towels",
 	description: "Cleaning supplies",
 	amount: 12.5,
 	category: "Supplies",
@@ -61,10 +62,15 @@ describe("Expenses", () => {
 				return Promise.resolve(jsonResponse({ ok: true }));
 			}
 			if (init?.method === "PUT") {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+				const { editReason: _, amount: rawAmount, ...updates } = body;
+				const result = { ...expense, ...updates };
+				if (rawAmount !== undefined) result.amount = Number(rawAmount);
+				return Promise.resolve(jsonResponse(result));
 			}
 			if (init?.method === "POST") {
 				const body = JSON.parse(String(init.body)) as {
+					item_name: string;
 					description: string;
 					amount: string;
 					category: string;
@@ -73,6 +79,7 @@ describe("Expenses", () => {
 					jsonResponse({
 						...expense,
 						id: "exp-new",
+						item_name: body.item_name,
 						description: body.description,
 						amount: parseFloat(body.amount),
 						category: body.category,
@@ -86,7 +93,7 @@ describe("Expenses", () => {
 
 	it("renders today's expenses after loading", async () => {
 		render(<Expenses />);
-		expect(await screen.findByText("Cleaning supplies")).toBeInTheDocument();
+		expect(await screen.findByText("Paper Towels")).toBeInTheDocument();
 		expect(screen.getByText(/12\.50/)).toBeInTheDocument();
 		expect(screen.getByText("Supplies")).toBeInTheDocument();
 		expect(screen.getByText("Unverified")).toBeInTheDocument();
@@ -112,6 +119,9 @@ describe("Expenses", () => {
 
 	it("logs a new expense via POST", async () => {
 		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockResolvedValueOnce(
+			jsonResponse([{ name: "Supplies", isActive: true }]),
+		);
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -138,11 +148,12 @@ describe("Expenses", () => {
 				"Expense logged successfully!",
 			),
 		);
-		const [, init] = mockFetch.mock.calls[1] as [string, RequestInit];
+		const [, init] = mockFetch.mock.calls[2] as [string, RequestInit];
 		expect(JSON.parse(String(init.body))).toEqual({
+			item_name: "",
 			description: "New mop",
 			amount: "8",
-			category: "Misc",
+			category: "Supplies",
 			date: expect.any(String),
 		});
 		expect(await screen.findByText("New mop")).toBeInTheDocument();
@@ -175,7 +186,7 @@ describe("Expenses", () => {
 
 		const reason = screen.getByPlaceholderText("Reason for deletion...");
 		fireEvent.change(reason, { target: { value: "Duplicate entry" } });
-		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -270,6 +281,9 @@ describe("Expenses", () => {
 
 	it("shows error toast when POST expense fails", async () => {
 		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockResolvedValueOnce(
+			jsonResponse([{ name: "Supplies", isActive: true }]),
+		);
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -327,6 +341,12 @@ describe("Expenses", () => {
 
 	it("sends selected category in POST body", async () => {
 		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockResolvedValueOnce(
+			jsonResponse([
+				{ name: "Supplies", isActive: true },
+				{ name: "Wages", isActive: true },
+			]),
+		);
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -364,7 +384,9 @@ describe("Expenses", () => {
 		expect(
 			screen.getByPlaceholderText("Reason for deletion..."),
 		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Confirm" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Confirm Delete" }),
+		).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -392,7 +414,7 @@ describe("Expenses", () => {
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Duplicate" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
 			expect(toast.error).toHaveBeenCalledWith("Failed to delete expense"),
@@ -417,6 +439,142 @@ describe("Expenses", () => {
 
 		await waitFor(() =>
 			expect(toast.error).toHaveBeenCalledWith("Failed to verify expense"),
+		);
+	});
+
+	it("renders the Manage Categories section", async () => {
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+		expect(screen.getByText("Manage Categories")).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText("New category name"),
+		).toBeInTheDocument();
+	});
+
+	it("creates a new category via POST", async () => {
+		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockResolvedValueOnce(
+			jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]),
+		);
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "POST" && url.includes("expense-categories")) {
+					return Promise.resolve(
+						jsonResponse({
+							id: "c-new",
+							name: "Transport",
+							isActive: true,
+							created_at: new Date().toISOString(),
+						}),
+					);
+				}
+				if (init?.method === "POST") {
+					return Promise.resolve(jsonResponse({ ...expense, id: "exp-new" }));
+				}
+				if (url.includes("expense-categories")) {
+					return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.change(screen.getByPlaceholderText("New category name"), {
+			target: { value: "Transport" },
+		});
+		fireEvent.click(screen.getByText("Add"));
+
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Category created!"),
+		);
+		const transportItems = screen.getAllByText("Transport");
+		expect(transportItems.length).toBeGreaterThanOrEqual(2);
+	});
+
+	it("shows error toast when creating a duplicate category fails", async () => {
+		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockResolvedValueOnce(
+			jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]),
+		);
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "POST" && url.includes("expense-categories")) {
+					return Promise.resolve(
+						jsonResponse(
+							{ error: "A category with this name already exists" },
+							false,
+							409,
+						),
+					);
+				}
+				if (url.includes("expense-categories")) {
+					return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.change(screen.getByPlaceholderText("New category name"), {
+			target: { value: "Supplies" },
+		});
+		fireEvent.click(screen.getByText("Add"));
+
+		await waitFor(() =>
+			expect(toast.error).toHaveBeenCalledWith(
+				"A category with this name already exists",
+			),
+		);
+	});
+
+	it("deactivates a category via PUT", async () => {
+		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockResolvedValueOnce(
+			jsonResponse([
+				{ id: "c1", name: "Supplies", isActive: true },
+				{ id: "c2", name: "Wages", isActive: true },
+			]),
+		);
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const deactivateButtons = screen
+			.getAllByRole("button")
+			.filter((btn) => btn.querySelector("svg") && !btn.textContent);
+		const deactivateBtn = deactivateButtons[deactivateButtons.length - 1];
+
+		const failFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "PUT" && url.includes("expense-categories")) {
+					const body = JSON.parse(String(init.body)) as { isActive?: boolean };
+					if (body.isActive === false) {
+						return Promise.resolve(
+							jsonResponse({ id: "c2", name: "Wages", isActive: false }),
+						);
+					}
+					return jsonResponse({ ok: true });
+				}
+				if (url.includes("expense-categories")) {
+					return jsonResponse([
+						{ id: "c1", name: "Supplies", isActive: true },
+						{ id: "c2", name: "Wages", isActive: true },
+					]);
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = failFetch as unknown as typeof fetch;
+
+		fireEvent.click(deactivateBtn);
+
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Category deactivated!"),
 		);
 	});
 });

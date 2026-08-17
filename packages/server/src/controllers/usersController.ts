@@ -1,3 +1,4 @@
+import { COLLECTIONS, ROLES, ROOT_ADMIN_EMAILS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
@@ -6,7 +7,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
 	try {
-		const docSnap = await db.collection("users").doc(user.uid).get();
+		const docSnap = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
 		if (!docSnap.exists) {
 			return res.status(404).json({ error: "User profile not found" });
 		}
@@ -21,7 +22,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 
 export const listUsers = async (_req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection("users").get();
+		const snapshot = await db.collection(COLLECTIONS.USERS).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -40,16 +41,15 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 		return res.status(400).json({ error: "Email required from auth token" });
 
 	try {
-		const docRef = db.collection("users").doc(user.uid);
-		const inviteRef = db.collection("user_invites").doc(email);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.USERS).doc(user.uid);
+		const inviteRef = db.collection(COLLECTIONS.USER_INVITES).doc(email);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
-		const isRootAdmin =
-			email === "bezueyob3@gmail.com" || email === "jobsbezu@gmail.com";
-		let assignedRole = "staff";
+		const isRootAdmin = ROOT_ADMIN_EMAILS.includes(email);
+		let assignedRole: (typeof ROLES)[keyof typeof ROLES] = ROLES.STAFF;
 
 		if (isRootAdmin) {
-			assignedRole = "admin";
+			assignedRole = ROLES.ADMIN;
 		} else {
 			const inviteSnap = await inviteRef.get();
 			if (!inviteSnap.exists) {
@@ -58,7 +58,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 						"Forbidden: You are not authorized to access this system. Please request an invite.",
 				});
 			}
-			assignedRole = inviteSnap.data()?.role || "staff";
+			assignedRole = inviteSnap.data()?.role || ROLES.STAFF;
 		}
 
 		const data = {
@@ -109,22 +109,25 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 	const { email, role } = req.body;
 
 	try {
-		const adminDoc = await db.collection("users").doc(adminUser.uid).get();
-		if (adminDoc.data()?.role !== "admin") {
+		const adminDoc = await db
+			.collection(COLLECTIONS.USERS)
+			.doc(adminUser.uid)
+			.get();
+		if (adminDoc.data()?.role !== ROLES.ADMIN) {
 			return res.status(403).json({ error: "Forbidden: Admins only" });
 		}
 
 		// Check if user is already registered
 		const usersQuery = await db
-			.collection("users")
+			.collection(COLLECTIONS.USERS)
 			.where("email", "==", email)
 			.get();
 		if (!usersQuery.empty) {
 			return res.status(400).json({ error: "User is already registered" });
 		}
 
-		const inviteRef = db.collection("user_invites").doc(email);
-		const auditRef = db.collection("audit_logs").doc();
+		const inviteRef = db.collection(COLLECTIONS.USER_INVITES).doc(email);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const inviteSnap = await transaction.get(inviteRef);
@@ -170,13 +173,16 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 	const { role, editReason } = req.body;
 
 	try {
-		const adminDoc = await db.collection("users").doc(adminUser.uid).get();
-		if (adminDoc.data()?.role !== "admin") {
+		const adminDoc = await db
+			.collection(COLLECTIONS.USERS)
+			.doc(adminUser.uid)
+			.get();
+		if (adminDoc.data()?.role !== ROLES.ADMIN) {
 			return res.status(403).json({ error: "Forbidden: Admins only" });
 		}
 
-		const docRef = db.collection("users").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.USERS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -220,14 +226,17 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 	}
 
 	try {
-		const adminDoc = await db.collection("users").doc(adminUser.uid).get();
-		if (adminDoc.data()?.role !== "admin") {
+		const adminDoc = await db
+			.collection(COLLECTIONS.USERS)
+			.doc(adminUser.uid)
+			.get();
+		if (adminDoc.data()?.role !== ROLES.ADMIN) {
 			return res.status(403).json({ error: "Forbidden: Admins only" });
 		}
 
-		const userRef = db.collection("users").doc(id);
-		const inviteRef = db.collection("user_invites").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const userRef = db.collection(COLLECTIONS.USERS).doc(id);
+		const inviteRef = db.collection(COLLECTIONS.USER_INVITES).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const userSnap = await transaction.get(userRef);
@@ -241,10 +250,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 				const userData = userSnap.data();
 				const targetEmail = userData?.email;
 
-				if (
-					targetEmail === "bezueyob3@gmail.com" ||
-					targetEmail === "jobsbezu@gmail.com"
-				) {
+				if (ROOT_ADMIN_EMAILS.includes(targetEmail)) {
 					throw new Error("Root admin accounts cannot be deleted");
 				}
 

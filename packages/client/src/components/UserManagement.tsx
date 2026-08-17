@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -10,7 +11,7 @@ interface AppUser {
 	uid: string;
 	email: string;
 	displayName: string;
-	role: "admin" | "manager" | "staff";
+	role: (typeof ROLES)[keyof typeof ROLES];
 }
 
 export function UserManagement() {
@@ -18,9 +19,9 @@ export function UserManagement() {
 	const [loading, setLoading] = useState(true);
 
 	const [inviteEmail, setInviteEmail] = useState("");
-	const [inviteRole, setInviteRole] = useState<"admin" | "manager" | "staff">(
-		"staff",
-	);
+	const [inviteRole, setInviteRole] = useState<
+		(typeof ROLES)[keyof typeof ROLES]
+	>(ROLES.STAFF);
 	const [inviteLoading, setInviteLoading] = useState(false);
 
 	useEffect(() => {
@@ -63,7 +64,7 @@ export function UserManagement() {
 
 	const handleUpdateRole = async (
 		user: AppUser,
-		newRole: "admin" | "manager" | "staff",
+		newRole: (typeof ROLES)[keyof typeof ROLES],
 	) => {
 		try {
 			const token = await auth.currentUser?.getIdToken();
@@ -160,7 +161,7 @@ export function UserManagement() {
 
 			toast.success(`User ${inviteEmail} invited as ${inviteRole}!`);
 			setInviteEmail("");
-			setInviteRole("staff");
+			setInviteRole(ROLES.STAFF);
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error((err as Error).message || "Failed to invite user");
@@ -202,14 +203,14 @@ export function UserManagement() {
 									value={inviteRole}
 									onChange={(e) =>
 										setInviteRole(
-											e.target.value as "admin" | "manager" | "staff",
+											e.target.value as (typeof ROLES)[keyof typeof ROLES],
 										)
 									}
 									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
 								>
-									<option value="admin">Admin</option>
-									<option value="manager">Manager</option>
-									<option value="staff">Staff</option>
+									<option value={ROLES.ADMIN}>Admin</option>
+									<option value={ROLES.MANAGER}>Manager</option>
+									<option value={ROLES.STAFF}>Staff</option>
 								</select>
 							</div>
 							<Button type="submit" disabled={inviteLoading || !inviteEmail}>
@@ -251,9 +252,9 @@ export function UserManagement() {
 											}
 											className="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
 										>
-											<option value="admin">Admin</option>
-											<option value="manager">Manager</option>
-											<option value="staff">Staff</option>
+											<option value={ROLES.ADMIN}>Admin</option>
+											<option value={ROLES.MANAGER}>Manager</option>
+											<option value={ROLES.STAFF}>Staff</option>
 										</select>
 									</td>
 									<td className="px-4 py-3 text-right">

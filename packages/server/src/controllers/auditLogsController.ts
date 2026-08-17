@@ -1,3 +1,4 @@
+import { COLLECTIONS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
@@ -5,7 +6,7 @@ import type { AuthRequest } from "../middleware/auth.js";
 export const listAuditLogs = async (_req: AuthRequest, res: Response) => {
 	try {
 		const snapshot = await db
-			.collection("audit_logs")
+			.collection(COLLECTIONS.AUDIT_LOGS)
 			.orderBy("timestamp", "desc")
 			.get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));

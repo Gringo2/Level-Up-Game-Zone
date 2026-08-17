@@ -1,4 +1,5 @@
 import type { Shift } from "@level-up/shared";
+import { SHIFT_STATUSES } from "@level-up/shared";
 import type React from "react";
 import {
 	createContext,
@@ -59,7 +60,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 
 			let openShift =
 				data
-					.filter((s) => s.status === "OPEN")
+					.filter((s) => s.status === SHIFT_STATUSES.OPEN)
 					.sort(
 						(a, b) =>
 							new Date(b.start_time).getTime() -

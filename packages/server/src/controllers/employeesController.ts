@@ -1,10 +1,11 @@
+import { COLLECTIONS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 export const listEmployees = async (_req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection("employees").get();
+		const snapshot = await db.collection(COLLECTIONS.EMPLOYEES).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -21,8 +22,8 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 	const { name, position, base_salary, hired_date, break_day } = req.body;
 
 	try {
-		const newDocRef = db.collection("employees").doc();
-		const auditRef = db.collection("audit_logs").doc();
+		const newDocRef = db.collection(COLLECTIONS.EMPLOYEES).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
 			name,
@@ -71,8 +72,8 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 	} = req.body;
 
 	try {
-		const docRef = db.collection("employees").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.EMPLOYEES).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);

@@ -156,7 +156,7 @@ describe("Keno", () => {
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Wrong entry" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -286,7 +286,9 @@ describe("Keno", () => {
 		expect(
 			screen.getByPlaceholderText("Reason for deletion..."),
 		).toBeInTheDocument();
-		expect(screen.getByRole("button", { name: "Confirm" })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Confirm Delete" }),
+		).toBeInTheDocument();
 
 		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
@@ -314,7 +316,7 @@ describe("Keno", () => {
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Duplicate" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
 			expect(toast.error).toHaveBeenCalledWith("Failed to delete keno log"),

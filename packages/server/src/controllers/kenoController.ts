@@ -1,10 +1,11 @@
+import { COLLECTIONS, ROLES } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 export const listKenoLogs = async (_req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection("keno_logs").get();
+		const snapshot = await db.collection(COLLECTIONS.KENO_LOGS).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -21,11 +22,11 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 	const { sales, payouts, net_profit, date } = req.body;
 
 	try {
-		const userDoc = await db.collection("users").doc(user.uid).get();
-		const role = userDoc.exists ? userDoc.data()?.role : "staff";
+		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
+		const role = userDoc.exists ? userDoc.data()?.role : ROLES.STAFF;
 
-		const newDocRef = db.collection("keno_logs").doc();
-		const auditRef = db.collection("audit_logs").doc();
+		const newDocRef = db.collection(COLLECTIONS.KENO_LOGS).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
 			sales: parseFloat(sales),
@@ -33,7 +34,7 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 			net_profit: parseFloat(net_profit),
 			user_id: user.uid,
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
-			verified: role === "manager" || role === "admin",
+			verified: role === ROLES.MANAGER || role === ROLES.ADMIN,
 		};
 
 		await db.runTransaction(async (transaction) => {
@@ -63,8 +64,8 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 	const { sales, payouts, net_profit, editReason } = req.body;
 
 	try {
-		const docRef = db.collection("keno_logs").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.KENO_LOGS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -109,8 +110,8 @@ export const deleteKeno = async (req: AuthRequest, res: Response) => {
 	const { deleteReason } = req.body;
 
 	try {
-		const docRef = db.collection("keno_logs").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.KENO_LOGS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -148,8 +149,8 @@ export const verifyKeno = async (req: AuthRequest, res: Response) => {
 	const { id } = req.params;
 
 	try {
-		const docRef = db.collection("keno_logs").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.KENO_LOGS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);

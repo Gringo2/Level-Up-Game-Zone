@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { Loader2 } from "lucide-react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -43,7 +44,7 @@ function AppContent() {
 						<Route path="/games" element={<GameSales />} />
 
 						{/* Manager & Admin Routes */}
-						{(user.role === "manager" || user.role === "admin") && (
+						{(user.role === ROLES.MANAGER || user.role === ROLES.ADMIN) && (
 							<>
 								<Route path="/keno" element={<Keno />} />
 								<Route path="/credits" element={<Credits />} />
@@ -55,7 +56,7 @@ function AppContent() {
 						)}
 
 						{/* Admin Only Routes */}
-						{user.role === "admin" && (
+						{user.role === ROLES.ADMIN && (
 							<>
 								<Route path="/admin" element={<Admin />} />
 								<Route path="/audit-logs" element={<AuditLogs />} />

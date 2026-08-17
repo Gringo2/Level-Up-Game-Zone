@@ -1,4 +1,5 @@
 import type { GameRate, GameSalesLog } from "@level-up/shared";
+import { DEFAULT_GAME_RATES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -13,6 +14,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
@@ -260,9 +262,9 @@ export function GameSales() {
 										Authorization: `Bearer ${token}`,
 									},
 									body: JSON.stringify({
-										game_name: "PS4",
-										price_per_unit: 5,
-										unit_type: "Hour",
+										game_name: DEFAULT_GAME_RATES[0].game_name,
+										price_per_unit: DEFAULT_GAME_RATES[0].price_per_unit,
+										unit_type: DEFAULT_GAME_RATES[0].unit_type,
 										isActive: true,
 									}),
 								});
@@ -273,9 +275,9 @@ export function GameSales() {
 										Authorization: `Bearer ${token}`,
 									},
 									body: JSON.stringify({
-										game_name: "Pool",
-										price_per_unit: 2,
-										unit_type: "Game",
+										game_name: DEFAULT_GAME_RATES[1].game_name,
+										price_per_unit: DEFAULT_GAME_RATES[1].price_per_unit,
+										unit_type: DEFAULT_GAME_RATES[1].unit_type,
 										isActive: true,
 									}),
 								});
@@ -429,57 +431,23 @@ export function GameSales() {
 										</div>
 
 										<div className="flex items-center gap-2 w-full sm:w-auto">
-											{deletingId === log.id ? (
-												<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 bg-red-50 p-2 rounded-md border border-red-100 w-full sm:w-auto justify-end">
-													<Input
-														size={1}
-														className="h-8 w-full sm:w-40 text-xs bg-white"
-														placeholder="Reason for deletion..."
-														value={deleteReason}
-														onChange={(e) => setDeleteReason(e.target.value)}
-													/>
-													<div className="flex gap-1">
-														<Button
-															size="sm"
-															variant="destructive"
-															onClick={() => handleDelete(log.id)}
-															disabled={!deleteReason}
-														>
-															Confirm
-														</Button>
-														<Button
-															size="sm"
-															variant="ghost"
-															onClick={() => {
-																setDeletingId(null);
-																setDeleteReason("");
-															}}
-														>
-															Cancel
-														</Button>
-													</div>
-												</div>
-											) : (
-												<>
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() => handleEdit(log)}
-														disabled={!!editingId}
-													>
-														<Edit2 className="h-4 w-4 mr-1" /> Edit
-													</Button>
-													<Button
-														size="sm"
-														variant="ghost"
-														className="text-red-600 hover:text-red-700 hover:bg-red-50"
-														onClick={() => setDeletingId(log.id)}
-														disabled={!!editingId}
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</>
-											)}
+											<Button
+												size="sm"
+												variant="outline"
+												onClick={() => handleEdit(log)}
+												disabled={!!editingId}
+											>
+												<Edit2 className="h-4 w-4 mr-1" /> Edit
+											</Button>
+											<Button
+												size="sm"
+												variant="ghost"
+												className="text-red-600 hover:text-red-700 hover:bg-red-50"
+												onClick={() => setDeletingId(log.id)}
+												disabled={!!editingId}
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
 										</div>
 									</div>
 								))
@@ -488,6 +456,20 @@ export function GameSales() {
 					</CardContent>
 				</Card>
 			</div>
+			<ConfirmDialog
+				open={!!deletingId}
+				title="Delete Game Sale"
+				message="Are you sure you want to delete this game sale entry? This action cannot be undone."
+				reasonValue={deleteReason}
+				onReasonChange={setDeleteReason}
+				onConfirm={() => {
+					if (deletingId) handleDelete(deletingId);
+				}}
+				onCancel={() => {
+					setDeletingId(null);
+					setDeleteReason("");
+				}}
+			/>
 		</div>
 	);
 }

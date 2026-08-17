@@ -1,10 +1,11 @@
+import { COLLECTIONS, CREDIT_STATUSES } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 export const listCredits = async (_req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection("credits").get();
+		const snapshot = await db.collection(COLLECTIONS.CREDITS).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -21,14 +22,14 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 	const { employee_name, amount, reason, date } = req.body;
 
 	try {
-		const newDocRef = db.collection("credits").doc();
-		const auditRef = db.collection("audit_logs").doc();
+		const newDocRef = db.collection(COLLECTIONS.CREDITS).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
 			employee_name,
 			amount: parseFloat(amount),
 			reason,
-			status: "Pending",
+			status: CREDIT_STATUSES.PENDING,
 			user_id: user.uid,
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 		};
@@ -66,8 +67,8 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 	}
 
 	try {
-		const docRef = db.collection("credits").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.CREDITS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -115,8 +116,8 @@ export const deleteCredit = async (req: AuthRequest, res: Response) => {
 	const { deleteReason } = req.body;
 
 	try {
-		const docRef = db.collection("credits").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.CREDITS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);

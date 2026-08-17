@@ -1,3 +1,10 @@
+import {
+	COLLECTIONS,
+	CREDIT_STATUSES,
+	SHIFT_STATUSES,
+	SYSTEM_IDENTITY,
+	VARIANCE_THRESHOLD_FOR_EXPLANATION,
+} from "@level-up/shared";
 import type { Response } from "express";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
@@ -6,7 +13,7 @@ import type { AuthRequest } from "../middleware/auth.js";
 export const listShifts = async (_req: AuthRequest, res: Response) => {
 	try {
 		await autoLabelStaleShifts();
-		const snapshot = await db.collection("shifts").get();
+		const snapshot = await db.collection(COLLECTIONS.SHIFTS).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -20,8 +27,8 @@ export const listShifts = async (_req: AuthRequest, res: Response) => {
 const autoLabelStaleShifts = async () => {
 	try {
 		const openShiftsSnap = await db
-			.collection("shifts")
-			.where("status", "==", "OPEN")
+			.collection(COLLECTIONS.SHIFTS)
+			.where("status", "==", SHIFT_STATUSES.OPEN)
 			.get();
 		const now = new Date();
 		// Local calendar date (YYYY-MM-DD)
@@ -33,7 +40,7 @@ const autoLabelStaleShifts = async () => {
 				shift.start_time,
 			).toLocaleDateString("en-CA");
 			if (shiftStartDateString !== todayDateString) {
-				await doc.ref.update({ status: "MISSED" });
+				await doc.ref.update({ status: SHIFT_STATUSES.MISSED });
 			}
 		}
 	} catch (err) {
@@ -48,23 +55,23 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 
 	try {
 		const openShiftsSnap = await db
-			.collection("shifts")
-			.where("status", "==", "OPEN")
+			.collection(COLLECTIONS.SHIFTS)
+			.where("status", "==", SHIFT_STATUSES.OPEN)
 			.get();
 
 		if (!openShiftsSnap.empty) {
 			return res.status(400).json({ error: "An active shift is already open" });
 		}
 
-		const newDocRef = db.collection("shifts").doc();
-		const auditRef = db.collection("audit_logs").doc();
+		const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
 			manager_id: user.uid,
 			manager_name: managerName || user.email || "Unknown",
 			start_time: new Date().toISOString(),
 			opening_float: parseFloat(floatAmount),
-			status: "OPEN",
+			status: SHIFT_STATUSES.OPEN,
 		};
 
 		await db.runTransaction(async (transaction) => {
@@ -94,7 +101,7 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 		const { id } = req.params;
 		const { actualCashCounted, shortageReason } = req.body;
 
-		const shiftRef = db.collection("shifts").doc(id);
+		const shiftRef = db.collection(COLLECTIONS.SHIFTS).doc(id);
 		const shiftDoc = await shiftRef.get();
 
 		if (!shiftDoc.exists) {
@@ -104,7 +111,7 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 		const shiftData = shiftDoc.data();
 		if (!shiftData) return res.status(404).json({ error: "Shift data empty" });
 
-		if (shiftData.status === "CLOSED") {
+		if (shiftData.status === SHIFT_STATUSES.CLOSED) {
 			return res.status(400).json({ error: "Shift is already closed" });
 		}
 
@@ -113,10 +120,19 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 		// Fetch dependent data securely on the backend
 		const [gameSalesSnap, kenoSnap, creditsSnap, expensesSnap] =
 			await Promise.all([
-				db.collection("game_sales_logs").where("date", ">=", startTime).get(),
-				db.collection("keno_logs").where("date", ">=", startTime).get(),
-				db.collection("credits").where("date", ">=", startTime).get(),
-				db.collection("expenses").where("date", ">=", startTime).get(),
+				db
+					.collection(COLLECTIONS.GAME_SALES_LOGS)
+					.where("date", ">=", startTime)
+					.get(),
+				db
+					.collection(COLLECTIONS.KENO_LOGS)
+					.where("date", ">=", startTime)
+					.get(),
+				db.collection(COLLECTIONS.CREDITS).where("date", ">=", startTime).get(),
+				db
+					.collection(COLLECTIONS.EXPENSES)
+					.where("date", ">=", startTime)
+					.get(),
 			]);
 
 		const totalGameSales = gameSalesSnap.docs.reduce(
@@ -130,7 +146,10 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 			0,
 		);
 		const pendingCredits = creditsSnap.docs
-			.filter((doc: QueryDocumentSnapshot) => doc.data().status === "Pending")
+			.filter(
+				(doc: QueryDocumentSnapshot) =>
+					doc.data().status === CREDIT_STATUSES.PENDING,
+			)
 			.reduce(
 				(sum: number, doc: QueryDocumentSnapshot) =>
 					sum + (doc.data().amount || 0),
@@ -150,7 +169,10 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 			pendingCredits;
 		const variance = Number(actualCashCounted) - expectedCash;
 
-		if (Math.abs(variance) > 2 && !shortageReason) {
+		if (
+			Math.abs(variance) > VARIANCE_THRESHOLD_FOR_EXPLANATION &&
+			!shortageReason
+		) {
 			return res.status(400).json({
 				error:
 					"Variance is greater than $2.00. Please provide a reason for the shortage.",
@@ -163,7 +185,7 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 			expected_cash_calculated: expectedCash,
 			variance: variance,
 			reason_for_shortage: shortageReason || "",
-			status: "CLOSED",
+			status: SHIFT_STATUSES.CLOSED,
 		};
 
 		await shiftRef.update(updateData);
@@ -184,7 +206,7 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 	const { floatAmount } = req.body;
 
 	try {
-		const shiftRef = db.collection("shifts").doc(id);
+		const shiftRef = db.collection(COLLECTIONS.SHIFTS).doc(id);
 		const newFloat = parseFloat(floatAmount);
 
 		await db.runTransaction(async (transaction) => {
@@ -194,13 +216,13 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 				throw new Error("Shift not found");
 			}
 
-			if (shiftDoc.data()?.status !== "OPEN") {
+			if (shiftDoc.data()?.status !== SHIFT_STATUSES.OPEN) {
 				throw new Error("Only open shifts can have their float updated");
 			}
 
 			transaction.update(shiftRef, { opening_float: newFloat });
 
-			const auditRef = db.collection("audit_logs").doc();
+			const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 			transaction.set(auditRef, {
 				table_affected: "shifts",
 				record_id: id,
@@ -234,8 +256,8 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 		await autoLabelStaleShifts();
 
 		const missedShiftsSnap = await db
-			.collection("shifts")
-			.where("status", "==", "MISSED")
+			.collection(COLLECTIONS.SHIFTS)
+			.where("status", "==", SHIFT_STATUSES.MISSED)
 			.get();
 		const missedShifts = missedShiftsSnap.docs.map((doc) => ({
 			id: doc.id,
@@ -243,7 +265,7 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 		}));
 
 		const lastShiftSnap = await db
-			.collection("shifts")
+			.collection(COLLECTIONS.SHIFTS)
 			.orderBy("start_time", "desc")
 			.limit(1)
 			.get();
@@ -270,7 +292,7 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 		if (gapDates.length > 0) {
 			const earliestGap = gapDates[0];
 			const resolutionsSnap = await db
-				.collection("missed_day_resolutions")
+				.collection(COLLECTIONS.MISSED_DAY_RESOLUTIONS)
 				.where("date", ">=", earliestGap)
 				.get();
 			resolvedDates = resolutionsSnap.docs.map((doc) => doc.data().date);
@@ -286,21 +308,21 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 		if (unresolvedGaps.length === 0 && missedShifts.length === 0) {
 			await db.runTransaction(async (transaction) => {
 				const openShiftsQuery = db
-					.collection("shifts")
-					.where("status", "==", "OPEN");
+					.collection(COLLECTIONS.SHIFTS)
+					.where("status", "==", SHIFT_STATUSES.OPEN);
 				const openShiftsSnap = await transaction.get(openShiftsQuery);
 
 				if (openShiftsSnap.empty) {
-					const newDocRef = db.collection("shifts").doc();
-					const auditRef = db.collection("audit_logs").doc();
+					const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
+					const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 					const user = req.user;
 					const data = {
-						manager_id: user?.uid || "system",
-						manager_name: user?.email || "System Auto-Open",
+						manager_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
+						manager_name: user?.email || SYSTEM_IDENTITY.DISPLAY_NAME,
 						start_time: new Date().toISOString(),
 						opening_float: 0,
-						status: "OPEN",
+						status: SHIFT_STATUSES.OPEN,
 					};
 
 					transaction.set(newDocRef, data);
@@ -310,7 +332,7 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 						old_value: null,
 						new_value: data,
 						reason_for_change: "Auto-opened shift for new day",
-						user_id: user?.uid || "system",
+						user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
 						timestamp: new Date().toISOString(),
 					});
 

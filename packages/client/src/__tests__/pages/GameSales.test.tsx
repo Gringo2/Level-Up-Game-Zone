@@ -201,7 +201,7 @@ describe("GameSales", () => {
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Duplicate entry" },
 		});
-		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
 			expect(mockFetch).toHaveBeenCalledWith(
@@ -334,7 +334,7 @@ describe("GameSales", () => {
 
 		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
 
-		fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
 			expect(toast.error).toHaveBeenCalledWith("Failed to delete sale"),

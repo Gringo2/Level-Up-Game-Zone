@@ -1,10 +1,11 @@
+import { COLLECTIONS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
 export const listSales = async (_req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection("game_sales_logs").get();
+		const snapshot = await db.collection(COLLECTIONS.GAME_SALES_LOGS).get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -28,8 +29,8 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 	} = req.body;
 
 	try {
-		const newDocRef = db.collection("game_sales_logs").doc();
-		const auditRef = db.collection("audit_logs").doc();
+		const newDocRef = db.collection(COLLECTIONS.GAME_SALES_LOGS).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
 			game_id,
@@ -75,8 +76,8 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 	} = req.body;
 
 	try {
-		const docRef = db.collection("game_sales_logs").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.GAME_SALES_LOGS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
@@ -123,8 +124,8 @@ export const deleteSale = async (req: AuthRequest, res: Response) => {
 	const { deleteReason } = req.body;
 
 	try {
-		const docRef = db.collection("game_sales_logs").doc(id);
-		const auditRef = db.collection("audit_logs").doc();
+		const docRef = db.collection(COLLECTIONS.GAME_SALES_LOGS).doc(id);
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);

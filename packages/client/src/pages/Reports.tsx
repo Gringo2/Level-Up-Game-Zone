@@ -5,6 +5,11 @@ import type {
 	KenoLog,
 	Shift,
 } from "@level-up/shared";
+import {
+	CREDIT_STATUSES,
+	DEFAULT_EXPENSE_CATEGORY,
+	SHIFT_STATUSES,
+} from "@level-up/shared";
 import { format } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
@@ -174,7 +179,7 @@ export function Reports() {
 	const totalKenoNet = kenoLogs.reduce((sum, log) => sum + log.net_profit, 0);
 	const totalExpenses = expenses.reduce((sum, log) => sum + log.amount, 0);
 
-	const closedShifts = shifts.filter((s) => s.status === "CLOSED");
+	const closedShifts = shifts.filter((s) => s.status === SHIFT_STATUSES.CLOSED);
 	const totalVariance = closedShifts.reduce(
 		(sum, s) => sum + (s.variance || 0),
 		0,
@@ -194,7 +199,7 @@ export function Reports() {
 	// Expense Breakdown
 	const expensesByCategory = expenses.reduce(
 		(acc, exp) => {
-			const cat = exp.category || "Misc";
+			const cat = exp.category || DEFAULT_EXPENSE_CATEGORY;
 			acc[cat] = (acc[cat] || 0) + exp.amount;
 			return acc;
 		},
@@ -217,7 +222,7 @@ export function Reports() {
 	});
 
 	credits
-		.filter((c) => c.status === "Deducted")
+		.filter((c) => c.status === CREDIT_STATUSES.DEDUCTED)
 		.forEach((c) => {
 			if (!staffData[c.employee_name])
 				staffData[c.employee_name] = { variances: 0, deductions: 0 };
@@ -681,10 +686,12 @@ export function Reports() {
 															</td>
 															<td className="px-4 py-3">
 																<span className="px-2 py-1 bg-zinc-100 rounded-md text-xs">
-																	{log.category || "Misc"}
+																	{log.category || DEFAULT_EXPENSE_CATEGORY}
 																</span>
 															</td>
-															<td className="px-4 py-3">{log.description}</td>
+															<td className="px-4 py-3">
+																{log.item_name || log.description}
+															</td>
 															<td className="px-4 py-3 text-right font-medium text-red-600">
 																-${log.amount.toFixed(2)}
 															</td>

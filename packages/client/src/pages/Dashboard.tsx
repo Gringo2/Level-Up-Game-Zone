@@ -1,4 +1,5 @@
 import type { Credit, Expense, GameSalesLog, KenoLog } from "@level-up/shared";
+import { CREDIT_STATUSES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Coins, CreditCard, Gamepad2, Loader2, Receipt } from "lucide-react";
 import type React from "react";
@@ -123,7 +124,7 @@ export function Dashboard() {
 	);
 	const totalKenoNet = kenoLogs.reduce((sum, log) => sum + log.net_profit, 0);
 	const pendingCredits = credits
-		.filter((c) => c.status === "Pending")
+		.filter((c) => c.status === CREDIT_STATUSES.PENDING)
 		.reduce((sum, log) => sum + log.amount, 0);
 	const totalExpenses = expenses.reduce((sum, log) => sum + log.amount, 0);
 

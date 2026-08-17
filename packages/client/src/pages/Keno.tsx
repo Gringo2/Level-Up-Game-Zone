@@ -1,4 +1,5 @@
 import type { KenoLog } from "@level-up/shared";
+import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -13,6 +14,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
@@ -362,72 +364,38 @@ export function Keno() {
 									</div>
 
 									<div className="flex items-center gap-2 w-full sm:w-auto">
-										{deletingId === log.id ? (
-											<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 bg-red-50 p-2 rounded-md border border-red-100 w-full sm:w-auto justify-end">
-												<Input
-													size={1}
-													className="h-8 w-full sm:w-40 text-xs bg-white"
-													placeholder="Reason for deletion..."
-													value={deleteReason}
-													onChange={(e) => setDeleteReason(e.target.value)}
-												/>
-												<div className="flex gap-1">
-													<Button
-														size="sm"
-														variant="destructive"
-														onClick={() => handleDelete(log.id)}
-														disabled={!deleteReason}
-													>
-														Confirm
-													</Button>
-													<Button
-														size="sm"
-														variant="ghost"
-														onClick={() => {
-															setDeletingId(null);
-															setDeleteReason("");
-														}}
-													>
-														Cancel
-													</Button>
-												</div>
-											</div>
-										) : (
+										{!log.verified &&
+											(user?.role === ROLES.MANAGER ||
+												user?.role === ROLES.ADMIN) && (
+												<Button
+													size="sm"
+													variant="outline"
+													className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+													onClick={() => handleVerify(log.id)}
+												>
+													Verify
+												</Button>
+											)}
+										{(user?.role === ROLES.MANAGER ||
+											user?.role === ROLES.ADMIN) && (
 											<>
-												{!log.verified &&
-													(user?.role === "manager" ||
-														user?.role === "admin") && (
-														<Button
-															size="sm"
-															variant="outline"
-															className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-															onClick={() => handleVerify(log.id)}
-														>
-															Verify
-														</Button>
-													)}
-												{(user?.role === "manager" ||
-													user?.role === "admin") && (
-													<>
-														<Button
-															size="sm"
-															variant="outline"
-															onClick={() => handleEdit(log)}
-															disabled={!!editingId}
-														>
-															<Edit2 className="h-4 w-4 mr-1" /> Edit
-														</Button>
-														<Button
-															size="sm"
-															variant="ghost"
-															className="text-red-600 hover:text-red-700 hover:bg-red-50"
-															onClick={() => setDeletingId(log.id)}
-															disabled={!!editingId}
-														>
-															<Trash2 className="h-4 w-4" />
-														</Button>
-													</>
-												)}
+												<Button
+													size="sm"
+													variant="outline"
+													onClick={() => handleEdit(log)}
+													disabled={!!editingId}
+												>
+													<Edit2 className="h-4 w-4 mr-1" /> Edit
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													className="text-red-600 hover:text-red-700 hover:bg-red-50"
+													onClick={() => setDeletingId(log.id)}
+													disabled={!!editingId}
+												>
+													<Trash2 className="h-4 w-4" />
+												</Button>
 											</>
 										)}
 									</div>
@@ -437,6 +405,20 @@ export function Keno() {
 					</div>
 				</CardContent>
 			</Card>
+			<ConfirmDialog
+				open={!!deletingId}
+				title="Delete Keno Ticket"
+				message="Are you sure you want to delete this keno ticket? This action cannot be undone."
+				reasonValue={deleteReason}
+				onReasonChange={setDeleteReason}
+				onConfirm={() => {
+					if (deletingId) handleDelete(deletingId);
+				}}
+				onCancel={() => {
+					setDeletingId(null);
+					setDeleteReason("");
+				}}
+			/>
 		</div>
 	);
 }

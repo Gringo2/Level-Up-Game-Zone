@@ -1,4 +1,5 @@
 import type { Credit, Employee } from "@level-up/shared";
+import { CREDIT_STATUSES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Loader2, Printer, Receipt } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -46,7 +47,9 @@ export function SalaryReport() {
 					: [];
 
 				if (mounted) {
-					setCredits(creditsData.filter((c) => c.status === "Deducted"));
+					setCredits(
+						creditsData.filter((c) => c.status === CREDIT_STATUSES.DEDUCTED),
+					);
 					setEmployees(empData.filter((e) => e.isActive));
 					setLoading(false);
 				}

@@ -249,10 +249,10 @@ describe("Credits", () => {
 			);
 		fireEvent.click(trashButtons[0]);
 
-		const reasonInput = screen.getByPlaceholderText("Reason...");
+		const reasonInput = screen.getByPlaceholderText("Reason for deletion...");
 		fireEvent.change(reasonInput, { target: { value: "Duplicate entry" } });
 
-		fireEvent.click(screen.getByText("Yes"));
+		fireEvent.click(screen.getByText("Confirm Delete"));
 
 		await waitFor(() => {
 			expect(fetchMock).toHaveBeenCalledWith(
@@ -319,9 +319,9 @@ describe("Credits", () => {
 			);
 		fireEvent.click(trashButtons[0]);
 
-		expect(screen.getByText("Yes")).toBeDefined();
+		expect(screen.getByText("Confirm Delete")).toBeDefined();
 
-		fireEvent.click(screen.getByText("No"));
+		fireEvent.click(screen.getByText("Cancel"));
 		await waitFor(() => {
 			expect(screen.queryByPlaceholderText("Reason...")).toBeNull();
 		});
@@ -480,10 +480,10 @@ describe("Credits - Edit & Failure Paths", () => {
 		});
 
 		fireEvent.click(findIconButton("lucide-trash2")[0]);
-		fireEvent.change(screen.getByPlaceholderText("Reason..."), {
+		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Duplicate entry" },
 		});
-		fireEvent.click(screen.getByText("Yes"));
+		fireEvent.click(screen.getByText("Confirm Delete"));
 
 		await waitFor(() => {
 			expect(toast.error).toHaveBeenCalledWith("Failed to delete credit");
