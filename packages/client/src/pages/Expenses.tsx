@@ -125,8 +125,8 @@ export function Expenses() {
 		setAmount(expense.amount.toString());
 		setCategory(expense.category || categories[0]?.name || "");
 		setEntryDate(new Date(expense.date).toISOString().slice(0, 10));
-		setQuantity(expense.quantity?.toString() || "");
-		setUnitPrice(expense.unit_price?.toString() || "");
+		setQuantity(expense.quantity?.toString() ?? "");
+		setUnitPrice(expense.unit_price?.toString() ?? "");
 		setUnit(expense.unit || "");
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	};

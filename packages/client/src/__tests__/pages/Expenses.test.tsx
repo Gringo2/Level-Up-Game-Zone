@@ -45,6 +45,9 @@ const expense = {
 	user_id: "u1",
 	date: new Date().toISOString(),
 	verified: false,
+	quantity: 3,
+	unit_price: 4.17,
+	unit: "pack",
 };
 
 const mockFetch = vi.fn();
@@ -234,6 +237,45 @@ describe("Expenses", () => {
 		expect(
 			await screen.findByText("Cleaning supplies (corrected)"),
 		).toBeInTheDocument();
+	});
+
+	it("populates unit fields when editing an expense with unit data", async () => {
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+		expect(screen.getByLabelText("Item Name")).toHaveValue("Paper Towels");
+		expect(screen.getByLabelText("Qty")).toHaveValue(3);
+		expect(screen.getByLabelText("Unit Price ($)")).toHaveValue(4.17);
+		expect(screen.getByLabelText("Unit")).toHaveValue("pack");
+	});
+
+	it("sends unit fields in PUT body when editing an expense with unit data", async () => {
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+		const reason = screen.getByLabelText("Reason for Edit (Required)");
+		fireEvent.change(reason, { target: { value: "Updated quantity" } });
+		fireEvent.change(screen.getByLabelText("Qty"), {
+			target: { value: "5" },
+		});
+		const form = screen.getByText("Update Expense").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() => {
+			const putCall = mockFetch.mock.calls.find(
+				(call: [string, RequestInit]) =>
+					call[1]?.method === "PUT" &&
+					String(call[0]).includes("/api/expenses/exp-1"),
+			);
+			expect(putCall).toBeDefined();
+			const body = JSON.parse(String(putCall?.[1]?.body));
+			expect(body.quantity).toBe(5);
+			expect(body.unit_price).toBe(4.17);
+			expect(body.unit).toBe("pack");
+			expect(body.item_name).toBe("Paper Towels");
+		});
 	});
 
 	it("hides management actions from staff users", async () => {
