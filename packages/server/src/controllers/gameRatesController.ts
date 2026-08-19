@@ -93,7 +93,11 @@ export const updateRate = async (req: AuthRequest, res: Response) => {
 			});
 		});
 
-		return res.status(200).json({ message: "Updated successfully" });
+		const updatedDoc = await db
+			.collection(COLLECTIONS.GAME_RATES)
+			.doc(id)
+			.get();
+		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating rate:", error);
 		return res

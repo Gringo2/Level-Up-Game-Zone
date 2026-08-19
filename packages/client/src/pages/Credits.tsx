@@ -199,17 +199,10 @@ export function Credits() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
 					);
+				const updated = await safeJson<Credit>(response);
 				toast.success("Credit updated successfully!");
 				setCredits((prev) =>
-					prev.map((c) =>
-						c.id === editingId
-							? {
-									...c,
-									employee_name: employeeName,
-									amount: parseFloat(amount),
-								}
-							: c,
-					),
+					prev.map((c) => (c.id === editingId ? updated : c)),
 				);
 				cancelEdit();
 			} else {

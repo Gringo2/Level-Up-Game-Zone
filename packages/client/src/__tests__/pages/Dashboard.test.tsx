@@ -2,9 +2,15 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useShift } from "../../contexts/ShiftContext.js";
 import { Dashboard } from "../../pages/Dashboard.js";
 
@@ -98,23 +104,27 @@ describe("Dashboard", () => {
 		window.print = vi.fn();
 		mockFetch.mockImplementation((url: string) => {
 			if (url.endsWith("/api/sales")) {
-				return Promise.resolve(jsonResponse(gameSalesLogs));
+				return jsonResponse(gameSalesLogs);
 			}
 			if (url.endsWith("/api/keno")) {
-				return Promise.resolve(jsonResponse(kenoLogs));
+				return jsonResponse(kenoLogs);
 			}
 			if (url.endsWith("/api/credits")) {
-				return Promise.resolve(jsonResponse(credits));
+				return jsonResponse(credits);
 			}
-			if (url.endsWith("/api/expenses")) {
-				return Promise.resolve(jsonResponse(expenses));
+			if (url.includes("/api/expenses")) {
+				return jsonResponse(expenses);
 			}
 			if (url.includes("/close") || url.includes("/float")) {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				return jsonResponse({ ok: true });
 			}
-			return Promise.resolve(jsonResponse({ error: "not found" }, false, 404));
+			return jsonResponse({ error: "not found" }, false, 404);
 		});
 		global.fetch = mockFetch as unknown as typeof fetch;
+	});
+
+	afterEach(() => {
+		cleanup();
 	});
 
 	it("renders dashboard totals and the active shift card", async () => {
@@ -159,9 +169,9 @@ describe("Dashboard", () => {
 	it("requires a reason when the close-shift variance exceeds $2", async () => {
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/close") || url.includes("/float")) {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				return jsonResponse({ ok: true });
 			}
-			return Promise.resolve(jsonResponse([]));
+			return jsonResponse([]);
 		});
 		render(<Dashboard />);
 		await screen.findByText("Active Shift: Alice");
@@ -207,9 +217,9 @@ describe("Dashboard", () => {
 	it("closes a shift without a reason when variance is within $2", async () => {
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/close") || url.includes("/float")) {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				return jsonResponse({ ok: true });
 			}
-			return Promise.resolve(jsonResponse([]));
+			return jsonResponse([]);
 		});
 		render(<Dashboard />);
 		await screen.findByText("Active Shift: Alice");

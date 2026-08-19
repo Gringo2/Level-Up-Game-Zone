@@ -66,7 +66,18 @@ describe("Sales Integration Tests", () => {
 		it("should successfully update a sale", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
-					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
+					doc: vi.fn().mockReturnValue({
+						id: "sale-123",
+						get: vi.fn().mockResolvedValue({
+							id: "sale-123",
+							data: () => ({
+								game_name: "Pool",
+								quantity_sold: 3,
+								rate_applied: 10,
+								calculated_total: 30,
+							}),
+						}),
+					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});

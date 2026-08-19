@@ -87,13 +87,16 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 
 			const oldDoc = { id: docSnap.id, ...docSnap.data() };
 
-			const newValues = {
-				game_id,
-				game_name,
-				quantity_sold: parseFloat(quantity_sold),
-				rate_applied: parseFloat(rate_applied),
-				calculated_total: parseFloat(calculated_total),
-			};
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
+			const newValues: Record<string, any> = {};
+			if (game_id !== undefined) newValues.game_id = game_id;
+			if (game_name !== undefined) newValues.game_name = game_name;
+			if (quantity_sold !== undefined)
+				newValues.quantity_sold = parseFloat(quantity_sold);
+			if (rate_applied !== undefined)
+				newValues.rate_applied = parseFloat(rate_applied);
+			if (calculated_total !== undefined)
+				newValues.calculated_total = parseFloat(calculated_total);
 
 			transaction.update(docRef, newValues);
 
@@ -101,14 +104,19 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 				table_affected: "game_sales_logs",
 				record_id: id,
 				old_value: oldDoc,
-				new_value: newValues,
+				new_value: { ...oldDoc, ...newValues },
 				reason_for_change: editReason,
 				user_id: user.uid,
 				timestamp: new Date().toISOString(),
 			});
 		});
 
-		return res.status(200).json({ message: "Updated successfully" });
+		// Re-read to return full merged object
+		const updatedDoc = await db
+			.collection(COLLECTIONS.GAME_SALES_LOGS)
+			.doc(id)
+			.get();
+		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating sale:", error);
 		return res

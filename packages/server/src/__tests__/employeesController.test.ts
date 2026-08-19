@@ -66,7 +66,17 @@ describe("Employees Integration Tests", () => {
 		it("should successfully update an employee", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
-					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
+					doc: vi.fn().mockReturnValue({
+						id: "emp-123",
+						get: vi.fn().mockResolvedValue({
+							id: "emp-123",
+							data: () => ({
+								name: "Bob",
+								position: "Manager",
+								base_salary: 3500,
+							}),
+						}),
+					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
@@ -92,12 +102,27 @@ describe("Employees Integration Tests", () => {
 				.send({ base_salary: 3500, editReason: "Promotion" });
 
 			expect(response.status).toBe(200);
+			expect(response.body.id).toBe("emp-123");
+			expect(response.body.base_salary).toBe(3500);
 		});
 
 		it("should successfully update an employee with all partial fields", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
-					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
+					doc: vi.fn().mockReturnValue({
+						id: "emp-123",
+						get: vi.fn().mockResolvedValue({
+							id: "emp-123",
+							data: () => ({
+								name: "Robert",
+								position: "Supervisor",
+								base_salary: 3800,
+								hired_date: "2025-06-01",
+								break_day: "Saturday",
+								isActive: false,
+							}),
+						}),
+					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});

@@ -76,7 +76,10 @@ describe("GameSales", () => {
 				return Promise.resolve(jsonResponse({ ok: true }));
 			}
 			if (init?.method === "PUT") {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				const body = JSON.parse(String(init.body || "{}"));
+				return Promise.resolve(
+					jsonResponse({ ...salesLog, ...body, id: salesLog.id }),
+				);
 			}
 			if (init?.method === "POST" && url.endsWith("/api/rates")) {
 				return Promise.resolve(jsonResponse({ ok: true }));

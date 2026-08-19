@@ -2,9 +2,15 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { Expenses } from "../../pages/Expenses.js";
 
@@ -53,6 +59,9 @@ const expense = {
 const mockFetch = vi.fn();
 
 describe("Expenses", () => {
+	afterEach(() => {
+		cleanup();
+	});
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.mocked(useAuth).mockReturnValue({ user: managerUser, loading: false });
@@ -105,15 +114,17 @@ describe("Expenses", () => {
 	});
 
 	it("renders the empty state when there are no expenses", async () => {
-		mockFetch.mockResolvedValue(jsonResponse([]));
+		mockFetch.mockImplementation(() => jsonResponse([]));
 		render(<Expenses />);
 		expect(
-			await screen.findByText("No expenses logged today yet."),
+			await screen.findByText("No expenses found for the selected date range."),
 		).toBeInTheDocument();
 	});
 
 	it("shows an error toast when loading fails", async () => {
-		mockFetch.mockResolvedValue(jsonResponse({ error: "boom" }, false, 500));
+		mockFetch.mockImplementation(() =>
+			jsonResponse({ error: "boom" }, false, 500),
+		);
 		render(<Expenses />);
 		await waitFor(() =>
 			expect(toast.error).toHaveBeenCalledWith("Failed to load expenses"),
@@ -121,13 +132,16 @@ describe("Expenses", () => {
 	});
 
 	it("logs a new expense via POST", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
-		mockFetch.mockResolvedValueOnce(
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() =>
 			jsonResponse([{ name: "Supplies", isActive: true }]),
 		);
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
+		fireEvent.change(screen.getByLabelText("Item Name"), {
+			target: { value: "New Mop" },
+		});
 		fireEvent.change(
 			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
 			{
@@ -153,7 +167,7 @@ describe("Expenses", () => {
 		);
 		const [, init] = mockFetch.mock.calls[2] as [string, RequestInit];
 		expect(JSON.parse(String(init.body))).toEqual({
-			item_name: "",
+			item_name: "New Mop",
 			description: "New mop",
 			amount: "8",
 			category: "Supplies",
@@ -322,8 +336,8 @@ describe("Expenses", () => {
 	});
 
 	it("shows error toast when POST expense fails", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
-		mockFetch.mockResolvedValueOnce(
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() =>
 			jsonResponse([{ name: "Supplies", isActive: true }]),
 		);
 		render(<Expenses />);
@@ -355,7 +369,7 @@ describe("Expenses", () => {
 	});
 
 	it("shows error toast when PUT expense fails in edit mode", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 		fireEvent.click(screen.getByRole("button", { name: "Edit" }));
@@ -382,8 +396,8 @@ describe("Expenses", () => {
 	});
 
 	it("sends selected category in POST body", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
-		mockFetch.mockResolvedValueOnce(
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() =>
 			jsonResponse([
 				{ name: "Supplies", isActive: true },
 				{ name: "Wages", isActive: true },
@@ -494,8 +508,8 @@ describe("Expenses", () => {
 	});
 
 	it("creates a new category via POST", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
-		mockFetch.mockResolvedValueOnce(
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() =>
 			jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]),
 		);
 		render(<Expenses />);
@@ -537,8 +551,8 @@ describe("Expenses", () => {
 	});
 
 	it("shows error toast when creating a duplicate category fails", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
-		mockFetch.mockResolvedValueOnce(
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() =>
 			jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]),
 		);
 		render(<Expenses />);
@@ -576,8 +590,8 @@ describe("Expenses", () => {
 	});
 
 	it("deactivates a category via PUT", async () => {
-		mockFetch.mockResolvedValueOnce(jsonResponse([expense]));
-		mockFetch.mockResolvedValueOnce(
+		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
+		mockFetch.mockImplementationOnce(() =>
 			jsonResponse([
 				{ id: "c1", name: "Supplies", isActive: true },
 				{ id: "c2", name: "Wages", isActive: true },

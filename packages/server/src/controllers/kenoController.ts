@@ -75,11 +75,12 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 
 			const oldDoc = { id: docSnap.id, ...docSnap.data() };
 
-			const newValues = {
-				sales: parseFloat(sales),
-				payouts: parseFloat(payouts),
-				net_profit: parseFloat(net_profit),
-			};
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
+			const newValues: Record<string, any> = {};
+			if (sales !== undefined) newValues.sales = parseFloat(sales);
+			if (payouts !== undefined) newValues.payouts = parseFloat(payouts);
+			if (net_profit !== undefined)
+				newValues.net_profit = parseFloat(net_profit);
 
 			transaction.update(docRef, newValues);
 
@@ -87,14 +88,15 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 				table_affected: "keno_logs",
 				record_id: id,
 				old_value: oldDoc,
-				new_value: newValues,
+				new_value: { ...oldDoc, ...newValues },
 				reason_for_change: editReason,
 				user_id: user.uid,
 				timestamp: new Date().toISOString(),
 			});
 		});
 
-		return res.status(200).json({ message: "Updated successfully" });
+		const updatedDoc = await db.collection(COLLECTIONS.KENO_LOGS).doc(id).get();
+		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating keno:", error);
 		return res

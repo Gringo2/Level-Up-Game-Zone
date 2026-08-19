@@ -49,6 +49,12 @@ export function Expenses() {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
+	const [filterDateFrom, setFilterDateFrom] = useState(() =>
+		new Date().toISOString().slice(0, 10),
+	);
+	const [filterDateTo, setFilterDateTo] = useState(() =>
+		new Date().toISOString().slice(0, 10),
+	);
 
 	useEffect(() => {
 		let mounted = true;
@@ -58,8 +64,17 @@ export function Expenses() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
+				const dayStart = getShopStartOfDay(
+					new Date(filterDateFrom),
+				).toISOString();
+				const dayEnd = getShopEndOfDay(new Date(filterDateTo)).toISOString();
+
+				const params = new URLSearchParams();
+				params.set("startDate", dayStart);
+				params.set("endDate", dayEnd);
+
 				const [expensesRes, categoriesRes] = await Promise.all([
-					fetch(`${API_BASE}/api/expenses`, {
+					fetch(`${API_BASE}/api/expenses?${params.toString()}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
 					fetch(`${API_BASE}/api/expense-categories`, {
@@ -73,19 +88,10 @@ export function Expenses() {
 					);
 				}
 
-				const dayStart = getShopStartOfDay().toISOString();
-				const dayEnd = getShopEndOfDay().toISOString();
 				const data = (await safeJson(expensesRes)) as Expense[];
-				const fetched = data
-					.filter(
-						(expense) => expense.date >= dayStart && expense.date <= dayEnd,
-					)
-					.sort(
-						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-					);
 
 				if (mounted) {
-					setExpenses(fetched);
+					setExpenses(data);
 				}
 
 				if (categoriesRes.ok) {
@@ -106,7 +112,7 @@ export function Expenses() {
 		return () => {
 			mounted = false;
 		};
-	}, []);
+	}, [filterDateFrom, filterDateTo]);
 
 	useEffect(() => {
 		if (
@@ -575,14 +581,48 @@ export function Expenses() {
 
 			<Card className="max-w-2xl">
 				<CardHeader>
-					<CardTitle>Today's Expenses</CardTitle>
-					<CardDescription>Recent expenses logged today.</CardDescription>
+					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+						<div>
+							<CardTitle>Expenses</CardTitle>
+							<CardDescription>
+								{filterDateFrom === filterDateTo
+									? `Expenses for ${filterDateFrom}`
+									: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
+							</CardDescription>
+						</div>
+						<div className="flex items-center gap-2">
+							<div className="flex items-center gap-1">
+								<Label htmlFor="filterFrom" className="text-xs text-zinc-500">
+									From
+								</Label>
+								<Input
+									id="filterFrom"
+									type="date"
+									value={filterDateFrom}
+									onChange={(e) => setFilterDateFrom(e.target.value)}
+									className="h-8 w-[150px] text-xs"
+								/>
+							</div>
+							<div className="flex items-center gap-1">
+								<Label htmlFor="filterTo" className="text-xs text-zinc-500">
+									To
+								</Label>
+								<Input
+									id="filterTo"
+									type="date"
+									value={filterDateTo}
+									onChange={(e) => setFilterDateTo(e.target.value)}
+									className="h-8 w-[150px] text-xs"
+								/>
+							</div>
+						</div>
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-3">
 						{expenses.length === 0 ? (
 							<div className="text-center text-zinc-500 py-8">
-								No expenses logged today yet.
+								No expenses found for the selected date range.
 							</div>
 						) : (
 							expenses.map((expense) => (

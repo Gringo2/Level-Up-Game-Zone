@@ -2,11 +2,19 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { toast } from "sonner";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { Keno } from "../../pages/Keno.js";
+
+afterEach(cleanup);
 
 vi.mock("../../firebase", () => ({
 	auth: {
@@ -61,7 +69,16 @@ describe("Keno", () => {
 				return Promise.resolve(jsonResponse({ ok: true }));
 			}
 			if (init?.method === "PUT") {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				const body = JSON.parse(String(init.body || "{}"));
+				return Promise.resolve(
+					jsonResponse({
+						...kenoLog,
+						...body,
+						id: kenoLog.id,
+						sales: Number(body.sales ?? kenoLog.sales),
+						payouts: Number(body.payouts ?? kenoLog.payouts),
+					}),
+				);
 			}
 			if (init?.method === "POST") {
 				return Promise.resolve(jsonResponse({ ...kenoLog, id: "keno-new" }));

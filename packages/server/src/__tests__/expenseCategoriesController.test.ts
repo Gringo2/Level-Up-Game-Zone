@@ -123,7 +123,8 @@ describe("Expense Categories Integration Tests", () => {
 
 			const response = await request(app)
 				.delete("/api/expense-categories/cat-123")
-				.set("Authorization", authHeader);
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "No longer needed" });
 
 			expect(response.status).toBe(200);
 			expect(response.body.message).toBe("Deleted successfully");
@@ -307,7 +308,8 @@ describe("Expense Categories Integration Tests", () => {
 
 			const response = await request(app)
 				.delete("/api/expense-categories/nonexistent")
-				.set("Authorization", authHeader);
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Removing nonexistent" });
 
 			expect(response.status).toBe(404);
 			expect(response.body.error).toBe("Expense category not found");

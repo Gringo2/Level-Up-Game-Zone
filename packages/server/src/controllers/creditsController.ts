@@ -62,10 +62,6 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 	const { id } = req.params;
 	const { employee_name, amount, reason, status, editReason } = req.body;
 
-	if (!editReason) {
-		return res.status(400).json({ error: "Edit reason is required" });
-	}
-
 	try {
 		const docRef = db.collection(COLLECTIONS.CREDITS).doc(id);
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
@@ -78,7 +74,8 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 
 			const oldDoc = { id: docSnap.id, ...docSnap.data() };
 
-			const newValues: Record<string, string | number> = {};
+			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
+			const newValues: Record<string, any> = {};
 			if (employee_name !== undefined) newValues.employee_name = employee_name;
 			if (amount !== undefined) newValues.amount = parseFloat(amount);
 			if (reason !== undefined) newValues.reason = reason;
@@ -100,7 +97,8 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 			});
 		});
 
-		return res.status(200).json({ message: "Updated successfully" });
+		const updatedDoc = await db.collection(COLLECTIONS.CREDITS).doc(id).get();
+		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating credit:", error);
 		return res

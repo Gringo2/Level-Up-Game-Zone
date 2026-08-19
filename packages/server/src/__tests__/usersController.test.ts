@@ -305,7 +305,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/userToDelete")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Removing inactive user" });
 
 			expect(response.status).toBe(200);
 			expect(response.body.message).toBe(
@@ -356,7 +356,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/invited@x.com")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Revoking invitation" });
 
 			expect(response.status).toBe(200);
 			expect(response.body.message).toBe(
@@ -407,7 +407,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/pending@x.com")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Revoking pending invite" });
 
 			expect(response.status).toBe(200);
 			expect(response.body.message).toBe(
@@ -761,7 +761,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/mock-admin-uid")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Trying to delete self" });
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toBe("Cannot delete your own user account");
@@ -789,7 +789,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/other-user")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Trying to delete other" });
 
 			expect(response.status).toBe(403);
 			expect(response.body.error).toBe("Forbidden: Admins only");
@@ -828,7 +828,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/ghost-user")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Cleaning up ghost user" });
 
 			expect(response.status).toBe(404);
 			expect(response.body.error).toBe("User or invitation not found");
@@ -877,7 +877,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/bezueyob3-gmail")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Trying to delete root admin" });
 
 			expect(response.status).toBe(403);
 			expect(response.body.error).toBe("Root admin accounts cannot be deleted");
@@ -1058,7 +1058,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.delete("/api/users/some-user")
 				.set("Authorization", authHeader)
-				.send({});
+				.send({ deleteReason: "Testing crash handling" });
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toContain("DB crashed");

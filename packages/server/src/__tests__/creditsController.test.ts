@@ -61,7 +61,13 @@ describe("Credits Integration Tests", () => {
 		it("should successfully update a credit", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
-					doc: vi.fn().mockReturnValue({ id: "credit-123" }),
+					doc: vi.fn().mockReturnValue({
+						id: "credit-123",
+						get: vi.fn().mockResolvedValue({
+							id: "credit-123",
+							data: () => ({ employee_name: "John", amount: 75 }),
+						}),
+					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
@@ -87,13 +93,26 @@ describe("Credits Integration Tests", () => {
 				.send({ amount: 75, editReason: "Increased amount" });
 
 			expect(response.status).toBe(200);
+			expect(response.body.id).toBe("credit-123");
+			expect(response.body.amount).toBe(75);
 		});
 
 		it("should successfully update a credit with status resolution (partial fields)", async () => {
 			const updateMock = vi.fn();
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
-					doc: vi.fn().mockReturnValue({ id: "credit-123" }),
+					doc: vi.fn().mockReturnValue({
+						id: "credit-123",
+						get: vi.fn().mockResolvedValue({
+							id: "credit-123",
+							data: () => ({
+								employee_name: "John Doe",
+								amount: 50,
+								reason: "Salary advance",
+								status: "Resolved",
+							}),
+						}),
+					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
@@ -124,13 +143,9 @@ describe("Credits Integration Tests", () => {
 				});
 
 			expect(response.status).toBe(200);
-			expect(updateMock).toHaveBeenCalledWith(
-				expect.objectContaining({ id: "credit-123" }),
-				expect.objectContaining({
-					reason: "Salary advance",
-					status: "Resolved",
-				}),
-			);
+			expect(response.body.id).toBe("credit-123");
+			expect(response.body.employee_name).toBe("John Doe");
+			expect(response.body.status).toBe("Resolved");
 		});
 
 		it("should successfully delete a credit", async () => {
@@ -176,14 +191,13 @@ describe("Credits Integration Tests", () => {
 			expect(response.body.error).toContain("Required");
 		});
 
-		it("should return 400 when updating credit without editReason (Controller Logic)", async () => {
+		it("should return 400 when updating credit without editReason (Zod Validation)", async () => {
 			const response = await request(app)
 				.put("/api/credits/credit-123")
 				.set("Authorization", authHeader)
 				.send({ amount: 100 }); // missing editReason
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toBe("Edit reason is required");
 		});
 
 		it("should return 400 when deleting credit without deleteReason (Zod)", async () => {

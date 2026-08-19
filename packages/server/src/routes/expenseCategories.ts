@@ -9,6 +9,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
 	CreateExpenseCategorySchema,
+	DeleteReasonSchema,
 	UpdateExpenseCategorySchema,
 } from "../schemas/index.js";
 
@@ -34,6 +35,7 @@ router.put(
 router.delete(
 	"/:id",
 	requireAuth as RequestHandler,
+	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteExpenseCategory as RequestHandler,
 );
 

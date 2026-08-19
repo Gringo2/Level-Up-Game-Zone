@@ -63,11 +63,14 @@ export function Dashboard() {
 								Authorization: `Bearer ${token}`,
 							},
 						}),
-						fetch(`${API_BASE}/api/expenses`, {
-							headers: {
-								Authorization: `Bearer ${token}`,
+						fetch(
+							`${API_BASE}/api/expenses?startDate=${encodeURIComponent(start)}`,
+							{
+								headers: {
+									Authorization: `Bearer ${token}`,
+								},
 							},
-						}),
+						),
 					]);
 
 				if (!gamesResponse.ok) {
@@ -100,9 +103,7 @@ export function Dashboard() {
 				setCredits(
 					(creditsData as Credit[]).filter((log) => log.date >= start),
 				);
-				setExpenses(
-					(expensesData as Expense[]).filter((log) => log.date >= start),
-				);
+				setExpenses(expensesData as Expense[]);
 			} catch (err) {
 				console.error(err);
 				if (mounted) {

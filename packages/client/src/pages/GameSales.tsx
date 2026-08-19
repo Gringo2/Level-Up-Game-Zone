@@ -185,21 +185,9 @@ export function GameSales() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
 					);
+				const updated = await safeJson<GameSalesLog>(response);
 				toast.success("Game sale updated successfully!");
-				setLogs((prev) =>
-					prev.map((l) =>
-						l.id === editingId
-							? {
-									...l,
-									game_id: selectedRate.id,
-									game_name: selectedRate.game_name,
-									quantity_sold: parseFloat(quantity),
-									rate_applied: selectedRate.price_per_unit,
-									calculated_total: calculatedTotal,
-								}
-							: l,
-					),
-				);
+				setLogs((prev) => prev.map((l) => (l.id === editingId ? updated : l)));
 				cancelEdit();
 			} else {
 				const response = await fetch(`${API_BASE}/api/sales`, {

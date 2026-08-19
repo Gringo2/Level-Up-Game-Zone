@@ -11,6 +11,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
 	CreateUserSchema,
+	DeleteReasonSchema,
 	InviteUserSchema,
 	UpdateRoleSchema,
 } from "../schemas/index.js";
@@ -40,6 +41,7 @@ router.post(
 router.delete(
 	"/:id",
 	requireAuth as RequestHandler,
+	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteUser as RequestHandler,
 );
 

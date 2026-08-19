@@ -187,19 +187,9 @@ export function EmployeeRoster() {
 				);
 			}
 
+			const updated = (await safeJson(response)) as Employee;
 			setEmployees((prev) =>
-				prev.map((emp) =>
-					emp.id === editState.id
-						? {
-								...emp,
-								name: editState.name.trim(),
-								position: editState.position.trim(),
-								base_salary: parseFloat(editState.baseSalary),
-								hired_date: editState.hiredDate,
-								break_day: editState.breakDay,
-							}
-						: emp,
-				),
+				prev.map((emp) => (emp.id === editState.id ? updated : emp)),
 			);
 
 			setEditState(null);

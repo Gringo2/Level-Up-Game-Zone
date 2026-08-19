@@ -184,19 +184,9 @@ export function Keno() {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
 					);
+				const updated = await safeJson<KenoLog>(response);
 				toast.success("Keno log updated successfully!");
-				setLogs((prev) =>
-					prev.map((l) =>
-						l.id === editingId
-							? {
-									...l,
-									sales: parseFloat(sales),
-									payouts: parseFloat(payouts),
-									net_profit: netProfit,
-								}
-							: l,
-					),
-				);
+				setLogs((prev) => prev.map((l) => (l.id === editingId ? updated : l)));
 				cancelEdit();
 			} else {
 				const response = await fetch(`${API_BASE}/api/keno`, {

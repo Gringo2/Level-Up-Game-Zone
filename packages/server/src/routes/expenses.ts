@@ -7,16 +7,22 @@ import {
 	verifyExpense,
 } from "../controllers/expensesController.js";
 import { requireAuth } from "../middleware/auth.js";
-import { validateBody } from "../middleware/validate.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateExpenseSchema,
 	DeleteReasonSchema,
+	ListExpensesQuerySchema,
 	UpdateExpenseSchema,
 } from "../schemas/index.js";
 
 const router = Router();
 
-router.get("/", requireAuth as RequestHandler, listExpenses as RequestHandler);
+router.get(
+	"/",
+	requireAuth as RequestHandler,
+	validateQuery(ListExpensesQuerySchema) as RequestHandler,
+	listExpenses as RequestHandler,
+);
 router.post(
 	"/",
 	requireAuth as RequestHandler,

@@ -3,9 +3,23 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listExpenses = async (_req: AuthRequest, res: Response) => {
+export const listExpenses = async (req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection(COLLECTIONS.EXPENSES).get();
+		const { startDate, endDate } = req.query as {
+			startDate?: string;
+			endDate?: string;
+		};
+
+		let query: FirebaseFirestore.Query = db.collection(COLLECTIONS.EXPENSES);
+
+		if (startDate) {
+			query = query.where("date", ">=", startDate);
+		}
+		if (endDate) {
+			query = query.where("date", "<=", endDate);
+		}
+
+		const snapshot = await query.orderBy("date", "desc").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {

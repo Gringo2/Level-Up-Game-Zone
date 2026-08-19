@@ -72,7 +72,17 @@ describe("Keno Integration Tests", () => {
 		it("should successfully update a keno log", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
-					doc: vi.fn().mockReturnValue({ id: "keno-123" }),
+					doc: vi.fn().mockReturnValue({
+						id: "keno-123",
+						get: vi.fn().mockResolvedValue({
+							id: "keno-123",
+							data: () => ({
+								sales: 300,
+								payouts: 50,
+								net_profit: 250,
+							}),
+						}),
+					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});

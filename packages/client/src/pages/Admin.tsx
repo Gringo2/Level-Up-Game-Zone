@@ -161,18 +161,9 @@ export function Admin() {
 					(await safeJson(response)).error || "Failed to update rate",
 				);
 
+			const updated = (await safeJson(response)) as GameRate;
 			setRates((prev) =>
-				prev.map((r) =>
-					r.id === editState.rateId
-						? {
-								...r,
-								game_name: editState.gameName,
-								price_per_unit: parseFloat(editState.price),
-								unit_type:
-									editState.unitType as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
-							}
-						: r,
-				),
+				prev.map((r) => (r.id === editState.rateId ? updated : r)),
 			);
 			setEditState(null);
 			toast.success("Rate updated successfully!");
@@ -205,11 +196,8 @@ export function Admin() {
 					(await safeJson(response)).error || "Failed to update rate",
 				);
 
-			setRates((prev) =>
-				prev.map((r) =>
-					r.id === rate.id ? { ...r, isActive: !r.isActive } : r,
-				),
-			);
+			const updated = (await safeJson(response)) as GameRate;
+			setRates((prev) => prev.map((r) => (r.id === rate.id ? updated : r)));
 			toast.success(`Rate ${rate.isActive ? "deactivated" : "activated"}`);
 		} catch (err: unknown) {
 			console.error(err);

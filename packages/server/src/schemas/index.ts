@@ -88,6 +88,11 @@ export const UpdateKenoSchema = z.object({
 });
 
 // Expense Schemas
+export const ListExpensesQuerySchema = z.object({
+	startDate: z.string().optional(),
+	endDate: z.string().optional(),
+});
+
 export const CreateExpenseSchema = z
 	.object({
 		item_name: z.string().trim().min(1, "Item name is required"),
@@ -163,7 +168,10 @@ export const UpdateCreditSchema = z.object({
 			CREDIT_STATUSES.DEDUCTED,
 		])
 		.optional(),
-	editReason: z.string().optional(),
+	editReason: z
+		.string()
+		.trim()
+		.min(3, "Reason for change must be at least 3 characters"),
 });
 
 // Expense Category Schemas

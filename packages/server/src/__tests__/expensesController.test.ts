@@ -16,20 +16,27 @@ describe("Expenses Integration Tests", () => {
 		it("should successfully list expenses", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "expenses") {
-					return {
-						get: vi.fn().mockResolvedValue({
-							docs: [
-								{
-									id: "exp1",
-									data: () => ({ description: "Supplies", amount: 20 }),
-								},
-							],
-						}),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+					const mockDocs = [
+						{
+							id: "exp1",
+							data: () => ({ description: "Supplies", amount: 20 }),
+						},
+					];
+					const mockGet = vi.fn().mockResolvedValue({ docs: mockDocs });
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
+						get: mockGet,
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						doc: vi.fn().mockReturnValue({ id: "exp1" }),
+					};
+					return chainable;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				return {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+				} as any;
 			});
 
 			const response = await request(app)
@@ -39,6 +46,71 @@ describe("Expenses Integration Tests", () => {
 			expect(response.status).toBe(200);
 			expect(response.body).toHaveLength(1);
 			expect(response.body[0].description).toBe("Supplies");
+		});
+
+		it("should filter expenses by startDate query param", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "expenses") {
+					const mockDocs = [
+						{
+							id: "exp2",
+							data: () => ({
+								description: "Lunch",
+								amount: 10,
+								date: "2025-06-15T10:00:00.000Z",
+							}),
+						},
+					];
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
+						get: vi.fn().mockResolvedValue({ docs: mockDocs }),
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						doc: vi.fn().mockReturnValue({ id: "exp2" }),
+					};
+					return chainable;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+				} as any;
+			});
+
+			const response = await request(app)
+				.get("/api/expenses?startDate=2025-06-15T00:00:00.000Z")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveLength(1);
+		});
+
+		it("should filter expenses by both startDate and endDate", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "expenses") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
+						get: vi.fn().mockResolvedValue({ docs: [] }),
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					};
+					return chainable;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+				} as any;
+			});
+
+			const response = await request(app)
+				.get(
+					"/api/expenses?startDate=2025-06-01T00:00:00.000Z&endDate=2025-06-30T23:59:59.999Z",
+				)
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
 		});
 
 		it("should successfully create an expense", async () => {
@@ -244,6 +316,33 @@ describe("Expenses Integration Tests", () => {
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("at least 3 characters");
 		});
+
+		it("should accept optional date query params and return 200", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "expenses") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
+						get: vi.fn().mockResolvedValue({ docs: [] }),
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					};
+					return chainable;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+				} as any;
+			});
+
+			const response = await request(app)
+				.get("/api/expenses?startDate=123&endDate=456")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveLength(0);
+		});
 	});
 
 	describe("Not Found Contract (non-existent documents)", () => {
@@ -324,13 +423,20 @@ describe("Expenses Integration Tests", () => {
 		it("returns 500 when listing expenses crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "expenses") {
-					return {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					};
+					return chainable;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				return {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+				} as any;
 			});
 
 			const response = await request(app)
@@ -414,13 +520,11 @@ describe("Expenses Integration Tests", () => {
 		});
 
 		it("returns 401 without a bearer token on POST", async () => {
-			const response = await request(app)
-				.post("/api/expenses")
-				.send({
-					item_name: "Cleaning Supplies",
-					description: "Cleaning",
-					amount: 15.5,
-				});
+			const response = await request(app).post("/api/expenses").send({
+				item_name: "Cleaning Supplies",
+				description: "Cleaning",
+				amount: 15.5,
+			});
 
 			expect(response.status).toBe(401);
 		});

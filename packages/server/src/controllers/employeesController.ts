@@ -105,7 +105,8 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 			});
 		});
 
-		return res.status(200).json({ message: "Employee updated successfully" });
+		const updatedDoc = await db.collection(COLLECTIONS.EMPLOYEES).doc(id).get();
+		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating employee:", error);
 		return res
