@@ -8,6 +8,7 @@ export interface AppUser {
 	email: string;
 	displayName: string;
 	role: Role;
+	created_at?: string;
 }
 
 export type BreakDay =

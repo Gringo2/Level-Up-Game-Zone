@@ -1,4 +1,6 @@
+import type { AppUser } from "@level-up/shared";
 import { ROLES } from "@level-up/shared";
+import { format } from "date-fns";
 import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -7,13 +9,6 @@ import { API_BASE, safeJson } from "../lib/api";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ConfirmDialog } from "./ui/confirm-dialog";
-
-interface AppUser {
-	uid: string;
-	email: string;
-	displayName: string;
-	role: (typeof ROLES)[keyof typeof ROLES];
-}
 
 export function UserManagement() {
 	const [users, setUsers] = useState<AppUser[]>([]);
@@ -244,6 +239,7 @@ export function UserManagement() {
 								<th className="px-4 py-3 font-medium">Name</th>
 								<th className="px-4 py-3 font-medium">Email</th>
 								<th className="px-4 py-3 font-medium">Role</th>
+								<th className="px-4 py-3 font-medium">Joined</th>
 								<th className="px-4 py-3 font-medium text-right">Actions</th>
 							</tr>
 						</thead>
@@ -265,6 +261,11 @@ export function UserManagement() {
 											<option value={ROLES.MANAGER}>Manager</option>
 											<option value={ROLES.STAFF}>Staff</option>
 										</select>
+									</td>
+									<td className="px-4 py-3 text-sm text-zinc-500">
+										{user.created_at
+											? format(new Date(user.created_at), "MMM d, yyyy")
+											: "N/A"}
 									</td>
 									<td className="px-4 py-3 text-right">
 										<Button
