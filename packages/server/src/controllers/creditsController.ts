@@ -36,6 +36,11 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 	const { employee_id, employee_name, amount, reason, date } = req.body;
 
 	try {
+		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
+		const displayName = userDoc.exists
+			? userDoc.data()?.displayName
+			: undefined;
+
 		const newDocRef = db.collection(COLLECTIONS.CREDITS).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
@@ -46,6 +51,7 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 			reason,
 			status: CREDIT_STATUSES.PENDING,
 			user_id: user.uid,
+			...(displayName && { user_name: displayName }),
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 		};
 

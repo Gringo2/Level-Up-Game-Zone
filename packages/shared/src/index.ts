@@ -69,6 +69,7 @@ export interface Credit {
 	amount: number;
 	status: "Pending" | "Resolved" | "Deducted";
 	user_id: string;
+	user_name?: string;
 	date: string;
 	resolved_date?: string;
 }

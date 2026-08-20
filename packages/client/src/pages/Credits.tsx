@@ -378,6 +378,7 @@ export function Credits() {
 											</div>
 											<div className="text-xs text-zinc-400 mt-1">
 												{format(new Date(credit.date), "MMM d, h:mm a")}
+												{credit.user_name && <> &bull; {credit.user_name}</>}
 											</div>
 										</div>
 
