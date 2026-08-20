@@ -394,6 +394,14 @@ export function Credits() {
 												>
 													{credit.status}
 												</span>
+												{credit.resolved_date && (
+													<span className="text-xs text-zinc-400">
+														{format(
+															new Date(credit.resolved_date),
+															"MMM d, h:mm a",
+														)}
+													</span>
+												)}
 												{deletingId === credit.id ? null : (
 													<>
 														<Button
