@@ -214,20 +214,33 @@ export function Reports() {
 
 	// Staff Accountability (Payroll Export)
 	// We need to group Variances (from shifts) and Deducted Credits (from credits) by employee
-	const staffData: Record<string, { variances: number; deductions: number }> =
-		{};
+	const staffData: Record<
+		string,
+		{ variances: number; deductions: number; shortageReasons: string[] }
+	> = {};
 
 	closedShifts.forEach((s) => {
 		if (!staffData[s.manager_name])
-			staffData[s.manager_name] = { variances: 0, deductions: 0 };
+			staffData[s.manager_name] = {
+				variances: 0,
+				deductions: 0,
+				shortageReasons: [],
+			};
 		staffData[s.manager_name].variances += s.variance || 0;
+		if (s.reason_for_shortage) {
+			staffData[s.manager_name].shortageReasons.push(s.reason_for_shortage);
+		}
 	});
 
 	credits
 		.filter((c) => c.status === CREDIT_STATUSES.DEDUCTED)
 		.forEach((c) => {
 			if (!staffData[c.employee_name])
-				staffData[c.employee_name] = { variances: 0, deductions: 0 };
+				staffData[c.employee_name] = {
+					variances: 0,
+					deductions: 0,
+					shortageReasons: [],
+				};
 			staffData[c.employee_name].deductions += c.amount;
 		});
 
@@ -498,6 +511,13 @@ export function Reports() {
 															className={`px-4 py-3 text-right ${data.variances < 0 ? "text-red-600 font-medium" : data.variances > 0 ? "text-emerald-600" : ""}`}
 														>
 															${data.variances.toFixed(2)}
+															{data.shortageReasons.length > 0 && (
+																<div className="text-xs font-normal text-zinc-500 text-left mt-1">
+																	{data.shortageReasons.map((r) => (
+																		<div key={r}>&bull; {r}</div>
+																	))}
+																</div>
+															)}
 														</td>
 														<td className="px-4 py-3 text-right text-red-600 font-medium">
 															${data.deductions.toFixed(2)}
