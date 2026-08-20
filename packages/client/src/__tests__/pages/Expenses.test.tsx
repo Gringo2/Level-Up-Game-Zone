@@ -199,7 +199,15 @@ describe("Expenses", () => {
 	it("deletes an expense via DELETE after a reason is provided", async () => {
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		const deleteBtn = screen
+			.getAllByRole("button")
+			.filter(
+				(btn) =>
+					btn.querySelector("svg") &&
+					!btn.textContent &&
+					btn.className.includes("text-red"),
+			)[0];
+		fireEvent.click(deleteBtn);
 
 		const reason = screen.getByPlaceholderText("Reason for deletion...");
 		fireEvent.change(reason, { target: { value: "Duplicate entry" } });
@@ -435,7 +443,15 @@ describe("Expenses", () => {
 	it("dismisses delete confirmation when Cancel is clicked", async () => {
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		const deleteBtn = screen
+			.getAllByRole("button")
+			.filter(
+				(btn) =>
+					btn.querySelector("svg") &&
+					!btn.textContent &&
+					btn.className.includes("text-red"),
+			)[0];
+		fireEvent.click(deleteBtn);
 
 		expect(
 			screen.getByPlaceholderText("Reason for deletion..."),
@@ -455,7 +471,15 @@ describe("Expenses", () => {
 	it("shows error toast when delete expense fails", async () => {
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		const deleteBtn = screen
+			.getAllByRole("button")
+			.filter(
+				(btn) =>
+					btn.querySelector("svg") &&
+					!btn.textContent &&
+					btn.className.includes("text-red"),
+			)[0];
+		fireEvent.click(deleteBtn);
 
 		const failFetch = vi
 			.fn()

@@ -1,7 +1,7 @@
 import type { Expense, ExpenseCategory } from "@level-up/shared";
 import { EXPENSE_CATEGORY_FALLBACKS, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Edit2, Loader2, Trash2 } from "lucide-react";
+import { Edit2, Loader2, RotateCcw, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -398,6 +398,41 @@ export function Expenses() {
 			console.error(err);
 			toast.error(
 				err instanceof Error ? err.message : "Failed to deactivate category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleActivateCategory = async (id: string) => {
+		setCategoryLoading(true);
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			const response = await fetch(`${API_BASE}/api/expense-categories/${id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					isActive: true,
+					editReason: "Reactivated by user",
+				}),
+			});
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to activate category");
+			}
+			setAllCategories((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, isActive: true } : c)),
+			);
+			toast.success("Category activated!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to activate category",
 			);
 		} finally {
 			setCategoryLoading(false);
@@ -801,7 +836,7 @@ export function Expenses() {
 											>
 												{cat.isActive ? "Active" : "Inactive"}
 											</span>
-											{cat.isActive && (
+											{cat.isActive ? (
 												<>
 													<Button
 														size="sm"
@@ -825,6 +860,16 @@ export function Expenses() {
 														<Trash2 className="h-4 w-4" />
 													</Button>
 												</>
+											) : (
+												<Button
+													size="sm"
+													variant="ghost"
+													className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+													onClick={() => handleActivateCategory(cat.id)}
+													disabled={categoryLoading}
+												>
+													<RotateCcw className="h-4 w-4" />
+												</Button>
 											)}
 										</>
 									)}
