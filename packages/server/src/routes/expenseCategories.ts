@@ -1,7 +1,6 @@
 import { type RequestHandler, Router } from "express";
 import {
 	createExpenseCategory,
-	deleteExpenseCategory,
 	listExpenseCategories,
 	updateExpenseCategory,
 } from "../controllers/expenseCategoriesController.js";
@@ -9,7 +8,6 @@ import { requireAuth } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
 	CreateExpenseCategorySchema,
-	DeleteReasonSchema,
 	UpdateExpenseCategorySchema,
 } from "../schemas/index.js";
 
@@ -31,12 +29,6 @@ router.put(
 	requireAuth as RequestHandler,
 	validateBody(UpdateExpenseCategorySchema) as RequestHandler,
 	updateExpenseCategory as RequestHandler,
-);
-router.delete(
-	"/:id",
-	requireAuth as RequestHandler,
-	validateBody(DeleteReasonSchema) as RequestHandler,
-	deleteExpenseCategory as RequestHandler,
 );
 
 export default router;

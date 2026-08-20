@@ -98,38 +98,6 @@ describe("Expense Categories Integration Tests", () => {
 			expect(response.body.name).toBe("New Name");
 		});
 
-		it("should successfully delete an expense category", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
-				return {
-					doc: vi.fn().mockReturnValue({ id: "cat-123" }),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				} as any;
-			});
-
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({
-						exists: true,
-						id: "cat-123",
-						data: () => ({ name: "To Delete", isActive: true }),
-					}),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
-
-			const response = await request(app)
-				.delete("/api/expense-categories/cat-123")
-				.set("Authorization", authHeader)
-				.send({ deleteReason: "No longer needed" });
-
-			expect(response.status).toBe(200);
-			expect(response.body.message).toBe("Deleted successfully");
-		});
-
 		it("should deactivate an expense category", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
 				return {
@@ -282,37 +250,6 @@ describe("Expense Categories Integration Tests", () => {
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toBe("Internal server error");
-		});
-
-		it("returns 404 when deleting a non-existent category", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
-				return {
-					doc: vi.fn().mockReturnValue({ id: "nonexistent" }),
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				} as any;
-			});
-
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({
-						exists: false,
-						data: () => undefined,
-					}),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
-
-			const response = await request(app)
-				.delete("/api/expense-categories/nonexistent")
-				.set("Authorization", authHeader)
-				.send({ deleteReason: "Removing nonexistent" });
-
-			expect(response.status).toBe(404);
-			expect(response.body.error).toBe("Expense category not found");
 		});
 	});
 });
