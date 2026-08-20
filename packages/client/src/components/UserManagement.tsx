@@ -6,6 +6,7 @@ import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { ConfirmDialog } from "./ui/confirm-dialog";
 
 interface AppUser {
 	uid: string;
@@ -23,6 +24,10 @@ export function UserManagement() {
 		(typeof ROLES)[keyof typeof ROLES]
 	>(ROLES.STAFF);
 	const [inviteLoading, setInviteLoading] = useState(false);
+
+	const [deletingUser, setDeletingUser] = useState<AppUser | null>(null);
+	const [deleteReason, setDeleteReason] = useState("");
+	const [deleteLoading, setDeleteLoading] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
@@ -98,25 +103,25 @@ export function UserManagement() {
 		}
 	};
 
-	const handleDeleteUser = async (targetUser: AppUser) => {
-		if (
-			!window.confirm(
-				`Are you sure you want to delete user ${targetUser.displayName || targetUser.email}?`,
-			)
-		) {
-			return;
-		}
+	const handleDeleteUser = async () => {
+		if (!deletingUser) return;
 
+		setDeleteLoading(true);
 		try {
 			const token = await auth.currentUser?.getIdToken();
 			if (!token) throw new Error("Not authenticated");
 
-			const response = await fetch(`${API_BASE}/api/users/${targetUser.uid}`, {
-				method: "DELETE",
-				headers: {
-					Authorization: `Bearer ${token}`,
+			const response = await fetch(
+				`${API_BASE}/api/users/${deletingUser.uid}`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify({ deleteReason }),
 				},
-			});
+			);
 
 			if (!response.ok) {
 				throw new Error(
@@ -125,10 +130,14 @@ export function UserManagement() {
 			}
 
 			toast.success("User account deleted successfully!");
-			setUsers((prev) => prev.filter((u) => u.uid !== targetUser.uid));
+			setUsers((prev) => prev.filter((u) => u.uid !== deletingUser.uid));
+			setDeletingUser(null);
+			setDeleteReason("");
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error((err as Error).message || "Failed to delete user");
+		} finally {
+			setDeleteLoading(false);
 		}
 	};
 
@@ -262,7 +271,10 @@ export function UserManagement() {
 											variant="ghost"
 											size="sm"
 											className="text-red-600 hover:text-red-800"
-											onClick={() => handleDeleteUser(user)}
+											onClick={() => {
+												setDeletingUser(user);
+												setDeleteReason("");
+											}}
 											title="Delete user account"
 										>
 											<Trash2 className="h-4 w-4" />
@@ -274,6 +286,20 @@ export function UserManagement() {
 					</table>
 				</CardContent>
 			</Card>
+
+			<ConfirmDialog
+				open={!!deletingUser}
+				title="Delete User"
+				message={`Are you sure you want to delete user ${deletingUser?.displayName || deletingUser?.email}? This action cannot be undone.`}
+				reasonValue={deleteReason}
+				onReasonChange={setDeleteReason}
+				onConfirm={handleDeleteUser}
+				onCancel={() => {
+					setDeletingUser(null);
+					setDeleteReason("");
+				}}
+				loading={deleteLoading}
+			/>
 		</div>
 	);
 }

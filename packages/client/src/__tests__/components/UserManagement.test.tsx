@@ -37,14 +37,12 @@ const mockUsers = [
 ];
 
 describe("UserManagement", () => {
-	const originalConfirm = window.confirm;
 	beforeEach(() => {
 		vi.restoreAllMocks();
 		mockFetch.mockReset();
 		(safeJson as ReturnType<typeof vi.fn>).mockReset();
 		mockFetch.mockResolvedValue({ ok: true, status: 200 });
 		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValue(mockUsers);
-		window.confirm = originalConfirm;
 	});
 
 	it("shows loading spinner on mount", () => {
@@ -129,7 +127,6 @@ describe("UserManagement", () => {
 	});
 
 	it("sends DELETE request when delete is confirmed", async () => {
-		window.confirm = vi.fn().mockReturnValue(true);
 		render(<UserManagement />);
 		await waitFor(() => {
 			expect(screen.getByText("Alice")).toBeDefined();
@@ -138,17 +135,24 @@ describe("UserManagement", () => {
 		const deleteButtons = screen.getAllByTitle("Delete user account");
 		fireEvent.click(deleteButtons[0]);
 
+		expect(screen.getByText("Delete User")).toBeInTheDocument();
+		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
+			target: { value: "Test reason" },
+		});
+		fireEvent.click(screen.getByText("Confirm Delete"));
+
 		await waitFor(() => {
-			expect(window.confirm).toHaveBeenCalled();
 			expect(mockFetch).toHaveBeenCalledWith(
 				expect.stringContaining("/api/users/u1"),
-				expect.objectContaining({ method: "DELETE" }),
+				expect.objectContaining({
+					method: "DELETE",
+					body: JSON.stringify({ deleteReason: "Test reason" }),
+				}),
 			);
 		});
 	});
 
 	it("does not call API when delete is cancelled", async () => {
-		window.confirm = vi.fn().mockReturnValue(false);
 		render(<UserManagement />);
 		await waitFor(() => {
 			expect(screen.getByText("Alice")).toBeDefined();
@@ -157,6 +161,9 @@ describe("UserManagement", () => {
 		const initialCallCount = mockFetch.mock.calls.length;
 		const deleteButtons = screen.getAllByTitle("Delete user account");
 		fireEvent.click(deleteButtons[0]);
+
+		expect(screen.getByText("Delete User")).toBeInTheDocument();
+		fireEvent.click(screen.getByText("Cancel"));
 
 		await waitFor(() => {
 			expect(mockFetch.mock.calls.length).toBe(initialCallCount);
@@ -194,7 +201,6 @@ describe("UserManagement", () => {
 	});
 
 	it("shows error toast when delete user returns non-OK response", async () => {
-		window.confirm = vi.fn().mockReturnValue(true);
 		render(<UserManagement />);
 		await waitFor(() => {
 			expect(screen.getByText("Alice")).toBeDefined();
@@ -207,13 +213,17 @@ describe("UserManagement", () => {
 		const deleteButtons = screen.getAllByTitle("Delete user account");
 		fireEvent.click(deleteButtons[0]);
 
+		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
+			target: { value: "Test reason" },
+		});
+		fireEvent.click(screen.getByText("Confirm Delete"));
+
 		await waitFor(() => {
 			expect(toast.error).toHaveBeenCalled();
 		});
 	});
 
 	it("shows error toast when delete user fetch rejects", async () => {
-		window.confirm = vi.fn().mockReturnValue(true);
 		render(<UserManagement />);
 		await waitFor(() => {
 			expect(screen.getByText("Alice")).toBeDefined();
@@ -222,6 +232,11 @@ describe("UserManagement", () => {
 		mockFetch.mockRejectedValueOnce(new Error("Network error"));
 		const deleteButtons = screen.getAllByTitle("Delete user account");
 		fireEvent.click(deleteButtons[0]);
+
+		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
+			target: { value: "Test reason" },
+		});
+		fireEvent.click(screen.getByText("Confirm Delete"));
 
 		await waitFor(() => {
 			expect(toast.error).toHaveBeenCalled();
