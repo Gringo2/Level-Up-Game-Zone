@@ -827,6 +827,11 @@ export function Expenses() {
 									) : (
 										<>
 											<span className="flex-1 text-sm">{cat.name}</span>
+											{cat.created_at && (
+												<span className="text-xs text-zinc-400">
+													{format(new Date(cat.created_at), "MMM d, yyyy")}
+												</span>
+											)}
 											<span
 												className={`text-xs px-1.5 py-0.5 rounded-sm ${
 													cat.isActive
