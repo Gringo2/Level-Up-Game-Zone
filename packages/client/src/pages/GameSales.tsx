@@ -1,5 +1,5 @@
 import type { GameRate, GameSalesLog } from "@level-up/shared";
-import { DEFAULT_GAME_RATES } from "@level-up/shared";
+import { DEFAULT_GAME_RATES, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -54,11 +54,14 @@ export function GameSales() {
 							Authorization: `Bearer ${token}`,
 						},
 					}),
-					fetch(`${API_BASE}/api/sales`, {
-						headers: {
-							Authorization: `Bearer ${token}`,
+					fetch(
+						`${API_BASE}/api/sales?startDate=${encodeURIComponent(getShopStartOfDay().toISOString())}&endDate=${encodeURIComponent(getShopEndOfDay().toISOString())}`,
+						{
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
 						},
-					}),
+					),
 				]);
 
 				if (!ratesResponse.ok) {
@@ -70,17 +73,12 @@ export function GameSales() {
 
 				const fetchedRates = await safeJson<GameRate[]>(ratesResponse);
 				const fetchedSales = await safeJson<GameSalesLog[]>(salesResponse);
-				const start = getShopStartOfDay().toISOString();
-				const end = getShopEndOfDay().toISOString();
-				const dailySales = fetchedSales.filter(
-					(log) => log.date >= start && log.date <= end,
-				);
 
 				if (!mounted) return;
 
 				setRates(fetchedRates.filter((rate) => rate.isActive));
 				setLogs(
-					dailySales.sort(
+					fetchedSales.sort(
 						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 					),
 				);
@@ -414,29 +412,34 @@ export function GameSales() {
 												</span>
 											</div>
 											<div className="text-xs text-zinc-400 mt-1">
-												{format(new Date(log.date), "h:mm a")}
+												{format(new Date(log.date), "MMM d, h:mm a")}
 												{log.user_name && <> &bull; {log.user_name}</>}
 											</div>
 										</div>
 
 										<div className="flex items-center gap-2 w-full sm:w-auto">
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() => handleEdit(log)}
-												disabled={!!editingId}
-											>
-												<Edit2 className="h-4 w-4 mr-1" /> Edit
-											</Button>
-											<Button
-												size="sm"
-												variant="ghost"
-												className="text-red-600 hover:text-red-700 hover:bg-red-50"
-												onClick={() => setDeletingId(log.id)}
-												disabled={!!editingId}
-											>
-												<Trash2 className="h-4 w-4" />
-											</Button>
+											{(user?.role === ROLES.MANAGER ||
+												user?.role === ROLES.ADMIN) && (
+												<>
+													<Button
+														size="sm"
+														variant="outline"
+														onClick={() => handleEdit(log)}
+														disabled={!!editingId}
+													>
+														<Edit2 className="h-4 w-4 mr-1" /> Edit
+													</Button>
+													<Button
+														size="sm"
+														variant="ghost"
+														className="text-red-600 hover:text-red-700 hover:bg-red-50"
+														onClick={() => setDeletingId(log.id)}
+														disabled={!!editingId}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</>
+											)}
 										</div>
 									</div>
 								))

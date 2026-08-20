@@ -1,5 +1,5 @@
 import type { Credit, Employee } from "@level-up/shared";
-import { CREDIT_STATUSES } from "@level-up/shared";
+import { CREDIT_STATUSES, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
@@ -32,6 +32,7 @@ export function Credits() {
 	const [loading, setLoading] = useState(false);
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [employeeRoster, setEmployeeRoster] = useState<Employee[]>([]);
+	const [filterEmployeeId, setFilterEmployeeId] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
@@ -45,12 +46,20 @@ export function Credits() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
+				const params = new URLSearchParams();
+				if (filterEmployeeId) {
+					params.set("employee_id", filterEmployeeId);
+				}
+
 				const [creditsResponse, employeesResponse] = await Promise.all([
-					fetch(`${API_BASE}/api/credits`, {
-						headers: {
-							Authorization: `Bearer ${token}`,
+					fetch(
+						`${API_BASE}/api/credits${params.toString() ? `?${params.toString()}` : ""}`,
+						{
+							headers: {
+								Authorization: `Bearer ${token}`,
+							},
 						},
-					}),
+					),
 					fetch(`${API_BASE}/api/employees`, {
 						headers: {
 							Authorization: `Bearer ${token}`,
@@ -87,7 +96,7 @@ export function Credits() {
 		return () => {
 			mounted = false;
 		};
-	}, []);
+	}, [filterEmployeeId]);
 
 	const handleResolve = async (
 		id: string,
@@ -356,8 +365,26 @@ export function Credits() {
 
 				<Card className="lg:col-span-2">
 					<CardHeader>
-						<CardTitle>Recent Credits</CardTitle>
-						<CardDescription>Manage employee IOUs.</CardDescription>
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+							<div>
+								<CardTitle>Recent Credits</CardTitle>
+								<CardDescription>Manage employee IOUs.</CardDescription>
+							</div>
+							{employeeRoster.length > 0 && (
+								<select
+									value={filterEmployeeId}
+									onChange={(e) => setFilterEmployeeId(e.target.value)}
+									className="flex h-9 rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+								>
+									<option value="">All Employees</option>
+									{employeeRoster.map((emp) => (
+										<option key={emp.id} value={emp.id}>
+											{emp.name}
+										</option>
+									))}
+								</select>
+							)}
+						</div>
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-3">
@@ -403,53 +430,63 @@ export function Credits() {
 														)}
 													</span>
 												)}
-												{deletingId === credit.id ? null : (
-													<>
-														<Button
-															size="icon"
-															variant="ghost"
-															className="h-6 w-6"
-															onClick={() => handleEdit(credit)}
-															disabled={!!editingId}
-														>
-															<Edit2 className="h-3 w-3" />
-														</Button>
-														<Button
-															size="icon"
-															variant="ghost"
-															className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
-															onClick={() => setDeletingId(credit.id)}
-															disabled={!!editingId}
-														>
-															<Trash2 className="h-3 w-3" />
-														</Button>
-													</>
-												)}
+												{(user?.role === ROLES.MANAGER ||
+													user?.role === ROLES.ADMIN) &&
+													(deletingId === credit.id ? null : (
+														<>
+															<Button
+																size="icon"
+																variant="ghost"
+																className="h-6 w-6"
+																onClick={() => handleEdit(credit)}
+																disabled={!!editingId}
+															>
+																<Edit2 className="h-3 w-3" />
+															</Button>
+															<Button
+																size="icon"
+																variant="ghost"
+																className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+																onClick={() => setDeletingId(credit.id)}
+																disabled={!!editingId}
+															>
+																<Trash2 className="h-3 w-3" />
+															</Button>
+														</>
+													))}
 											</div>
-											{credit.status === CREDIT_STATUSES.PENDING && (
-												<div className="flex gap-2 mt-1">
-													<Button
-														size="sm"
-														variant="outline"
-														className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-														onClick={() =>
-															handleResolve(credit.id, CREDIT_STATUSES.RESOLVED)
-														}
-													>
-														Mark Paid
-													</Button>
-													<Button
-														size="sm"
-														variant="outline"
-														className="text-zinc-600 hover:bg-zinc-50"
-														onClick={() =>
-															handleResolve(credit.id, CREDIT_STATUSES.DEDUCTED)
-														}
-													>
-														Deduct
-													</Button>
-												</div>
-											)}
+											{(user?.role === ROLES.MANAGER ||
+												user?.role === ROLES.ADMIN) &&
+												credit.status === CREDIT_STATUSES.PENDING && (
+													<div className="flex gap-2 mt-1">
+														<Button
+															size="sm"
+															variant="outline"
+															className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+															onClick={() =>
+																handleResolve(
+																	credit.id,
+																	CREDIT_STATUSES.RESOLVED,
+																)
+															}
+														>
+															Mark Paid
+														</Button>
+														<Button
+															size="sm"
+															variant="outline"
+															className="text-zinc-600 hover:bg-zinc-50"
+															onClick={() =>
+																handleResolve(
+																	credit.id,
+																	CREDIT_STATUSES.DEDUCTED,
+																)
+															}
+														>
+															Deduct
+														</Button>
+													</div>
+												)}
 										</div>
 									</div>
 								))

@@ -42,7 +42,18 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("should successfully create an employee", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -64,7 +75,18 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("should successfully update an employee", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "emp-123",
@@ -107,7 +129,18 @@ describe("Employees Integration Tests", () => {
 		});
 
 		it("should successfully update an employee with all partial fields", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "emp-123",
@@ -197,6 +230,23 @@ describe("Employees Integration Tests", () => {
 
 	describe("Not Found Contract (non-existent documents)", () => {
 		const notFoundTransaction = () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing-emp" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
 				const mockTx = {
 					get: vi.fn().mockResolvedValue({
@@ -228,7 +278,18 @@ describe("Employees Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "emp-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

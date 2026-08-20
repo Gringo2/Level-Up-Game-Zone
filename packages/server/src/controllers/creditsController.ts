@@ -5,9 +5,10 @@ import type { AuthRequest } from "../middleware/auth.js";
 
 export const listCredits = async (req: AuthRequest, res: Response) => {
 	try {
-		const { startDate, endDate } = req.query as {
+		const { startDate, endDate, employee_id } = req.query as {
 			startDate?: string;
 			endDate?: string;
+			employee_id?: string;
 		};
 
 		let query: FirebaseFirestore.Query = db.collection(COLLECTIONS.CREDITS);
@@ -17,6 +18,9 @@ export const listCredits = async (req: AuthRequest, res: Response) => {
 		}
 		if (endDate) {
 			query = query.where("date", "<=", endDate);
+		}
+		if (employee_id) {
+			query = query.where("employee_id", "==", employee_id);
 		}
 
 		const snapshot = await query.orderBy("date", "desc").get();

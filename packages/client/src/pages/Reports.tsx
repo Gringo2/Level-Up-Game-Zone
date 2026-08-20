@@ -10,8 +10,15 @@ import {
 	DEFAULT_EXPENSE_CATEGORY,
 	SHIFT_STATUSES,
 } from "@level-up/shared";
-import { format } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
+import {
+	endOfMonth,
+	endOfWeek,
+	format,
+	startOfMonth,
+	startOfWeek,
+	subDays,
+} from "date-fns";
+import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -37,14 +44,44 @@ import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
 import { SHOP_TIMEZONE } from "../lib/dateUtils";
 
+const toShopDateStr = (d: Date) =>
+	formatInTimeZone(toZonedTime(d, SHOP_TIMEZONE), SHOP_TIMEZONE, "yyyy-MM-dd");
+
+type Preset = { label: string; from: string; to: string };
+
 export function Reports() {
 	const { user } = useAuth();
-	const [inputStartDate, setInputStartDate] = useState(
-		formatInTimeZone(new Date(), SHOP_TIMEZONE, "yyyy-MM-dd"),
-	);
-	const [inputEndDate, setInputEndDate] = useState(
-		formatInTimeZone(new Date(), SHOP_TIMEZONE, "yyyy-MM-dd"),
-	);
+
+	const today = new Date();
+	const shopToday = toZonedTime(today, SHOP_TIMEZONE);
+	const todayStr = toShopDateStr(today);
+
+	const presets: Preset[] = [
+		{ label: "Today", from: todayStr, to: todayStr },
+		{
+			label: "This Week",
+			from: toShopDateStr(startOfWeek(shopToday, { weekStartsOn: 1 })),
+			to: toShopDateStr(endOfWeek(shopToday, { weekStartsOn: 1 })),
+		},
+		{
+			label: "This Month",
+			from: toShopDateStr(startOfMonth(shopToday)),
+			to: toShopDateStr(endOfMonth(shopToday)),
+		},
+		{
+			label: "Last 7 Days",
+			from: toShopDateStr(subDays(shopToday, 6)),
+			to: todayStr,
+		},
+		{
+			label: "Last 30 Days",
+			from: toShopDateStr(subDays(shopToday, 29)),
+			to: todayStr,
+		},
+	];
+
+	const [inputStartDate, setInputStartDate] = useState(todayStr);
+	const [inputEndDate, setInputEndDate] = useState(todayStr);
 
 	const [appliedStartDate, setAppliedStartDate] = useState(inputStartDate);
 	const [appliedEndDate, setAppliedEndDate] = useState(inputEndDate);
@@ -126,32 +163,11 @@ export function Reports() {
 
 				if (!mounted) return;
 
-				setShifts(
-					(shiftsData as Shift[]).filter(
-						(shift) =>
-							shift.start_time >= startIso && shift.start_time <= endIso,
-					),
-				);
-				setGameSales(
-					(salesData as GameSalesLog[]).filter(
-						(log) => log.date >= startIso && log.date <= endIso,
-					),
-				);
-				setKenoLogs(
-					(kenoData as KenoLog[]).filter(
-						(log) => log.date >= startIso && log.date <= endIso,
-					),
-				);
-				setCredits(
-					(creditsData as Credit[]).filter(
-						(log) => log.date >= startIso && log.date <= endIso,
-					),
-				);
-				setExpenses(
-					(expensesData as Expense[]).filter(
-						(log) => log.date >= startIso && log.date <= endIso,
-					),
-				);
+				setShifts(shiftsData as Shift[]);
+				setGameSales(salesData as GameSalesLog[]);
+				setKenoLogs(kenoData as KenoLog[]);
+				setCredits(creditsData as Credit[]);
+				setExpenses(expensesData as Expense[]);
 				setLoading(false);
 			} catch (err) {
 				console.error(err);
@@ -257,24 +273,47 @@ export function Reports() {
 						Analyze revenue, expenses, and staff accountability.
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
-					<Input
-						type="date"
-						value={inputStartDate}
-						onChange={(e) => setInputStartDate(e.target.value)}
-						className="w-auto"
-					/>
-					<span className="text-zinc-500">to</span>
-					<Input
-						type="date"
-						value={inputEndDate}
-						onChange={(e) => setInputEndDate(e.target.value)}
-						className="w-auto"
-					/>
-					<Button onClick={handleApply}>Apply</Button>
-					<Button variant="outline" onClick={() => window.print()}>
-						Print
-					</Button>
+				<div className="flex flex-col items-end gap-2">
+					<div className="flex flex-wrap gap-1">
+						{presets.map((p) => (
+							<Button
+								key={p.label}
+								size="sm"
+								variant={
+									inputStartDate === p.from && inputEndDate === p.to
+										? "default"
+										: "outline"
+								}
+								onClick={() => {
+									setInputStartDate(p.from);
+									setInputEndDate(p.to);
+									setAppliedStartDate(p.from);
+									setAppliedEndDate(p.to);
+								}}
+							>
+								{p.label}
+							</Button>
+						))}
+					</div>
+					<div className="flex items-center gap-2">
+						<Input
+							type="date"
+							value={inputStartDate}
+							onChange={(e) => setInputStartDate(e.target.value)}
+							className="w-auto"
+						/>
+						<span className="text-zinc-500">to</span>
+						<Input
+							type="date"
+							value={inputEndDate}
+							onChange={(e) => setInputEndDate(e.target.value)}
+							className="w-auto"
+						/>
+						<Button onClick={handleApply}>Apply</Button>
+						<Button variant="outline" onClick={() => window.print()}>
+							Print
+						</Button>
+					</div>
 				</div>
 			</div>
 

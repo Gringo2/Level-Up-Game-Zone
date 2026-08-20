@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { type RequestHandler, Router } from "express";
 import {
 	createSale,
@@ -5,7 +6,7 @@ import {
 	listSales,
 	updateSale,
 } from "../controllers/salesController.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateSaleSchema,
@@ -31,12 +32,14 @@ router.post(
 router.put(
 	"/:id",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	validateBody(UpdateSaleSchema) as RequestHandler,
 	updateSale as RequestHandler,
 );
 router.delete(
 	"/:id",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteSale as RequestHandler,
 );

@@ -59,6 +59,38 @@ export function Expenses() {
 	useEffect(() => {
 		let mounted = true;
 
+		const loadCategories = async () => {
+			try {
+				const token = await auth.currentUser?.getIdToken();
+				if (!token) throw new Error("Not authenticated");
+
+				const categoriesRes = await fetch(
+					`${API_BASE}/api/expense-categories`,
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					},
+				);
+
+				if (categoriesRes.ok) {
+					const cats = (await safeJson(categoriesRes)) as ExpenseCategory[];
+					if (mounted) {
+						setAllCategories(cats);
+					}
+				}
+			} catch (err) {
+				console.error(err);
+			}
+		};
+
+		void loadCategories();
+		return () => {
+			mounted = false;
+		};
+	}, []);
+
+	useEffect(() => {
+		let mounted = true;
+
 		const loadExpenses = async () => {
 			try {
 				const token = await auth.currentUser?.getIdToken();
@@ -73,14 +105,12 @@ export function Expenses() {
 				params.set("startDate", dayStart);
 				params.set("endDate", dayEnd);
 
-				const [expensesRes, categoriesRes] = await Promise.all([
-					fetch(`${API_BASE}/api/expenses?${params.toString()}`, {
+				const expensesRes = await fetch(
+					`${API_BASE}/api/expenses?${params.toString()}`,
+					{
 						headers: { Authorization: `Bearer ${token}` },
-					}),
-					fetch(`${API_BASE}/api/expense-categories`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
-				]);
+					},
+				);
 
 				if (!expensesRes.ok) {
 					throw new Error(
@@ -92,13 +122,6 @@ export function Expenses() {
 
 				if (mounted) {
 					setExpenses(data);
-				}
-
-				if (categoriesRes.ok) {
-					const cats = (await safeJson(categoriesRes)) as ExpenseCategory[];
-					if (mounted) {
-						setAllCategories(cats);
-					}
 				}
 			} catch (err) {
 				console.error(err);

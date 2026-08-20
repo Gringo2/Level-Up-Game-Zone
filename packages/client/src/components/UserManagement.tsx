@@ -16,8 +16,8 @@ export function UserManagement() {
 
 	const [inviteEmail, setInviteEmail] = useState("");
 	const [inviteRole, setInviteRole] = useState<
-		(typeof ROLES)[keyof typeof ROLES]
-	>(ROLES.STAFF);
+		(typeof ROLES)[keyof typeof ROLES] | ""
+	>("");
 	const [inviteLoading, setInviteLoading] = useState(false);
 
 	const [deletingUser, setDeletingUser] = useState<AppUser | null>(null);
@@ -138,7 +138,7 @@ export function UserManagement() {
 
 	const handleInvite = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!inviteEmail) return;
+		if (!inviteEmail || !inviteRole) return;
 
 		setInviteLoading(true);
 		try {
@@ -165,7 +165,7 @@ export function UserManagement() {
 
 			toast.success(`User ${inviteEmail} invited as ${inviteRole}!`);
 			setInviteEmail("");
-			setInviteRole(ROLES.STAFF);
+			setInviteRole("");
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error((err as Error).message || "Failed to invite user");
@@ -210,14 +210,21 @@ export function UserManagement() {
 											e.target.value as (typeof ROLES)[keyof typeof ROLES],
 										)
 									}
+									required
 									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
 								>
+									<option value="" disabled>
+										Role...
+									</option>
 									<option value={ROLES.ADMIN}>Admin</option>
 									<option value={ROLES.MANAGER}>Manager</option>
 									<option value={ROLES.STAFF}>Staff</option>
 								</select>
 							</div>
-							<Button type="submit" disabled={inviteLoading || !inviteEmail}>
+							<Button
+								type="submit"
+								disabled={inviteLoading || !inviteEmail || !inviteRole}
+							>
 								{inviteLoading ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}

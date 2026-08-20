@@ -48,21 +48,30 @@ export function Dashboard() {
 
 				const [gamesResponse, kenoResponse, creditsResponse, expensesResponse] =
 					await Promise.all([
-						fetch(`${API_BASE}/api/sales`, {
-							headers: {
-								Authorization: `Bearer ${token}`,
+						fetch(
+							`${API_BASE}/api/sales?startDate=${encodeURIComponent(start)}`,
+							{
+								headers: {
+									Authorization: `Bearer ${token}`,
+								},
 							},
-						}),
-						fetch(`${API_BASE}/api/keno`, {
-							headers: {
-								Authorization: `Bearer ${token}`,
+						),
+						fetch(
+							`${API_BASE}/api/keno?startDate=${encodeURIComponent(start)}`,
+							{
+								headers: {
+									Authorization: `Bearer ${token}`,
+								},
 							},
-						}),
-						fetch(`${API_BASE}/api/credits`, {
-							headers: {
-								Authorization: `Bearer ${token}`,
+						),
+						fetch(
+							`${API_BASE}/api/credits?startDate=${encodeURIComponent(start)}`,
+							{
+								headers: {
+									Authorization: `Bearer ${token}`,
+								},
 							},
-						}),
+						),
 						fetch(
 							`${API_BASE}/api/expenses?startDate=${encodeURIComponent(start)}`,
 							{
@@ -96,13 +105,9 @@ export function Dashboard() {
 
 				if (!mounted) return;
 
-				setGameSales(
-					(gamesData as GameSalesLog[]).filter((log) => log.date >= start),
-				);
-				setKenoLogs((kenoData as KenoLog[]).filter((log) => log.date >= start));
-				setCredits(
-					(creditsData as Credit[]).filter((log) => log.date >= start),
-				);
+				setGameSales(gamesData as GameSalesLog[]);
+				setKenoLogs(kenoData as KenoLog[]);
+				setCredits(creditsData as Credit[]);
 				setExpenses(expensesData as Expense[]);
 			} catch (err) {
 				console.error(err);
@@ -136,11 +141,12 @@ export function Dashboard() {
 		totalExpenses -
 		pendingCredits;
 	const variance = closingCash ? parseFloat(closingCash) - expectedCash : 0;
+	const safeVariance = Number.isNaN(variance) ? 0 : variance;
 
 	const handleCloseShift = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!activeShift || !closingCash) return;
-		if (Math.abs(variance) > 2 && !shortageReason) {
+		if (Math.abs(safeVariance) > 2 && !shortageReason) {
 			toast.error("Variance is greater than $2.00. Please provide a reason.");
 			return;
 		}
@@ -244,7 +250,7 @@ export function Dashboard() {
 				<p>Opening Float: ${(activeShift?.opening_float || 0).toFixed(2)}</p>
 				<p>Expected Cash: ${expectedCash.toFixed(2)}</p>
 				<p>Actual Cash: ${closingCash || "_____"}</p>
-				<p>Variance: ${variance.toFixed(2)}</p>
+				<p>Variance: ${safeVariance.toFixed(2)}</p>
 				{shortageReason && <p>Reason: {shortageReason}</p>}
 				<div className="mt-16 flex justify-between">
 					<div className="border-t border-black w-48 text-center pt-2">
@@ -408,13 +414,13 @@ export function Dashboard() {
 											</div>
 											<div className="text-sm text-zinc-400 mb-1">Variance</div>
 											<div
-												className={`text-2xl font-bold ${variance < 0 ? "text-red-400" : variance > 0 ? "text-emerald-400" : "text-white"}`}
+												className={`text-2xl font-bold ${safeVariance < 0 ? "text-red-400" : safeVariance > 0 ? "text-emerald-400" : "text-white"}`}
 											>
-												${variance.toFixed(2)}
+												${safeVariance.toFixed(2)}
 											</div>
 										</div>
 									)}
-									{Math.abs(variance) > 2 && (
+									{Math.abs(safeVariance) > 2 && (
 										<div className="space-y-2">
 											<Label htmlFor="reason" className="text-red-400">
 												Reason for Variance (Required)
@@ -435,7 +441,7 @@ export function Dashboard() {
 											className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
 											disabled={
 												!closingCash ||
-												(Math.abs(variance) > 2 && !shortageReason)
+												(Math.abs(safeVariance) > 2 && !shortageReason)
 											}
 										>
 											Confirm & Close Shift

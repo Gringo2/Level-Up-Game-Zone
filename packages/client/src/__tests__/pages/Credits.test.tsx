@@ -95,7 +95,7 @@ describe("Credits", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 		expect(screen.getByText("Alice")).toBeDefined();
 		expect(screen.getByText("$20.00")).toBeDefined();
@@ -188,7 +188,7 @@ describe("Credits", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(screen.getByText("Mark Paid"));
@@ -214,7 +214,7 @@ describe("Credits", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(screen.getByText("Deduct"));
@@ -240,7 +240,7 @@ describe("Credits", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		const trashButtons = screen
@@ -310,7 +310,7 @@ describe("Credits", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		const trashButtons = screen
@@ -365,7 +365,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(editButton());
@@ -401,7 +401,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(editButton());
@@ -424,7 +424,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(editButton());
@@ -453,7 +453,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(screen.getByText("Mark Paid"));
@@ -477,7 +477,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		render(<Credits />);
 
 		await waitFor(() => {
-			expect(screen.getByText("Bob")).toBeDefined();
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
 		});
 
 		fireEvent.click(findIconButton("lucide-trash2")[0]);

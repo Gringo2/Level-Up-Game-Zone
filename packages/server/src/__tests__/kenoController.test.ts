@@ -15,6 +15,17 @@ describe("Keno Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list keno logs", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "keno_logs") {
 					const chainable: any = {
 						get: vi.fn().mockResolvedValue({
@@ -76,7 +87,18 @@ describe("Keno Integration Tests", () => {
 		});
 
 		it("should successfully update a keno log", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "keno-123",
@@ -145,6 +167,39 @@ describe("Keno Integration Tests", () => {
 		});
 
 		it("should successfully delete a keno log", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "keno-123",
+						data: () => ({ sales: 100, payouts: 50 }),
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
 			const response = await request(app)
 				.delete("/api/keno/keno-123")
 				.set("Authorization", authHeader)
@@ -226,6 +281,23 @@ describe("Keno Integration Tests", () => {
 
 	describe("Not Found Contract (non-existent documents)", () => {
 		const notFoundTransaction = () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing-keno" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
 				const mockTx = {
 					get: vi.fn().mockResolvedValue({
@@ -319,6 +391,17 @@ describe("Keno Integration Tests", () => {
 
 		it("returns 500 when listing keno logs crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "keno_logs") {
 					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),

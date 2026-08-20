@@ -33,12 +33,14 @@ router.post(
 router.put(
 	"/:id",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	validateBody(UpdateExpenseSchema) as RequestHandler,
 	updateExpense as RequestHandler,
 );
 router.delete(
 	"/:id",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteExpense as RequestHandler,
 );

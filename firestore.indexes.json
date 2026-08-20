@@ -11,6 +11,14 @@
 			"fields": [{ "fieldPath": "date", "order": "DESCENDING" }]
 		},
 		{
+			"collectionGroup": "credits",
+			"queryScope": "COLLECTION",
+			"fields": [
+				{ "fieldPath": "employee_id", "order": "ASCENDING" },
+				{ "fieldPath": "date", "order": "DESCENDING" }
+			]
+		},
+		{
 			"collectionGroup": "keno_logs",
 			"queryScope": "COLLECTION",
 			"fields": [{ "fieldPath": "date", "order": "DESCENDING" }]

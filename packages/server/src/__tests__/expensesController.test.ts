@@ -15,6 +15,17 @@ describe("Expenses Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list expenses", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "expenses") {
 					const mockDocs = [
 						{
@@ -50,6 +61,17 @@ describe("Expenses Integration Tests", () => {
 
 		it("should filter expenses by startDate query param", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "expenses") {
 					const mockDocs = [
 						{
@@ -87,6 +109,17 @@ describe("Expenses Integration Tests", () => {
 
 		it("should filter expenses by both startDate and endDate", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "expenses") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
@@ -179,7 +212,18 @@ describe("Expenses Integration Tests", () => {
 		});
 
 		it("should successfully update an expense", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -210,7 +254,18 @@ describe("Expenses Integration Tests", () => {
 		});
 
 		it("should successfully delete an expense", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -334,6 +389,23 @@ describe("Expenses Integration Tests", () => {
 		});
 
 		it("should return 400 when updating expense without editReason (Zod)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			const response = await request(app)
 				.put("/api/expenses/exp-123")
 				.set("Authorization", authHeader)
@@ -344,6 +416,23 @@ describe("Expenses Integration Tests", () => {
 		});
 
 		it("should return 400 when deleting expense without deleteReason (Zod)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			const response = await request(app)
 				.delete("/api/expenses/exp-123")
 				.set("Authorization", authHeader)
@@ -354,6 +443,23 @@ describe("Expenses Integration Tests", () => {
 		});
 
 		it("should return 400 when deleting expense with a too-short deleteReason (Zod)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			const response = await request(app)
 				.delete("/api/expenses/exp-123")
 				.set("Authorization", authHeader)
@@ -365,6 +471,17 @@ describe("Expenses Integration Tests", () => {
 
 		it("should accept optional date query params and return 200", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "expenses") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
@@ -487,6 +604,17 @@ describe("Expenses Integration Tests", () => {
 
 		it("returns 500 when listing expenses crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "expenses") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {

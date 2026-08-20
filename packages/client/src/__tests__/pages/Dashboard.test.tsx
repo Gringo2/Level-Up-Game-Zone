@@ -103,13 +103,13 @@ describe("Dashboard", () => {
 		});
 		window.print = vi.fn();
 		mockFetch.mockImplementation((url: string) => {
-			if (url.endsWith("/api/sales")) {
+			if (url.includes("/api/sales")) {
 				return jsonResponse(gameSalesLogs);
 			}
-			if (url.endsWith("/api/keno")) {
+			if (url.includes("/api/keno")) {
 				return jsonResponse(kenoLogs);
 			}
-			if (url.endsWith("/api/credits")) {
+			if (url.includes("/api/credits")) {
 				return jsonResponse(credits);
 			}
 			if (url.includes("/api/expenses")) {

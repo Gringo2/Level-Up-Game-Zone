@@ -66,6 +66,8 @@ describe("UserManagement", () => {
 			expect(screen.getByText("Alice")).toBeDefined();
 		});
 
+		const inviteRoleSelect = screen.getAllByRole("combobox")[0];
+		fireEvent.change(inviteRoleSelect, { target: { value: "manager" } });
 		const emailInput = screen.getByPlaceholderText("Email address");
 		fireEvent.change(emailInput, { target: { value: "new@test.com" } });
 		fireEvent.click(screen.getByText("Invite"));
@@ -84,6 +86,8 @@ describe("UserManagement", () => {
 			expect(screen.getByText("Alice")).toBeDefined();
 		});
 
+		const inviteRoleSelect = screen.getAllByRole("combobox")[0];
+		fireEvent.change(inviteRoleSelect, { target: { value: "staff" } });
 		const emailInput = screen.getByPlaceholderText("Email address");
 		fireEvent.change(emailInput, { target: { value: "new@test.com" } });
 		fireEvent.click(screen.getByText("Invite"));
@@ -191,6 +195,8 @@ describe("UserManagement", () => {
 		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
 			error: "already invited",
 		});
+		const inviteRoleSelect = screen.getAllByRole("combobox")[0];
+		fireEvent.change(inviteRoleSelect, { target: { value: "staff" } });
 		const emailInput = screen.getByPlaceholderText("Email address");
 		fireEvent.change(emailInput, { target: { value: "dup@test.com" } });
 		fireEvent.click(screen.getByText("Invite"));

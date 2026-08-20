@@ -132,10 +132,19 @@ describe("Expenses", () => {
 	});
 
 	it("logs a new expense via POST", async () => {
-		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
-		mockFetch.mockImplementationOnce(() =>
-			jsonResponse([{ name: "Supplies", isActive: true }]),
-		);
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ name: "Supplies", isActive: true }]);
+			}
+			if (init?.method === "POST") {
+				return jsonResponse({
+					...expense,
+					item_name: "New Mop",
+					description: "New mop",
+				});
+			}
+			return jsonResponse([expense]);
+		});
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -344,10 +353,12 @@ describe("Expenses", () => {
 	});
 
 	it("shows error toast when POST expense fails", async () => {
-		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
-		mockFetch.mockImplementationOnce(() =>
-			jsonResponse([{ name: "Supplies", isActive: true }]),
-		);
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -404,13 +415,18 @@ describe("Expenses", () => {
 	});
 
 	it("sends selected category in POST body", async () => {
-		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
-		mockFetch.mockImplementationOnce(() =>
-			jsonResponse([
-				{ name: "Supplies", isActive: true },
-				{ name: "Wages", isActive: true },
-			]),
-		);
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([
+					{ name: "Supplies", isActive: true },
+					{ name: "Wages", isActive: true },
+				]);
+			}
+			if (init?.method === "POST") {
+				return jsonResponse({ ...expense, category: "Wages" });
+			}
+			return jsonResponse([expense]);
+		});
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -532,10 +548,12 @@ describe("Expenses", () => {
 	});
 
 	it("creates a new category via POST", async () => {
-		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
-		mockFetch.mockImplementationOnce(() =>
-			jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]),
-		);
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -575,10 +593,12 @@ describe("Expenses", () => {
 	});
 
 	it("shows error toast when creating a duplicate category fails", async () => {
-		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
-		mockFetch.mockImplementationOnce(() =>
-			jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]),
-		);
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
@@ -614,13 +634,15 @@ describe("Expenses", () => {
 	});
 
 	it("deactivates a category via PUT", async () => {
-		mockFetch.mockImplementationOnce(() => jsonResponse([expense]));
-		mockFetch.mockImplementationOnce(() =>
-			jsonResponse([
-				{ id: "c1", name: "Supplies", isActive: true },
-				{ id: "c2", name: "Wages", isActive: true },
-			]),
-		);
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([
+					{ id: "c1", name: "Supplies", isActive: true },
+					{ id: "c2", name: "Wages", isActive: true },
+				]);
+			}
+			return jsonResponse([expense]);
+		});
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 

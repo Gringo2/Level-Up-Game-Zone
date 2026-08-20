@@ -92,6 +92,10 @@ export const DateRangeQuerySchema = z.object({
 	endDate: z.string().optional(),
 });
 
+export const CreditsQuerySchema = DateRangeQuerySchema.extend({
+	employee_id: z.string().optional(),
+});
+
 export const CreateExpenseSchema = z
 	.object({
 		item_name: z.string().trim().min(1, "Item name is required"),

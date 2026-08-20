@@ -81,7 +81,18 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("should successfully update a sale", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "sale-123",
@@ -123,7 +134,18 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("should successfully delete a sale", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -205,6 +227,23 @@ describe("Sales Integration Tests", () => {
 
 	describe("Not Found Contract (non-existent documents)", () => {
 		const notFoundTransaction = () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing-sale" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
 				const mockTx = {
 					get: vi.fn().mockResolvedValue({
@@ -248,7 +287,18 @@ describe("Sales Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
