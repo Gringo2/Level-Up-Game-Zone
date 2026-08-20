@@ -504,6 +504,10 @@ export function EmployeeRoster() {
 														: "N/A"}
 												</span>
 												<span>Break Day: {emp.break_day || "None"}</span>
+												<span>
+													Added:{" "}
+													{format(new Date(emp.created_at), "MMM d, yyyy")}
+												</span>
 											</div>
 										</div>
 										{user?.role === ROLES.ADMIN && (

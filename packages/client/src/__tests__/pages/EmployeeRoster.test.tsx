@@ -43,7 +43,7 @@ const emp = {
 	hired_date: "2025-01-01",
 	break_day: "Monday" as const,
 	isActive: true,
-	created_at: "",
+	created_at: "2025-01-01T00:00:00.000Z",
 };
 
 const emp2 = {
@@ -54,7 +54,7 @@ const emp2 = {
 	hired_date: "2025-06-15",
 	break_day: null,
 	isActive: true,
-	created_at: "",
+	created_at: "2025-06-15T00:00:00.000Z",
 };
 
 const employees = [emp, emp2];
@@ -134,7 +134,7 @@ describe("EmployeeRoster", () => {
 			hired_date: "2026-01-01",
 			break_day: null,
 			isActive: true,
-			created_at: "",
+			created_at: "2026-01-01T00:00:00.000Z",
 		};
 
 		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(employees));
@@ -402,7 +402,7 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 			hired_date: "2023-05-05",
 			break_day: "Wednesday",
 			isActive: true,
-			created_at: "",
+			created_at: "2023-05-05T00:00:00.000Z",
 		};
 		const fetchMock = vi
 			.fn()
