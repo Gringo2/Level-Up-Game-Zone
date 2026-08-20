@@ -73,6 +73,8 @@ export function Reports() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
+				const queryParams = `?startDate=${encodeURIComponent(startIso)}&endDate=${encodeURIComponent(endIso)}`;
+
 				const [
 					shiftsResponse,
 					salesResponse,
@@ -80,19 +82,19 @@ export function Reports() {
 					creditsResponse,
 					expensesResponse,
 				] = await Promise.all([
-					fetch(`${API_BASE}/api/shifts`, {
+					fetch(`${API_BASE}/api/shifts${queryParams}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`${API_BASE}/api/sales`, {
+					fetch(`${API_BASE}/api/sales${queryParams}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`${API_BASE}/api/keno`, {
+					fetch(`${API_BASE}/api/keno${queryParams}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`${API_BASE}/api/credits`, {
+					fetch(`${API_BASE}/api/credits${queryParams}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
-					fetch(`${API_BASE}/api/expenses`, {
+					fetch(`${API_BASE}/api/expenses${queryParams}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
 				]);

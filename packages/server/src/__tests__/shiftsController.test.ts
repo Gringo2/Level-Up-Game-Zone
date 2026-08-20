@@ -165,26 +165,24 @@ describe("Shifts Integration Tests", () => {
 		it("should successfully list shifts", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-					return {
-						where: () => ({
-							get: vi.fn().mockResolvedValue({ docs: [] }),
-						}),
+					const chainable: any = {
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
 						get: vi.fn().mockResolvedValue({
 							docs: [
 								{ id: "s1", data: () => ({ status: "OPEN" }) },
 								{ id: "s2", data: () => ({ status: "CLOSED" }) },
 							],
 						}),
-
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+					};
+					return chainable;
 				}
-				return {
+				const defaultChainable: any = {
 					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
-
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				} as any;
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -201,31 +199,29 @@ describe("Shifts Integration Tests", () => {
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-					return {
-						where: () => ({
-							get: vi.fn().mockResolvedValue({
-								docs: [
-									{
-										ref: staleShiftRef,
-										data: () => ({
-											status: "OPEN",
-											start_time: yesterday.toISOString(),
-										}),
-									},
-								],
-							}),
+					const chainable: any = {
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									ref: staleShiftRef,
+									data: () => ({
+										status: "OPEN",
+										start_time: yesterday.toISOString(),
+									}),
+								},
+							],
 						}),
-						get: vi.fn().mockResolvedValue({ docs: [] }),
-
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+					};
+					return chainable;
 				}
-				return {
+				const defaultChainable: any = {
 					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
-
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				} as any;
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -626,21 +622,19 @@ describe("Shifts Integration Tests", () => {
 		it("returns 500 when listing shifts crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
-					return {
-						where: () => ({
-							get: vi.fn().mockResolvedValue({ docs: [] }),
-						}),
+					const chainable: any = {
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+					};
+					return chainable;
 				}
-				return {
+				const defaultChainable: any = {
 					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
 					get: vi.fn().mockResolvedValue({ docs: [] }),
-
-					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				} as any;
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)

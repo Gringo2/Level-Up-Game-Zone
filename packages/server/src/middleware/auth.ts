@@ -1,6 +1,7 @@
+import { COLLECTIONS } from "@level-up/shared";
 import type { NextFunction, Request, Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import { auth } from "../firebase.js";
+import { auth, db } from "../firebase.js";
 
 export interface AuthRequest extends Request {
 	user: DecodedIdToken;
@@ -44,3 +45,35 @@ export const makeRequireAuth =
 export const requireAuth = makeRequireAuth((token) =>
 	auth.verifyIdToken(token),
 );
+
+export const requireRole = (allowedRoles: string[]) => {
+	return async (
+		req: AuthRequest,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> => {
+		// requireAuth should have already run and populated req.user
+		if (!req.user) {
+			res.status(401).json({ error: "Unauthorized: No user found in request" });
+			return;
+		}
+
+		try {
+			const userDoc = await db
+				.collection(COLLECTIONS.USERS)
+				.doc(req.user.uid)
+				.get();
+			const userRole = userDoc.exists ? userDoc.data()?.role : undefined;
+			if (!userRole || !allowedRoles.includes(userRole)) {
+				res
+					.status(403)
+					.json({ error: "Forbidden: Insufficient role permissions" });
+				return;
+			}
+			next();
+		} catch (error) {
+			console.error("Error checking user role:", error);
+			res.status(500).json({ error: "Internal server error" });
+		}
+	};
+};

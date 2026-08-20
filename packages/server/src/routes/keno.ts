@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { type RequestHandler, Router } from "express";
 import {
 	createKeno,
@@ -6,17 +7,23 @@ import {
 	updateKeno,
 	verifyKeno,
 } from "../controllers/kenoController.js";
-import { requireAuth } from "../middleware/auth.js";
-import { validateBody } from "../middleware/validate.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateKenoSchema,
+	DateRangeQuerySchema,
 	DeleteReasonSchema,
 	UpdateKenoSchema,
 } from "../schemas/index.js";
 
 const router = Router();
 
-router.get("/", requireAuth as RequestHandler, listKenoLogs as RequestHandler);
+router.get(
+	"/",
+	requireAuth as RequestHandler,
+	validateQuery(DateRangeQuerySchema) as RequestHandler,
+	listKenoLogs as RequestHandler,
+);
 router.post(
 	"/",
 	requireAuth as RequestHandler,
@@ -38,6 +45,7 @@ router.delete(
 router.put(
 	"/:id/verify",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	verifyKeno as RequestHandler,
 );
 

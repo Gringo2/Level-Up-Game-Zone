@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { type RequestHandler, Router } from "express";
 import {
 	createUser,
@@ -7,7 +8,7 @@ import {
 	listUsers,
 	updateRole,
 } from "../controllers/usersController.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
 	CreateUserSchema,
@@ -19,7 +20,12 @@ import {
 const router = Router();
 
 router.get("/me", requireAuth as RequestHandler, getMe as RequestHandler);
-router.get("/", requireAuth as RequestHandler, listUsers as RequestHandler);
+router.get(
+	"/",
+	requireAuth as RequestHandler,
+	requireRole([ROLES.ADMIN]) as RequestHandler,
+	listUsers as RequestHandler,
+);
 router.post(
 	"/",
 	requireAuth as RequestHandler,
@@ -29,18 +35,21 @@ router.post(
 router.put(
 	"/:id/role",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.ADMIN]) as RequestHandler,
 	validateBody(UpdateRoleSchema) as RequestHandler,
 	updateRole as RequestHandler,
 );
 router.post(
 	"/invite",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.ADMIN]) as RequestHandler,
 	validateBody(InviteUserSchema) as RequestHandler,
 	inviteUser as RequestHandler,
 );
 router.delete(
 	"/:id",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.ADMIN]) as RequestHandler,
 	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteUser as RequestHandler,
 );

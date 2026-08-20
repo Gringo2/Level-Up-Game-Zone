@@ -15,6 +15,17 @@ describe("Game Rates Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list game rates", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "game_rates") {
 					return {
 						get: vi.fn().mockResolvedValue({
@@ -42,7 +53,18 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("should successfully create a game rate", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-rate-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -63,7 +85,18 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("should successfully update a game rate", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "rate-123",
@@ -105,7 +138,18 @@ describe("Game Rates Integration Tests", () => {
 		});
 
 		it("should successfully update a game rate with all partial fields", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "rate-123",
@@ -236,7 +280,18 @@ describe("Game Rates Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "rate-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -246,6 +301,17 @@ describe("Game Rates Integration Tests", () => {
 
 		it("returns 500 when listing game rates crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "game_rates") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),

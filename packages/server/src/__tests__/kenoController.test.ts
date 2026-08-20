@@ -16,7 +16,7 @@ describe("Keno Integration Tests", () => {
 		it("should successfully list keno logs", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "keno_logs") {
-					return {
+					const chainable: any = {
 						get: vi.fn().mockResolvedValue({
 							docs: [
 								{
@@ -25,11 +25,17 @@ describe("Keno Integration Tests", () => {
 								},
 							],
 						}),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -149,6 +155,24 @@ describe("Keno Integration Tests", () => {
 		});
 
 		it("should successfully verify a keno log", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
 			const response = await request(app)
 				.put("/api/keno/keno-123/verify")
 				.set("Authorization", authHeader);
@@ -243,6 +267,24 @@ describe("Keno Integration Tests", () => {
 		});
 
 		it("returns 500 when verifying a non-existent keno log (documented contract)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing-keno" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
 			notFoundTransaction();
 
 			const response = await request(app)
@@ -278,13 +320,19 @@ describe("Keno Integration Tests", () => {
 		it("returns 500 when listing keno logs crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "keno_logs") {
-					return {
+					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -297,6 +345,7 @@ describe("Keno Integration Tests", () => {
 
 		it("returns 500 when creating keno crashes inside the transaction", async () => {
 			chainableCollection();
+			vi.mocked(db.runTransaction).mockReset();
 			vi.mocked(db.runTransaction).mockRejectedValueOnce(
 				new Error("DB crashed"),
 			);
@@ -312,6 +361,7 @@ describe("Keno Integration Tests", () => {
 
 		it("returns 500 when updating keno crashes inside the transaction", async () => {
 			chainableCollection();
+			vi.mocked(db.runTransaction).mockReset();
 			vi.mocked(db.runTransaction).mockRejectedValueOnce(
 				new Error("DB crashed"),
 			);
@@ -327,6 +377,7 @@ describe("Keno Integration Tests", () => {
 
 		it("returns 500 when deleting keno crashes inside the transaction", async () => {
 			chainableCollection();
+			vi.mocked(db.runTransaction).mockReset();
 			vi.mocked(db.runTransaction).mockRejectedValueOnce(
 				new Error("DB crashed"),
 			);
@@ -342,6 +393,7 @@ describe("Keno Integration Tests", () => {
 
 		it("returns 500 when verifying keno crashes inside the transaction", async () => {
 			chainableCollection();
+			vi.mocked(db.runTransaction).mockReset();
 			vi.mocked(db.runTransaction).mockRejectedValueOnce(
 				new Error("DB crashed"),
 			);

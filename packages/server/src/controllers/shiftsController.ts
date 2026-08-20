@@ -10,10 +10,24 @@ import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listShifts = async (_req: AuthRequest, res: Response) => {
+export const listShifts = async (req: AuthRequest, res: Response) => {
 	try {
 		await autoLabelStaleShifts();
-		const snapshot = await db.collection(COLLECTIONS.SHIFTS).get();
+		const { startDate, endDate } = req.query as {
+			startDate?: string;
+			endDate?: string;
+		};
+
+		let query: FirebaseFirestore.Query = db.collection(COLLECTIONS.SHIFTS);
+
+		if (startDate) {
+			query = query.where("start_time", ">=", startDate);
+		}
+		if (endDate) {
+			query = query.where("start_time", "<=", endDate);
+		}
+
+		const snapshot = await query.orderBy("start_time", "desc").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -102,20 +116,21 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 		const { actualCashCounted, shortageReason } = req.body;
 
 		const shiftRef = db.collection(COLLECTIONS.SHIFTS).doc(id);
-		const shiftDoc = await shiftRef.get();
+		const initialShiftDoc = await shiftRef.get();
 
-		if (!shiftDoc.exists) {
+		if (!initialShiftDoc.exists) {
 			return res.status(404).json({ error: "Shift not found" });
 		}
 
-		const shiftData = shiftDoc.data();
-		if (!shiftData) return res.status(404).json({ error: "Shift data empty" });
+		const initialShiftData = initialShiftDoc.data();
+		if (!initialShiftData)
+			return res.status(404).json({ error: "Shift data empty" });
 
-		if (shiftData.status === SHIFT_STATUSES.CLOSED) {
+		if (initialShiftData.status === SHIFT_STATUSES.CLOSED) {
 			return res.status(400).json({ error: "Shift is already closed" });
 		}
 
-		const startTime = shiftData.start_time;
+		const startTime = initialShiftData.start_time;
 
 		// Fetch dependent data securely on the backend
 		const [gameSalesSnap, kenoSnap, creditsSnap, expensesSnap] =
@@ -161,40 +176,72 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 			0,
 		);
 
-		const expectedCash =
-			(shiftData.opening_float || 0) +
-			totalKenoNet +
-			totalGameSales -
-			totalExpenses -
-			pendingCredits;
-		const variance = Number(actualCashCounted) - expectedCash;
+		let updateData: any;
 
-		if (
-			Math.abs(variance) > VARIANCE_THRESHOLD_FOR_EXPLANATION &&
-			!shortageReason
-		) {
-			return res.status(400).json({
-				error:
+		// Use a transaction to prevent concurrent closure issues
+		await db.runTransaction(async (transaction) => {
+			const shiftDoc = await transaction.get(shiftRef);
+
+			if (!shiftDoc.exists) {
+				throw new Error("Shift not found");
+			}
+
+			const shiftData = shiftDoc.data();
+			if (!shiftData) throw new Error("Shift data empty");
+
+			if (shiftData.status === SHIFT_STATUSES.CLOSED) {
+				throw new Error("Shift is already closed");
+			}
+
+			const expectedCash =
+				(shiftData.opening_float || 0) +
+				totalKenoNet +
+				totalGameSales -
+				totalExpenses -
+				pendingCredits;
+			const variance = Number(actualCashCounted) - expectedCash;
+
+			if (
+				Math.abs(variance) > VARIANCE_THRESHOLD_FOR_EXPLANATION &&
+				!shortageReason
+			) {
+				throw new Error(
 					"Variance is greater than $2.00. Please provide a reason for the shortage.",
-			});
-		}
+				);
+			}
 
-		const updateData = {
-			end_time: new Date().toISOString(),
-			actual_cash_counted: Number(actualCashCounted),
-			expected_cash_calculated: expectedCash,
-			variance: variance,
-			reason_for_shortage: shortageReason || "",
-			status: SHIFT_STATUSES.CLOSED,
-		};
+			updateData = {
+				end_time: new Date().toISOString(),
+				actual_cash_counted: Number(actualCashCounted),
+				expected_cash_calculated: expectedCash,
+				variance: variance,
+				reason_for_shortage: shortageReason || "",
+				status: SHIFT_STATUSES.CLOSED,
+			};
 
-		await shiftRef.update(updateData);
+			transaction.update(shiftRef, updateData);
+		});
 
 		return res
 			.status(200)
 			.json({ message: "Shift closed successfully", data: updateData });
 	} catch (error: unknown) {
 		console.error("Error closing shift:", error);
+		const err = error as Error;
+
+		if (
+			err.message === "Shift not found" ||
+			err.message === "Shift data empty"
+		) {
+			return res.status(404).json({ error: err.message });
+		}
+		if (err.message === "Shift is already closed") {
+			return res.status(400).json({ error: err.message });
+		}
+		if (err.message.includes("Variance is greater than $2.00")) {
+			return res.status(400).json({ error: err.message });
+		}
+
 		return res.status(500).json({ error: "Internal server error" });
 	}
 };

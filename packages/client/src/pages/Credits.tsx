@@ -23,6 +23,7 @@ import { API_BASE, safeJson } from "../lib/api";
 
 export function Credits() {
 	const { user } = useAuth();
+	const [employeeId, setEmployeeId] = useState("");
 	const [employeeName, setEmployeeName] = useState("");
 	const [amount, setAmount] = useState("");
 	const [entryDate, setEntryDate] = useState(() =>
@@ -126,6 +127,7 @@ export function Credits() {
 
 	const handleEdit = (credit: Credit) => {
 		setEditingId(credit.id);
+		setEmployeeId(credit.employee_id || "");
 		setEmployeeName(credit.employee_name);
 		setAmount(credit.amount.toString());
 		window.scrollTo({ top: 0, behavior: "smooth" });
@@ -133,6 +135,7 @@ export function Credits() {
 
 	const cancelEdit = () => {
 		setEditingId(null);
+		setEmployeeId("");
 		setEmployeeName("");
 		setAmount("");
 		setEditReason("");
@@ -170,7 +173,7 @@ export function Credits() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!employeeName || !amount || !user) return;
+		if (!employeeName || !employeeId || !amount || !user) return;
 
 		setLoading(true);
 		try {
@@ -190,6 +193,7 @@ export function Credits() {
 						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
+						employee_id: employeeId,
 						employee_name: employeeName,
 						amount: amount,
 						editReason,
@@ -213,6 +217,7 @@ export function Credits() {
 						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
+						employee_id: employeeId,
 						employee_name: employeeName,
 						amount: amount,
 						date: new Date(entryDate).toISOString(),
@@ -224,6 +229,7 @@ export function Credits() {
 					);
 				const newCredit = await safeJson<Credit>(response);
 				setCredits((prev) => [newCredit, ...prev]);
+				setEmployeeId("");
 				setEmployeeName("");
 				setAmount("");
 				toast.success("Credit logged successfully!");
@@ -266,8 +272,17 @@ export function Credits() {
 								{employeeRoster.length > 0 ? (
 									<select
 										id="employee"
-										value={employeeName}
-										onChange={(e) => setEmployeeName(e.target.value)}
+										value={employeeId}
+										onChange={(e) => {
+											const selectedId = e.target.value;
+											const selectedEmp = employeeRoster.find(
+												(emp) => emp.id === selectedId,
+											);
+											if (selectedEmp) {
+												setEmployeeId(selectedEmp.id);
+												setEmployeeName(selectedEmp.name);
+											}
+										}}
 										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
 										required
 									>
@@ -275,20 +290,15 @@ export function Credits() {
 											Select an employee...
 										</option>
 										{employeeRoster.map((emp) => (
-											<option key={emp.id} value={emp.name}>
+											<option key={emp.id} value={emp.id}>
 												{emp.name} ({emp.position})
 											</option>
 										))}
 									</select>
 								) : (
-									<Input
-										id="employee"
-										type="text"
-										placeholder="Type employee name..."
-										value={employeeName}
-										onChange={(e) => setEmployeeName(e.target.value)}
-										required
-									/>
+									<div className="text-sm text-zinc-500 italic">
+										Employee roster empty. Please add employees first.
+									</div>
 								)}
 							</div>
 							<div className="space-y-2">

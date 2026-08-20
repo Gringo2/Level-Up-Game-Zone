@@ -3,9 +3,23 @@ import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 
-export const listCredits = async (_req: AuthRequest, res: Response) => {
+export const listCredits = async (req: AuthRequest, res: Response) => {
 	try {
-		const snapshot = await db.collection(COLLECTIONS.CREDITS).get();
+		const { startDate, endDate } = req.query as {
+			startDate?: string;
+			endDate?: string;
+		};
+
+		let query: FirebaseFirestore.Query = db.collection(COLLECTIONS.CREDITS);
+
+		if (startDate) {
+			query = query.where("date", ">=", startDate);
+		}
+		if (endDate) {
+			query = query.where("date", "<=", endDate);
+		}
+
+		const snapshot = await query.orderBy("date", "desc").get();
 		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
@@ -19,13 +33,14 @@ export const listCredits = async (_req: AuthRequest, res: Response) => {
 export const createCredit = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { employee_name, amount, reason, date } = req.body;
+	const { employee_id, employee_name, amount, reason, date } = req.body;
 
 	try {
 		const newDocRef = db.collection(COLLECTIONS.CREDITS).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
+			employee_id,
 			employee_name,
 			amount: parseFloat(amount),
 			reason,
@@ -60,7 +75,8 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
 	const { id } = req.params;
-	const { employee_name, amount, reason, status, editReason } = req.body;
+	const { employee_id, employee_name, amount, reason, status, editReason } =
+		req.body;
 
 	try {
 		const docRef = db.collection(COLLECTIONS.CREDITS).doc(id);
@@ -76,6 +92,7 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 
 			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
 			const newValues: Record<string, any> = {};
+			if (employee_id !== undefined) newValues.employee_id = employee_id;
 			if (employee_name !== undefined) newValues.employee_name = employee_name;
 			if (amount !== undefined) newValues.amount = parseFloat(amount);
 			if (reason !== undefined) newValues.reason = reason;

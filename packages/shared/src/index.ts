@@ -62,6 +62,7 @@ export interface KenoLog {
 
 export interface Credit {
 	id: string;
+	employee_id?: string;
 	employee_name: string;
 	amount: number;
 	status: "Pending" | "Resolved" | "Deducted";

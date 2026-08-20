@@ -1,6 +1,7 @@
 import type { Credit, Employee } from "@level-up/shared";
 import { CREDIT_STATUSES } from "@level-up/shared";
 import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { Loader2, Printer, Receipt } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -12,13 +13,25 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 import { auth } from "../firebase";
 import { API_BASE, safeJson } from "../lib/api";
+import { SHOP_TIMEZONE } from "../lib/dateUtils";
 
 export function SalaryReport() {
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [employees, setEmployees] = useState<Employee[]>([]);
 	const [loading, setLoading] = useState(true);
+
+	const [inputStartDate, setInputStartDate] = useState(
+		formatInTimeZone(new Date(), SHOP_TIMEZONE, "yyyy-MM-dd"),
+	);
+	const [inputEndDate, setInputEndDate] = useState(
+		formatInTimeZone(new Date(), SHOP_TIMEZONE, "yyyy-MM-dd"),
+	);
+
+	const [appliedStartDate, setAppliedStartDate] = useState(inputStartDate);
+	const [appliedEndDate, setAppliedEndDate] = useState(inputEndDate);
 
 	useEffect(() => {
 		let mounted = true;
@@ -28,8 +41,17 @@ export function SalaryReport() {
 				const token = await auth.currentUser?.getIdToken();
 				if (!token) throw new Error("Not authenticated");
 
+				const startIso = new Date(
+					`${appliedStartDate}T00:00:00+03:00`,
+				).toISOString();
+				const endIso = new Date(
+					`${appliedEndDate}T23:59:59.999+03:00`,
+				).toISOString();
+
+				const queryParams = `?startDate=${encodeURIComponent(startIso)}&endDate=${encodeURIComponent(endIso)}`;
+
 				const [creditsResponse, employeesResponse] = await Promise.all([
-					fetch(`${API_BASE}/api/credits`, {
+					fetch(`${API_BASE}/api/credits${queryParams}`, {
 						headers: { Authorization: `Bearer ${token}` },
 					}),
 					fetch(`${API_BASE}/api/employees`, {
@@ -66,25 +88,43 @@ export function SalaryReport() {
 		return () => {
 			mounted = false;
 		};
-	}, []);
+	}, [appliedStartDate, appliedEndDate]);
 
-	// Group credits by lowercased employee name
+	const handleApply = () => {
+		setAppliedStartDate(inputStartDate);
+		setAppliedEndDate(inputEndDate);
+	};
+
+	// Group credits by employee_id (fallback to lowercased name)
+	const deductionsById: Record<string, Credit[]> = {};
 	const deductionsByName: Record<string, Credit[]> = {};
 	credits.forEach((c) => {
-		const key = c.employee_name.trim().toLowerCase();
-		if (!deductionsByName[key]) {
-			deductionsByName[key] = [];
+		if (c.employee_id) {
+			if (!deductionsById[c.employee_id]) {
+				deductionsById[c.employee_id] = [];
+			}
+			deductionsById[c.employee_id].push(c);
+		} else {
+			const key = c.employee_name.trim().toLowerCase();
+			if (!deductionsByName[key]) {
+				deductionsByName[key] = [];
+			}
+			deductionsByName[key].push(c);
 		}
-		deductionsByName[key].push(c);
 	});
 
-	// Find matched active employees
-	const matchedKeys = new Set<string>();
-
 	const payrollCards = employees.map((emp) => {
-		const key = emp.name.trim().toLowerCase();
-		matchedKeys.add(key);
-		const empCredits = deductionsByName[key] || [];
+		const empCredits = deductionsById[emp.id]
+			? [...deductionsById[emp.id]]
+			: [];
+
+		// Fallback for un-migrated historical credits that match by name
+		const nameKey = emp.name.trim().toLowerCase();
+		if (deductionsByName[nameKey]) {
+			empCredits.push(...deductionsByName[nameKey]);
+			delete deductionsByName[nameKey]; // Remove so they don't appear in unlinked
+		}
+
 		const totalDeducted = empCredits.reduce((sum, c) => sum + c.amount, 0);
 		const netPayable = emp.base_salary - totalDeducted;
 
@@ -97,8 +137,11 @@ export function SalaryReport() {
 	});
 
 	// Unlinked credits (historical names not currently in active roster)
-	const unlinkedKeys = Object.keys(deductionsByName).filter(
-		(k) => !matchedKeys.has(k),
+	const unlinkedKeys = Object.keys(deductionsByName);
+
+	// Unlinked IDs (deleted employees)
+	const unlinkedIds = Object.keys(deductionsById).filter(
+		(id) => !employees.some((e) => e.id === id),
 	);
 
 	return (
@@ -107,7 +150,9 @@ export function SalaryReport() {
 			<div className="hidden print:block mb-8 border-b pb-4">
 				<h1 className="text-3xl font-bold">Payroll & Salary Slips</h1>
 				<p className="text-sm text-zinc-500">
-					Generated on {format(new Date(), "MMMM d, yyyy")}
+					Generated for{" "}
+					{format(new Date(`${appliedStartDate}T00:00:00`), "MMM d, yyyy")} -{" "}
+					{format(new Date(`${appliedEndDate}T23:59:59`), "MMM d, yyyy")}
 				</p>
 			</div>
 
@@ -120,9 +165,25 @@ export function SalaryReport() {
 						Net salary calculations and itemized IOU deductions for store staff.
 					</p>
 				</div>
-				<Button variant="outline" onClick={() => window.print()}>
-					<Printer className="mr-2 h-4 w-4" /> Print Salary Slips
-				</Button>
+				<div className="flex items-center gap-2">
+					<Input
+						type="date"
+						value={inputStartDate}
+						onChange={(e) => setInputStartDate(e.target.value)}
+						className="w-auto"
+					/>
+					<span className="text-zinc-500">to</span>
+					<Input
+						type="date"
+						value={inputEndDate}
+						onChange={(e) => setInputEndDate(e.target.value)}
+						className="w-auto"
+					/>
+					<Button onClick={handleApply}>Apply</Button>
+					<Button variant="outline" onClick={() => window.print()}>
+						<Printer className="mr-2 h-4 w-4" /> Print
+					</Button>
+				</div>
 			</div>
 
 			{loading ? (
@@ -132,7 +193,9 @@ export function SalaryReport() {
 			) : (
 				<>
 					{/* Active Roster Payroll */}
-					{payrollCards.length === 0 && unlinkedKeys.length === 0 ? (
+					{payrollCards.length === 0 &&
+					unlinkedKeys.length === 0 &&
+					unlinkedIds.length === 0 ? (
 						<Card>
 							<CardContent className="p-8 text-center text-zinc-500">
 								No active employees or salary deductions found in the system.
@@ -238,7 +301,7 @@ export function SalaryReport() {
 								),
 							)}
 
-							{/* Unlinked Historical Deductions */}
+							{/* Unlinked Historical Deductions (By Name) */}
 							{unlinkedKeys.map((key) => {
 								const unlinkedCredits = deductionsByName[key];
 								const nameStr = unlinkedCredits[0]?.employee_name || key;
@@ -262,6 +325,61 @@ export function SalaryReport() {
 											</div>
 											<CardDescription className="text-xs">
 												Historical IOUs not linked to an active roster member.
+											</CardDescription>
+										</CardHeader>
+										<CardContent className="pt-4 space-y-4">
+											<div className="flex justify-between items-center text-sm p-3 bg-white rounded-md border border-amber-200">
+												<span className="text-zinc-600 font-medium">
+													Total Deducted
+												</span>
+												<span className="text-lg font-bold text-red-600">
+													-${total.toFixed(2)}
+												</span>
+											</div>
+											<div className="space-y-1.5">
+												{unlinkedCredits.map((c) => (
+													<div
+														key={c.id}
+														className="flex justify-between text-xs p-1.5 bg-white rounded border"
+													>
+														<span className="text-zinc-600">
+															{format(new Date(c.date), "MMM d, yyyy")}
+														</span>
+														<span className="font-semibold text-red-600">
+															-${c.amount.toFixed(2)}
+														</span>
+													</div>
+												))}
+											</div>
+										</CardContent>
+									</Card>
+								);
+							})}
+
+							{/* Unlinked Historical Deductions (By ID - Deleted Employees) */}
+							{unlinkedIds.map((id) => {
+								const unlinkedCredits = deductionsById[id];
+								const nameStr = unlinkedCredits[0]?.employee_name || "Unknown";
+								const total = unlinkedCredits.reduce(
+									(sum, c) => sum + c.amount,
+									0,
+								);
+								return (
+									<Card
+										key={id}
+										className="print:break-inside-avoid border-amber-200 bg-amber-50/30"
+									>
+										<CardHeader className="pb-3 border-b">
+											<div className="flex justify-between items-center">
+												<CardTitle className="text-lg font-bold text-amber-900">
+													{nameStr}
+												</CardTitle>
+												<span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">
+													Former Employee
+												</span>
+											</div>
+											<CardDescription className="text-xs">
+												IOUs for a deleted or inactive employee.
 											</CardDescription>
 										</CardHeader>
 										<CardContent className="pt-4 space-y-4">

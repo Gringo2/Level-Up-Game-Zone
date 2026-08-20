@@ -1,7 +1,7 @@
 import type { AuditLog } from "@level-up/shared";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
 	Card,
@@ -16,45 +16,59 @@ import { API_BASE, safeJson } from "../lib/api";
 export function AuditLogs() {
 	const [logs, setLogs] = useState<AuditLog[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
+	const [loadingMore, setLoadingMore] = useState(false);
+
+	const fetchLogs = useCallback(async (cursor?: string) => {
+		try {
+			const token = await auth.currentUser?.getIdToken();
+			if (!token) throw new Error("Not authenticated");
+
+			let url = `${API_BASE}/api/audit-logs?limit=50`;
+			if (cursor) url += `&cursor=${cursor}`;
+
+			const response = await fetch(url, {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					(await safeJson(response)).error || "Failed to fetch audit logs",
+				);
+			}
+
+			const payload = await safeJson<{
+				data: AuditLog[];
+				nextCursor: string | null;
+			}>(response);
+
+			setLogs((prev) => (cursor ? [...prev, ...payload.data] : payload.data));
+			setNextCursor(payload.nextCursor);
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to load audit logs");
+		}
+	}, []);
 
 	useEffect(() => {
 		let mounted = true;
-
-		const loadLogs = async () => {
-			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
-				const response = await fetch(`${API_BASE}/api/audit-logs`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
-				if (!response.ok) {
-					throw new Error(
-						(await safeJson(response)).error || "Failed to fetch audit logs",
-					);
-				}
-
-				const data = await safeJson<AuditLog[]>(response);
-				if (mounted) {
-					setLogs(data);
-					setLoading(false);
-				}
-			} catch (err) {
-				console.error(err);
-				if (mounted) {
-					toast.error("Failed to load audit logs");
-					setLoading(false);
-				}
-			}
-		};
-
-		void loadLogs();
+		setLoading(true);
+		fetchLogs().finally(() => {
+			if (mounted) setLoading(false);
+		});
 		return () => {
 			mounted = false;
 		};
-	}, []);
+	}, [fetchLogs]);
+
+	const handleLoadMore = async () => {
+		if (!nextCursor) return;
+		setLoadingMore(true);
+		await fetchLogs(nextCursor);
+		setLoadingMore(false);
+	};
 
 	const getActionType = (log: AuditLog) => {
 		if (log.old_value && log.new_value) return "UPDATE";
@@ -159,6 +173,21 @@ export function AuditLogs() {
 							</tbody>
 						</table>
 					</div>
+					{nextCursor && (
+						<div className="mt-4 flex justify-center">
+							<button
+								type="button"
+								onClick={handleLoadMore}
+								disabled={loadingMore}
+								className="px-4 py-2 text-sm font-medium text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-md disabled:opacity-50 flex items-center gap-2"
+							>
+								{loadingMore ? (
+									<Loader2 className="w-4 h-4 animate-spin" />
+								) : null}
+								{loadingMore ? "Loading..." : "Load More"}
+							</button>
+						</div>
+					)}
 				</CardContent>
 			</Card>
 		</div>

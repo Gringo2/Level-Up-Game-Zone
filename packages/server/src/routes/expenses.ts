@@ -1,3 +1,4 @@
+import { ROLES } from "@level-up/shared";
 import { type RequestHandler, Router } from "express";
 import {
 	createExpense,
@@ -6,12 +7,12 @@ import {
 	updateExpense,
 	verifyExpense,
 } from "../controllers/expensesController.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateExpenseSchema,
+	DateRangeQuerySchema,
 	DeleteReasonSchema,
-	ListExpensesQuerySchema,
 	UpdateExpenseSchema,
 } from "../schemas/index.js";
 
@@ -20,7 +21,7 @@ const router = Router();
 router.get(
 	"/",
 	requireAuth as RequestHandler,
-	validateQuery(ListExpensesQuerySchema) as RequestHandler,
+	validateQuery(DateRangeQuerySchema) as RequestHandler,
 	listExpenses as RequestHandler,
 );
 router.post(
@@ -44,6 +45,7 @@ router.delete(
 router.put(
 	"/:id/verify",
 	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	verifyExpense as RequestHandler,
 );
 

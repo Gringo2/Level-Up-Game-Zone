@@ -87,8 +87,7 @@ export const UpdateKenoSchema = z.object({
 		.min(3, "Reason for change must be at least 3 characters"),
 });
 
-// Expense Schemas
-export const ListExpensesQuerySchema = z.object({
+export const DateRangeQuerySchema = z.object({
 	startDate: z.string().optional(),
 	endDate: z.string().optional(),
 });
@@ -147,6 +146,7 @@ export const UpdateExpenseSchema = z.object({
 
 // Credit Schemas
 export const CreateCreditSchema = z.object({
+	employee_id: z.string().trim().min(1, "Employee ID is required"),
 	employee_name: z.string().trim().min(1, "Employee name is required"),
 	amount: positiveNumber("Amount"),
 	reason: z.string().optional(),
@@ -154,6 +154,7 @@ export const CreateCreditSchema = z.object({
 });
 
 export const UpdateCreditSchema = z.object({
+	employee_id: z.string().trim().min(1, "Employee ID is required").optional(),
 	employee_name: z
 		.string()
 		.trim()

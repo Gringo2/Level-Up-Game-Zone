@@ -63,7 +63,10 @@ describe("AuditLogs", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockFetch.mockResolvedValue(
-			jsonResponse([createLog, updateLog, deleteLog]),
+			jsonResponse({
+				data: [createLog, updateLog, deleteLog],
+				nextCursor: null,
+			}),
 		);
 		global.fetch = mockFetch as unknown as typeof fetch;
 	});
@@ -101,7 +104,7 @@ describe("AuditLogs", () => {
 	});
 
 	it("renders the empty state when there are no logs", async () => {
-		mockFetch.mockResolvedValue(jsonResponse([]));
+		mockFetch.mockResolvedValue(jsonResponse({ data: [], nextCursor: null }));
 		render(<AuditLogs />);
 		expect(
 			await screen.findByText("No activity logs recorded."),

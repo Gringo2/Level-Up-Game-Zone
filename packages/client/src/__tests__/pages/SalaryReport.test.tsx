@@ -167,7 +167,7 @@ describe("SalaryReport", () => {
 		});
 
 		const printSpy = vi.spyOn(window, "print").mockImplementation(() => {});
-		fireEvent.click(screen.getByText("Print Salary Slips"));
+		fireEvent.click(screen.getByText("Print"));
 		expect(printSpy).toHaveBeenCalled();
 		printSpy.mockRestore();
 	});

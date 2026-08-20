@@ -242,6 +242,17 @@ describe("Expenses Integration Tests", () => {
 
 		it("should successfully verify an expense", async () => {
 			vi.mocked(db.collection).mockImplementation((_path: string) => {
+				if (_path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -273,6 +284,41 @@ describe("Expenses Integration Tests", () => {
 	});
 
 	describe("Negative Path (Rejection Scenarios)", () => {
+		it("should return 403 when a staff member attempts to verify an expense", async () => {
+			const { auth } = await import("../firebase.js");
+			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce({
+				uid: "staff-uid",
+				email: "staff@example.com",
+				role: "staff",
+			} as any);
+
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return {
+					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+				} as any;
+			});
+
+			const response = await request(app)
+				.put("/api/expenses/exp-123/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(403);
+			expect(response.body.error).toContain(
+				"Forbidden: Insufficient role permissions",
+			);
+		});
 		it("should return 400 when creating expense with negative amount (Zod)", async () => {
 			const response = await request(app)
 				.post("/api/expenses")
@@ -347,6 +393,24 @@ describe("Expenses Integration Tests", () => {
 
 	describe("Not Found Contract (non-existent documents)", () => {
 		const notFoundTransaction = () => {
+			vi.mocked(db.runTransaction).mockReset();
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing-expense" }),
+				} as any;
+			});
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
 				const mockTx = {
 					get: vi.fn().mockResolvedValue({
@@ -401,6 +465,7 @@ describe("Expenses Integration Tests", () => {
 
 	describe("Database Crash (500 fallback)", () => {
 		const chainableCollection = () => {
+			vi.mocked(db.runTransaction).mockReset();
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
 					return {

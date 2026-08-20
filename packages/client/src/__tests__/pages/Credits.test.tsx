@@ -37,6 +37,7 @@ const jsonResponse = (data: unknown, ok = true, status = 200) =>
 
 const credit = {
 	id: "c1",
+	employee_id: "e1",
 	employee_name: "Bob",
 	amount: 20,
 	status: "Pending" as const,
@@ -158,7 +159,7 @@ describe("Credits", () => {
 		});
 
 		fireEvent.change(screen.getByLabelText("Employee Name"), {
-			target: { value: "Bob" },
+			target: { value: "e1" },
 		});
 		fireEvent.change(screen.getByLabelText("Amount ($)"), {
 			target: { value: "15" },
@@ -276,7 +277,7 @@ describe("Credits", () => {
 
 		await waitFor(() => {
 			expect(
-				screen.getByPlaceholderText("Type employee name..."),
+				screen.getByText("Employee roster empty. Please add employees first."),
 			).toBeDefined();
 		});
 	});
@@ -506,7 +507,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		});
 
 		fireEvent.change(screen.getByLabelText("Employee Name"), {
-			target: { value: "Bob" },
+			target: { value: "e1" },
 		});
 		fireEvent.change(screen.getByLabelText("Amount ($)"), {
 			target: { value: "15" },
@@ -531,7 +532,7 @@ describe("Credits - Edit & Failure Paths", () => {
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
-	it("types into the free-text employee input when roster is empty", async () => {
+	it("shows empty roster message when roster is empty", async () => {
 		vi.stubGlobal(
 			"fetch",
 			vi
@@ -542,13 +543,11 @@ describe("Credits - Edit & Failure Paths", () => {
 
 		render(<Credits />);
 
-		const input = screen.getByPlaceholderText("Type employee name...");
 		await waitFor(() => {
-			expect(input).toBeDefined();
+			expect(
+				screen.getByText("Employee roster empty. Please add employees first."),
+			).toBeDefined();
 		});
-
-		fireEvent.change(input, { target: { value: "Bob" } });
-		expect(input).toHaveValue("Bob");
 	});
 
 	it("does not submit when no user is signed in", async () => {
@@ -565,14 +564,9 @@ describe("Credits - Edit & Failure Paths", () => {
 			expect(fetchMock).toHaveBeenCalledTimes(2);
 		});
 		expect(screen.getByText("No credits logged yet.")).toBeDefined();
-
-		fireEvent.change(screen.getByPlaceholderText("Type employee name..."), {
-			target: { value: "Bob" },
-		});
-		fireEvent.change(screen.getByLabelText("Amount ($)"), {
-			target: { value: "15" },
-		});
-		fireEvent.click(screen.getByText("Log Credit"));
+		expect(
+			screen.getByText("Employee roster empty. Please add employees first."),
+		).toBeDefined();
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});

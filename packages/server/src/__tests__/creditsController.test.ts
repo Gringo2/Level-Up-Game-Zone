@@ -16,20 +16,32 @@ describe("Credits Integration Tests", () => {
 		it("should successfully list credits", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "credits") {
-					return {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
 						get: vi.fn().mockResolvedValue({
 							docs: [
 								{
 									id: "credit1",
-									data: () => ({ employee_name: "John Doe", amount: 10 }),
+									data: () => ({
+										employee_id: "emp-1",
+										employee_name: "John Doe",
+										amount: 10,
+									}),
 								},
 							],
 						}),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -52,7 +64,12 @@ describe("Credits Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/credits")
 				.set("Authorization", authHeader)
-				.send({ employee_name: "John Doe", amount: 50, reason: "Advance" });
+				.send({
+					employee_id: "emp-123",
+					employee_name: "John Doe",
+					amount: 50,
+					reason: "Advance",
+				});
 
 			expect(response.status).toBe(201);
 			expect(response.body.amount).toBe(50);
@@ -185,7 +202,7 @@ describe("Credits Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/credits")
 				.set("Authorization", authHeader)
-				.send({ amount: 50 }); // missing employee_name
+				.send({ amount: 50 }); // missing employee_id and employee_name
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
@@ -267,13 +284,21 @@ describe("Credits Integration Tests", () => {
 		it("returns 500 when listing credits crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "credits") {
-					return {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
 				}
 				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -293,7 +318,12 @@ describe("Credits Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/credits")
 				.set("Authorization", authHeader)
-				.send({ employee_name: "John Doe", amount: 50, reason: "Advance" });
+				.send({
+					employee_id: "emp-123",
+					employee_name: "John Doe",
+					amount: 50,
+					reason: "Advance",
+				});
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toContain("DB crashed");

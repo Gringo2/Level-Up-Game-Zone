@@ -1,0 +1,35 @@
+{
+	"indexes": [
+		{
+			"collectionGroup": "expenses",
+			"queryScope": "COLLECTION",
+			"fields": [{ "fieldPath": "date", "order": "DESCENDING" }]
+		},
+		{
+			"collectionGroup": "credits",
+			"queryScope": "COLLECTION",
+			"fields": [{ "fieldPath": "date", "order": "DESCENDING" }]
+		},
+		{
+			"collectionGroup": "keno_logs",
+			"queryScope": "COLLECTION",
+			"fields": [{ "fieldPath": "date", "order": "DESCENDING" }]
+		},
+		{
+			"collectionGroup": "game_sales_logs",
+			"queryScope": "COLLECTION",
+			"fields": [{ "fieldPath": "date", "order": "DESCENDING" }]
+		},
+		{
+			"collectionGroup": "shifts",
+			"queryScope": "COLLECTION",
+			"fields": [{ "fieldPath": "start_time", "order": "DESCENDING" }]
+		},
+		{
+			"collectionGroup": "audit_logs",
+			"queryScope": "COLLECTION",
+			"fields": [{ "fieldPath": "timestamp", "order": "DESCENDING" }]
+		}
+	],
+	"fieldOverrides": []
+}

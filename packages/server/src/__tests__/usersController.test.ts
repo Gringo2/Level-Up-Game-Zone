@@ -195,6 +195,12 @@ describe("Users Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
 					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
 						get: vi.fn().mockResolvedValue({
 							docs: [
 								{ id: "u1", data: () => ({ email: "a@x.com", role: "admin" }) },
@@ -447,6 +453,22 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("updateRole should return 400 if editReason is missing or too short (Zod Validation)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
 			const response = await request(app)
 				.put("/api/users/user123/role")
 				.set("Authorization", authHeader)
@@ -455,6 +477,22 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("updateRole should return 400 if role is invalid (Zod Validation)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
 			const response = await request(app)
 				.put("/api/users/user123/role")
 				.set("Authorization", authHeader)
@@ -463,6 +501,22 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("inviteUser should return 400 if role is invalid (InviteUserSchema errorMap)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
 			const response = await request(app)
 				.post("/api/users/invite")
 				.set("Authorization", authHeader)
@@ -660,7 +714,9 @@ describe("Users Integration Tests", () => {
 				.send({ email: "new@x.com", role: "staff" });
 
 			expect(response.status).toBe(403);
-			expect(response.body.error).toBe("Forbidden: Admins only");
+			expect(response.body.error).toBe(
+				"Forbidden: Insufficient role permissions",
+			);
 		});
 
 		it("createUser should return 403 for a non-root user without an invite", async () => {
@@ -758,6 +814,22 @@ describe("Users Integration Tests", () => {
 		});
 
 		it("deleteUser should return 400 when deleting your own account", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
 			const response = await request(app)
 				.delete("/api/users/mock-admin-uid")
 				.set("Authorization", authHeader)
@@ -792,7 +864,9 @@ describe("Users Integration Tests", () => {
 				.send({ deleteReason: "Trying to delete other" });
 
 			expect(response.status).toBe(403);
-			expect(response.body.error).toBe("Forbidden: Admins only");
+			expect(response.body.error).toBe(
+				"Forbidden: Insufficient role permissions",
+			);
 		});
 
 		it("deleteUser should return 404 when the user or invitation does not exist", async () => {
@@ -889,6 +963,12 @@ describe("Users Integration Tests", () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
 					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

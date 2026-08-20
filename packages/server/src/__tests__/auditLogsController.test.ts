@@ -15,9 +15,21 @@ describe("Audit Logs Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list audit logs", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "audit_logs") {
 					return {
 						orderBy: vi.fn().mockReturnThis(),
+						limit: vi.fn().mockReturnThis(),
 						get: vi.fn().mockResolvedValue({
 							docs: [
 								{
@@ -38,8 +50,8 @@ describe("Audit Logs Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(200);
-			expect(response.body).toHaveLength(1);
-			expect(response.body[0].id).toBe("log1");
+			expect(response.body.data).toHaveLength(1);
+			expect(response.body.data[0].id).toBe("log1");
 		});
 	});
 
@@ -53,9 +65,21 @@ describe("Audit Logs Integration Tests", () => {
 	describe("Database Crash (500 fallback)", () => {
 		it("returns 500 when listing audit logs crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				if (path === "audit_logs") {
 					return {
 						orderBy: vi.fn().mockReturnThis(),
+						limit: vi.fn().mockReturnThis(),
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;

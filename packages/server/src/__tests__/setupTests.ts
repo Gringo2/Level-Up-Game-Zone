@@ -9,7 +9,7 @@ vi.mock("../firebase.js", () => {
 		doc: vi.fn().mockReturnThis(),
 		get: vi.fn().mockResolvedValue({
 			exists: true,
-			data: () => ({}), // By default, returning empty valid data to avoid crashes
+			data: () => ({ role: "admin" }), // Default admin role for requireRole middleware
 			docs: [], // For where().get()
 			empty: true,
 		}),
@@ -36,12 +36,12 @@ vi.mock("../firebase.js", () => {
 		}),
 	};
 
-	// 2. Global mock for Firebase Auth used by requireAuth middleware
+	// 2. Global mock for Firebase Auth used by requireAuth middleware.
+	// DecodedIdToken does NOT carry a `role` field; roles live in Firestore.
 	const mockAuth = {
 		verifyIdToken: vi.fn().mockResolvedValue({
 			uid: "mock-admin-uid",
 			email: "admin@example.com",
-			role: "admin",
 		}),
 	};
 

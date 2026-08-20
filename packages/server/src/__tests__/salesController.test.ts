@@ -16,7 +16,7 @@ describe("Sales Integration Tests", () => {
 		it("should successfully list sales", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "game_sales_logs") {
-					return {
+					const chainable: any = {
 						get: vi.fn().mockResolvedValue({
 							docs: [
 								{
@@ -25,11 +25,17 @@ describe("Sales Integration Tests", () => {
 								},
 							],
 						}),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)
@@ -242,13 +248,19 @@ describe("Sales Integration Tests", () => {
 		it("returns 500 when listing sales crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "game_sales_logs") {
-					return {
+					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
-						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-					} as any;
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
 			});
 
 			const response = await request(app)

@@ -6,16 +6,22 @@ import {
 	updateSale,
 } from "../controllers/salesController.js";
 import { requireAuth } from "../middleware/auth.js";
-import { validateBody } from "../middleware/validate.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateSaleSchema,
+	DateRangeQuerySchema,
 	DeleteReasonSchema,
 	UpdateSaleSchema,
 } from "../schemas/index.js";
 
 const router = Router();
 
-router.get("/", requireAuth as RequestHandler, listSales as RequestHandler);
+router.get(
+	"/",
+	requireAuth as RequestHandler,
+	validateQuery(DateRangeQuerySchema) as RequestHandler,
+	listSales as RequestHandler,
+);
 router.post(
 	"/",
 	requireAuth as RequestHandler,

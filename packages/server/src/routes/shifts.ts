@@ -7,16 +7,22 @@ import {
 	updateFloat,
 } from "../controllers/shiftsController.js";
 import { requireAuth } from "../middleware/auth.js";
-import { validateBody } from "../middleware/validate.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CloseShiftSchema,
+	DateRangeQuerySchema,
 	StartShiftSchema,
 	UpdateFloatSchema,
 } from "../schemas/index.js";
 
 const router = Router();
 
-router.get("/", requireAuth as RequestHandler, listShifts as RequestHandler);
+router.get(
+	"/",
+	requireAuth as RequestHandler,
+	validateQuery(DateRangeQuerySchema) as RequestHandler,
+	listShifts as RequestHandler,
+);
 router.post(
 	"/",
 	requireAuth as RequestHandler,

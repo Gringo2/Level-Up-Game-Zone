@@ -6,16 +6,22 @@ import {
 	updateCredit,
 } from "../controllers/creditsController.js";
 import { requireAuth } from "../middleware/auth.js";
-import { validateBody } from "../middleware/validate.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateCreditSchema,
+	DateRangeQuerySchema,
 	DeleteReasonSchema,
 	UpdateCreditSchema,
 } from "../schemas/index.js";
 
 const router = Router();
 
-router.get("/", requireAuth as RequestHandler, listCredits as RequestHandler);
+router.get(
+	"/",
+	requireAuth as RequestHandler,
+	validateQuery(DateRangeQuerySchema) as RequestHandler,
+	listCredits as RequestHandler,
+);
 router.post(
 	"/",
 	requireAuth as RequestHandler,
