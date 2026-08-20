@@ -415,6 +415,7 @@ export function GameSales() {
 											</div>
 											<div className="text-xs text-zinc-400 mt-1">
 												{format(new Date(log.date), "h:mm a")}
+												{log.user_name && <> &bull; {log.user_name}</>}
 											</div>
 										</div>
 

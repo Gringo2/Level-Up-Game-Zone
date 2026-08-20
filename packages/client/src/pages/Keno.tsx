@@ -341,6 +341,11 @@ export function Keno() {
 										</div>
 										<div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
 											{format(new Date(log.date), "h:mm a")}
+											{log.user_name && (
+												<>
+													&bull; <span>{log.user_name}</span>
+												</>
+											)}
 											{log.verified ? (
 												<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
 													Verified

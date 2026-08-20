@@ -48,7 +48,18 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("should successfully create a sale", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ displayName: "Test User", role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-sale-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

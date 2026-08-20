@@ -45,6 +45,11 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 	} = req.body;
 
 	try {
+		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
+		const displayName = userDoc.exists
+			? userDoc.data()?.displayName
+			: undefined;
+
 		const newDocRef = db.collection(COLLECTIONS.GAME_SALES_LOGS).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
@@ -55,6 +60,7 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 			rate_applied: parseFloat(rate_applied),
 			calculated_total: parseFloat(calculated_total),
 			user_id: user.uid,
+			...(displayName && { user_name: displayName }),
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 		};
 

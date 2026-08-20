@@ -47,6 +47,7 @@ export interface GameSalesLog {
 	rate_applied: number;
 	calculated_total: number;
 	user_id: string;
+	user_name?: string;
 	date: string;
 }
 
@@ -56,6 +57,7 @@ export interface KenoLog {
 	payouts: number;
 	net_profit: number;
 	user_id: string;
+	user_name?: string;
 	date: string;
 	verified?: boolean;
 }
@@ -78,6 +80,7 @@ export interface Expense {
 	amount: number;
 	category?: string;
 	user_id: string;
+	user_name?: string;
 	date: string;
 	verified?: boolean;
 	quantity?: number;

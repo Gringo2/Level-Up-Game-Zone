@@ -47,6 +47,9 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
 	try {
 		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
 		const role = userDoc.exists ? userDoc.data()?.role : ROLES.STAFF;
+		const displayName = userDoc.exists
+			? userDoc.data()?.displayName
+			: undefined;
 
 		const newDocRef = db.collection(COLLECTIONS.EXPENSES).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
@@ -62,6 +65,7 @@ export const createExpense = async (req: AuthRequest, res: Response) => {
 			amount: computedAmount,
 			category,
 			user_id: user.uid,
+			...(displayName && { user_name: displayName }),
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 			verified: role === ROLES.MANAGER || role === ROLES.ADMIN,
 		};

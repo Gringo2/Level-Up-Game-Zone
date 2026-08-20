@@ -38,6 +38,9 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 	try {
 		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
 		const role = userDoc.exists ? userDoc.data()?.role : ROLES.STAFF;
+		const displayName = userDoc.exists
+			? userDoc.data()?.displayName
+			: undefined;
 
 		const newDocRef = db.collection(COLLECTIONS.KENO_LOGS).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
@@ -47,6 +50,7 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 			payouts: parseFloat(payouts),
 			net_profit: parseFloat(net_profit),
 			user_id: user.uid,
+			...(displayName && { user_name: displayName }),
 			date: date ? new Date(date).toISOString() : new Date().toISOString(),
 			verified: role === ROLES.MANAGER || role === ROLES.ADMIN,
 		};

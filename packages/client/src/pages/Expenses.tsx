@@ -688,6 +688,11 @@ export function Expenses() {
 										)}
 										<div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
 											{format(new Date(expense.date), "h:mm a")}
+											{expense.user_name && (
+												<>
+													&bull; <span>{expense.user_name}</span>
+												</>
+											)}
 											{expense.verified ? (
 												<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
 													Verified
