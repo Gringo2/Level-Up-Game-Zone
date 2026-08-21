@@ -46,6 +46,13 @@ describe("UserManagement", () => {
 		(safeJson as ReturnType<typeof vi.fn>).mockResolvedValue(mockUsers);
 	});
 
+	it("labels the invite form as a user invitation, not an employee record", async () => {
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Invite User")).toBeDefined();
+		});
+	});
+
 	it("shows loading spinner on mount", () => {
 		const { container } = render(<UserManagement />);
 		expect(container.querySelector(".animate-spin")).not.toBeNull();

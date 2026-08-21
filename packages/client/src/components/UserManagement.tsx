@@ -176,7 +176,7 @@ export function UserManagement() {
 			<Card className="max-w-xl">
 				<form onSubmit={handleInvite}>
 					<CardHeader>
-						<CardTitle>Invite Employee</CardTitle>
+						<CardTitle>Invite User</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-4">
 						<div className="flex gap-4">
