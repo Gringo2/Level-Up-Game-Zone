@@ -742,7 +742,7 @@ describe("Game Rates Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when creating game rate crashes inside the transaction", async () => {
@@ -761,7 +761,7 @@ describe("Game Rates Integration Tests", () => {
 				});
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when updating game rate crashes inside the transaction", async () => {
@@ -776,7 +776,7 @@ describe("Game Rates Integration Tests", () => {
 				.send({ price_per_unit: 25, editReason: "Corrected figures" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 

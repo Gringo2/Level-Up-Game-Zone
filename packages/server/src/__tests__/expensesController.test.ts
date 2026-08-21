@@ -637,7 +637,7 @@ describe("Expenses Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when creating expense crashes inside the transaction", async () => {
@@ -671,7 +671,7 @@ describe("Expenses Integration Tests", () => {
 				.send({ amount: 300, editReason: "Corrected figures" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when deleting expense crashes inside the transaction", async () => {
@@ -686,7 +686,7 @@ describe("Expenses Integration Tests", () => {
 				.send({ deleteReason: "Removing stale record" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when verifying expense crashes inside the transaction", async () => {
@@ -700,7 +700,7 @@ describe("Expenses Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 

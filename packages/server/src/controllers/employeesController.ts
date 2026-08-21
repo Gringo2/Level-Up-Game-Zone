@@ -2,6 +2,7 @@ import { COLLECTIONS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listEmployees = async (_req: AuthRequest, res: Response) => {
 	try {
@@ -10,9 +11,7 @@ export const listEmployees = async (_req: AuthRequest, res: Response) => {
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
 		console.error("Error listing employees:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -80,9 +79,7 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 				.json({ error: "An active employee with this name already exists" });
 		}
 		console.error("Error creating employee:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -174,8 +171,6 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 				.json({ error: "An active employee with this name already exists" });
 		}
 		console.error("Error updating employee:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

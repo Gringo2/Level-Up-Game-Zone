@@ -93,7 +93,7 @@ describe("Audit Logs Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 });

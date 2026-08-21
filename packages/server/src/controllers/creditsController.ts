@@ -2,6 +2,7 @@ import { COLLECTIONS, CREDIT_STATUSES } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listCredits = async (req: AuthRequest, res: Response) => {
 	try {
@@ -28,9 +29,7 @@ export const listCredits = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
 		console.error("Error listing credits:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -76,9 +75,7 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 		return res.status(201).json({ id: newDocRef.id, ...data });
 	} catch (error: unknown) {
 		console.error("Error creating credit:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -130,9 +127,7 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating credit:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -171,8 +166,6 @@ export const deleteCredit = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Deleted successfully" });
 	} catch (error: unknown) {
 		console.error("Error deleting credit:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

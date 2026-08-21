@@ -2,6 +2,7 @@ import { COLLECTIONS, ROLES, ROOT_ADMIN_EMAILS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { safeErrorMessage } from "../utils/safeError.js";
 
 export const getMe = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
@@ -14,9 +15,7 @@ export const getMe = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ uid: docSnap.id, ...docSnap.data() });
 	} catch (error: unknown) {
 		console.error("Error fetching user profile:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -27,9 +26,7 @@ export const listUsers = async (_req: AuthRequest, res: Response) => {
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
 		console.error("Error listing users:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -100,7 +97,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 		if (message === "User already exists") {
 			return res.status(400).json({ error: message });
 		}
-		return res.status(500).json({ error: message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -164,7 +161,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 		if (message === "User already invited") {
 			return res.status(400).json({ error: message });
 		}
-		return res.status(500).json({ error: message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -211,9 +208,7 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Role updated successfully" });
 	} catch (error: unknown) {
 		console.error("Error updating user role:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -299,6 +294,6 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 				.status(message.includes("Root") ? 403 : 404)
 				.json({ error: message });
 		}
-		return res.status(500).json({ error: message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

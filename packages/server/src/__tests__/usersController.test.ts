@@ -984,7 +984,7 @@ describe("Users Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when fetching profile crashes", async () => {
@@ -1008,7 +1008,7 @@ describe("Users Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when createUser crashes inside the transaction", async () => {
@@ -1042,7 +1042,7 @@ describe("Users Integration Tests", () => {
 				.send({});
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when inviteUser crashes inside the transaction", async () => {
@@ -1077,7 +1077,7 @@ describe("Users Integration Tests", () => {
 				.send({ email: "new@x.com", role: "staff" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when updateRole crashes inside the transaction", async () => {
@@ -1109,7 +1109,7 @@ describe("Users Integration Tests", () => {
 				.send({ role: "manager", editReason: "Promoting user" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when deleteUser crashes inside the transaction", async () => {
@@ -1141,7 +1141,7 @@ describe("Users Integration Tests", () => {
 				.send({ deleteReason: "Testing crash handling" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 });

@@ -642,7 +642,7 @@ describe("Shifts Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when closing a shift crashes on DB read", async () => {
@@ -746,7 +746,7 @@ describe("Shifts Integration Tests", () => {
 				.send({ floatAmount: 150, managerName: "Test Manager" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when starting a shift crashes inside the transaction", async () => {
@@ -775,7 +775,7 @@ describe("Shifts Integration Tests", () => {
 				.send({ floatAmount: 150, managerName: "Test Manager" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 

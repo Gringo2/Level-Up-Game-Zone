@@ -696,7 +696,7 @@ describe("Employees Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when creating employee crashes inside the transaction", async () => {
@@ -716,7 +716,7 @@ describe("Employees Integration Tests", () => {
 				});
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when updating employee crashes inside the transaction", async () => {
@@ -731,7 +731,7 @@ describe("Employees Integration Tests", () => {
 				.send({ base_salary: 4000, editReason: "Corrected figures" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 

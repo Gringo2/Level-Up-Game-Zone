@@ -2,6 +2,7 @@ import { COLLECTIONS, ROLES } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listKenoLogs = async (req: AuthRequest, res: Response) => {
 	try {
@@ -24,9 +25,7 @@ export const listKenoLogs = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
 		console.error("Error listing keno logs:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -119,9 +118,7 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
 		console.error("Error updating keno:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -160,9 +157,7 @@ export const deleteKeno = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Deleted successfully" });
 	} catch (error: unknown) {
 		console.error("Error deleting keno:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -200,8 +195,6 @@ export const verifyKeno = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Verified successfully" });
 	} catch (error: unknown) {
 		console.error("Error verifying keno:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

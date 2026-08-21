@@ -329,7 +329,40 @@ describe("Sales Integration Tests", () => {
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toBe("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
+		});
+
+		it("does not leak internal error details to clients", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "game_sales_logs") {
+					const chainable: any = {
+						get: vi
+							.fn()
+							.mockRejectedValue(
+								new Error(
+									"permission denied: projects/secret/documents/game_sales_logs",
+								),
+							),
+						where: vi.fn().mockReturnThis(),
+						orderBy: vi.fn().mockReturnThis(),
+					};
+					return chainable;
+				}
+				const defaultChainable: any = {
+					get: vi.fn().mockResolvedValue({ docs: [] }),
+					where: vi.fn().mockReturnThis(),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return defaultChainable;
+			});
+
+			const response = await request(app)
+				.get("/api/sales")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toBe("Internal server error");
+			expect(response.body.error).not.toContain("projects/secret");
 		});
 
 		it("returns 500 when creating sale crashes inside the transaction", async () => {
@@ -364,7 +397,7 @@ describe("Sales Integration Tests", () => {
 				.send({ quantity_sold: 3, editReason: "Corrected figures" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 
 		it("returns 500 when deleting sale crashes inside the transaction", async () => {
@@ -379,7 +412,7 @@ describe("Sales Integration Tests", () => {
 				.send({ deleteReason: "Removing stale record" });
 
 			expect(response.status).toBe(500);
-			expect(response.body.error).toContain("DB crashed");
+			expect(response.body.error).toBe("Internal server error");
 		});
 	});
 

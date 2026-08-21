@@ -2,6 +2,7 @@ import { COLLECTIONS, ROLES } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listExpenses = async (req: AuthRequest, res: Response) => {
 	try {
@@ -24,9 +25,7 @@ export const listExpenses = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
 		console.error("Error listing expenses:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -158,9 +157,7 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json(updatedData);
 	} catch (error: unknown) {
 		console.error("Error updating expense:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -199,9 +196,7 @@ export const deleteExpense = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Deleted successfully" });
 	} catch (error: unknown) {
 		console.error("Error deleting expense:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -239,8 +234,6 @@ export const verifyExpense = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Verified successfully" });
 	} catch (error: unknown) {
 		console.error("Error verifying expense:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

@@ -9,6 +9,7 @@ import type { Response } from "express";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listShifts = async (req: AuthRequest, res: Response) => {
 	try {
@@ -32,9 +33,7 @@ export const listShifts = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
 		console.error("Error listing shifts:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
@@ -105,9 +104,7 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 		return res.status(201).json({ id: newDocRef.id, ...data });
 	} catch (error: unknown) {
 		console.error("Error starting shift:", error);
-		return res
-			.status(500)
-			.json({ error: (error as Error).message || "Internal server error" });
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
 
