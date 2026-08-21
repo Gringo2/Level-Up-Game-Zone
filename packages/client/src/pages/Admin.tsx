@@ -15,8 +15,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 
 interface EditState {
 	rateId: string;
@@ -44,14 +43,7 @@ export function Admin() {
 
 		const loadRates = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
-				const response = await fetch(`${API_BASE}/api/rates`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
+				const response = await authFetch(`${API_BASE}/api/rates`);
 				if (!response.ok) {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to fetch rates",
@@ -80,14 +72,10 @@ export function Admin() {
 
 		setLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/rates`, {
+			const response = await authFetch(`${API_BASE}/api/rates`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					game_name: gameName,
@@ -137,16 +125,12 @@ export function Admin() {
 
 		setEditLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(
+			const response = await authFetch(
 				`${API_BASE}/api/rates/${editState.rateId}`,
 				{
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						game_name: editState.gameName,
@@ -177,14 +161,10 @@ export function Admin() {
 
 	const toggleRateStatus = async (rate: GameRate) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/rates/${rate.id}`, {
+			const response = await authFetch(`${API_BASE}/api/rates/${rate.id}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					isActive: !rate.isActive,

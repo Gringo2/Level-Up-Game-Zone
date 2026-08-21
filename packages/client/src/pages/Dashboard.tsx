@@ -16,8 +16,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useShift } from "../contexts/ShiftContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopStartOfDay } from "../lib/dateUtils";
 
 export function Dashboard() {
@@ -39,46 +38,23 @@ export function Dashboard() {
 
 		const loadDashboardData = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
 				const start = activeShift
 					? activeShift.start_time
 					: getShopStartOfDay().toISOString();
 
 				const [gamesResponse, kenoResponse, creditsResponse, expensesResponse] =
 					await Promise.all([
-						fetch(
+						authFetch(
 							`${API_BASE}/api/sales?startDate=${encodeURIComponent(start)}`,
-							{
-								headers: {
-									Authorization: `Bearer ${token}`,
-								},
-							},
 						),
-						fetch(
+						authFetch(
 							`${API_BASE}/api/keno?startDate=${encodeURIComponent(start)}`,
-							{
-								headers: {
-									Authorization: `Bearer ${token}`,
-								},
-							},
 						),
-						fetch(
+						authFetch(
 							`${API_BASE}/api/credits?startDate=${encodeURIComponent(start)}`,
-							{
-								headers: {
-									Authorization: `Bearer ${token}`,
-								},
-							},
 						),
-						fetch(
+						authFetch(
 							`${API_BASE}/api/expenses?startDate=${encodeURIComponent(start)}`,
-							{
-								headers: {
-									Authorization: `Bearer ${token}`,
-								},
-							},
 						),
 					]);
 
@@ -151,16 +127,12 @@ export function Dashboard() {
 			return;
 		}
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(
+			const response = await authFetch(
 				`${API_BASE}/api/shifts/${activeShift.id}/close`,
 				{
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						actualCashCounted: parseFloat(closingCash),
@@ -188,16 +160,12 @@ export function Dashboard() {
 		e.preventDefault();
 		if (!activeShift || !newFloat) return;
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(
+			const response = await authFetch(
 				`${API_BASE}/api/shifts/${activeShift.id}/float`,
 				{
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({ floatAmount: parseFloat(newFloat) }),
 				},

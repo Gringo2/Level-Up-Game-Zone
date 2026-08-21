@@ -20,6 +20,10 @@ vi.mock("../../firebase", () => ({
 	},
 }));
 
+vi.mock("firebase/auth", () => ({
+	signOut: vi.fn(),
+}));
+
 vi.mock("sonner", () => ({
 	toast: { error: vi.fn(), success: vi.fn() },
 }));

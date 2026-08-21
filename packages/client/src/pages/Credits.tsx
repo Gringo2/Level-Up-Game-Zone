@@ -18,8 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 
 export function Credits() {
 	const { user } = useAuth();
@@ -43,28 +42,16 @@ export function Credits() {
 
 		const loadCredits = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
 				const params = new URLSearchParams();
 				if (filterEmployeeId) {
 					params.set("employee_id", filterEmployeeId);
 				}
 
 				const [creditsResponse, employeesResponse] = await Promise.all([
-					fetch(
+					authFetch(
 						`${API_BASE}/api/credits${params.toString() ? `?${params.toString()}` : ""}`,
-						{
-							headers: {
-								Authorization: `Bearer ${token}`,
-							},
-						},
 					),
-					fetch(`${API_BASE}/api/employees`, {
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					}),
+					authFetch(`${API_BASE}/api/employees`),
 				]);
 
 				if (!creditsResponse.ok) {
@@ -114,14 +101,10 @@ export function Credits() {
 			| typeof CREDIT_STATUSES.DEDUCTED,
 	) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/credits/${id}`, {
+			const response = await authFetch(`${API_BASE}/api/credits/${id}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					status: resolution,
@@ -165,14 +148,10 @@ export function Credits() {
 			return;
 		}
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/credits/${id}`, {
+			const response = await authFetch(`${API_BASE}/api/credits/${id}`, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({ deleteReason }),
 			});
@@ -195,28 +174,27 @@ export function Credits() {
 
 		setLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const response = await fetch(`${API_BASE}/api/credits/${editingId}`, {
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
+				const response = await authFetch(
+					`${API_BASE}/api/credits/${editingId}`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							employee_id: employeeId,
+							employee_name: employeeName,
+							amount: amount,
+							editReason,
+						}),
 					},
-					body: JSON.stringify({
-						employee_id: employeeId,
-						employee_name: employeeName,
-						amount: amount,
-						editReason,
-					}),
-				});
+				);
 				if (!response.ok)
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
@@ -228,11 +206,10 @@ export function Credits() {
 				);
 				cancelEdit();
 			} else {
-				const response = await fetch(`${API_BASE}/api/credits`, {
+				const response = await authFetch(`${API_BASE}/api/credits`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						employee_id: employeeId,

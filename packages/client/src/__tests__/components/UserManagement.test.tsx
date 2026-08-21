@@ -23,13 +23,14 @@ vi.mock("sonner", () => ({
 	},
 }));
 
+const { mockFetch } = vi.hoisted(() => ({ mockFetch: vi.fn() }));
+global.fetch = mockFetch;
+
 vi.mock("../../lib/api", () => ({
 	API_BASE: "http://localhost:3001",
 	safeJson: vi.fn(),
+	authFetch: (...args: unknown[]) => mockFetch(...(args as [string])),
 }));
-
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
 
 const mockUsers = [
 	{ uid: "u1", email: "alice@test.com", displayName: "Alice", role: "staff" },

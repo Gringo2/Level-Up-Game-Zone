@@ -18,8 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function Expenses() {
@@ -61,14 +60,8 @@ export function Expenses() {
 
 		const loadCategories = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
-				const categoriesRes = await fetch(
+				const categoriesRes = await authFetch(
 					`${API_BASE}/api/expense-categories`,
-					{
-						headers: { Authorization: `Bearer ${token}` },
-					},
 				);
 
 				if (categoriesRes.ok) {
@@ -93,9 +86,6 @@ export function Expenses() {
 
 		const loadExpenses = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
 				const dayStart = getShopStartOfDay(
 					new Date(filterDateFrom),
 				).toISOString();
@@ -105,11 +95,8 @@ export function Expenses() {
 				params.set("startDate", dayStart);
 				params.set("endDate", dayEnd);
 
-				const expensesRes = await fetch(
+				const expensesRes = await authFetch(
 					`${API_BASE}/api/expenses?${params.toString()}`,
-					{
-						headers: { Authorization: `Bearer ${token}` },
-					},
 				);
 
 				if (!expensesRes.ok) {
@@ -188,14 +175,10 @@ export function Expenses() {
 			return;
 		}
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/expenses/${id}`, {
+			const response = await authFetch(`${API_BASE}/api/expenses/${id}`, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({ deleteReason }),
 			});
@@ -214,16 +197,12 @@ export function Expenses() {
 
 	const handleVerify = async (id: string) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/expenses/${id}/verify`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await authFetch(
+				`${API_BASE}/api/expenses/${id}/verify`,
+				{
+					method: "PUT",
 				},
-			});
+			);
 			if (!response.ok)
 				throw new Error((await safeJson(response)).error || "Failed to verify");
 
@@ -243,9 +222,6 @@ export function Expenses() {
 
 		setLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
@@ -263,14 +239,16 @@ export function Expenses() {
 				if (unitPrice) body.unit_price = parseFloat(unitPrice);
 				if (unit) body.unit = unit;
 
-				const response = await fetch(`${API_BASE}/api/expenses/${editingId}`, {
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
+				const response = await authFetch(
+					`${API_BASE}/api/expenses/${editingId}`,
+					{
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(body),
 					},
-					body: JSON.stringify(body),
-				});
+				);
 				if (!response.ok)
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
@@ -293,11 +271,10 @@ export function Expenses() {
 				if (unitPrice) body.unit_price = parseFloat(unitPrice);
 				if (unit) body.unit = unit;
 
-				const response = await fetch(`${API_BASE}/api/expenses`, {
+				const response = await authFetch(`${API_BASE}/api/expenses`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify(body),
 				});
@@ -330,14 +307,10 @@ export function Expenses() {
 
 		setCategoryLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/expense-categories`, {
+			const response = await authFetch(`${API_BASE}/api/expense-categories`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({ name: newCategoryName.trim() }),
 			});
@@ -367,20 +340,19 @@ export function Expenses() {
 
 		setCategoryLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/expense-categories/${id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await authFetch(
+				`${API_BASE}/api/expense-categories/${id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						name: editingCategoryName.trim(),
+						editReason: categoryEditReason.trim(),
+					}),
 				},
-				body: JSON.stringify({
-					name: editingCategoryName.trim(),
-					editReason: categoryEditReason.trim(),
-				}),
-			});
+			);
 			if (!response.ok) {
 				const body = await safeJson(response);
 				throw new Error(body.error || "Failed to update category");
@@ -404,20 +376,19 @@ export function Expenses() {
 	const handleDeactivateCategory = async (id: string) => {
 		setCategoryLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/expense-categories/${id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await authFetch(
+				`${API_BASE}/api/expense-categories/${id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						isActive: false,
+						editReason: "Deactivated by user",
+					}),
 				},
-				body: JSON.stringify({
-					isActive: false,
-					editReason: "Deactivated by user",
-				}),
-			});
+			);
 			if (!response.ok) {
 				const body = await safeJson(response);
 				throw new Error(body.error || "Failed to deactivate category");
@@ -439,20 +410,19 @@ export function Expenses() {
 	const handleActivateCategory = async (id: string) => {
 		setCategoryLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/expense-categories/${id}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await authFetch(
+				`${API_BASE}/api/expense-categories/${id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						isActive: true,
+						editReason: "Reactivated by user",
+					}),
 				},
-				body: JSON.stringify({
-					isActive: true,
-					editReason: "Reactivated by user",
-				}),
-			});
+			);
 			if (!response.ok) {
 				const body = await safeJson(response);
 				throw new Error(body.error || "Failed to activate category");

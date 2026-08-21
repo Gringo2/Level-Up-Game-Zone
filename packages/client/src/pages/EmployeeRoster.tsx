@@ -16,8 +16,7 @@ import {
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 
 interface EditState {
 	id: string;
@@ -52,14 +51,7 @@ export function EmployeeRoster() {
 		let mounted = true;
 		const loadEmployees = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
-				const response = await fetch(`${API_BASE}/api/employees`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
+				const response = await authFetch(`${API_BASE}/api/employees`);
 				if (!response.ok) {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to fetch employees",
@@ -92,14 +84,10 @@ export function EmployeeRoster() {
 
 		setSubmitLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/employees`, {
+			const response = await authFetch(`${API_BASE}/api/employees`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					name: name.trim(),
@@ -159,16 +147,12 @@ export function EmployeeRoster() {
 
 		setEditLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(
+			const response = await authFetch(
 				`${API_BASE}/api/employees/${editState.id}`,
 				{
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						name: editState.name.trim(),
@@ -204,15 +188,11 @@ export function EmployeeRoster() {
 
 	const toggleActiveStatus = async (emp: Employee) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			const newStatus = !emp.isActive;
-			const response = await fetch(`${API_BASE}/api/employees/${emp.id}`, {
+			const response = await authFetch(`${API_BASE}/api/employees/${emp.id}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					isActive: newStatus,

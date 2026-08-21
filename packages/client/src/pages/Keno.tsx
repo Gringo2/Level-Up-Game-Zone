@@ -18,8 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function Keno() {
@@ -41,14 +40,7 @@ export function Keno() {
 
 		const loadKenoLogs = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
-				const response = await fetch(`${API_BASE}/api/keno`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
+				const response = await authFetch(`${API_BASE}/api/keno`);
 				if (!response.ok) {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to fetch keno logs",
@@ -112,14 +104,10 @@ export function Keno() {
 			return;
 		}
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/keno/${id}`, {
+			const response = await authFetch(`${API_BASE}/api/keno/${id}`, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({ deleteReason }),
 			});
@@ -138,15 +126,8 @@ export function Keno() {
 
 	const handleVerify = async (id: string) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/keno/${id}/verify`, {
+			const response = await authFetch(`${API_BASE}/api/keno/${id}/verify`, {
 				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
-				},
 			});
 			if (!response.ok)
 				throw new Error((await safeJson(response)).error || "Failed to verify");
@@ -167,20 +148,16 @@ export function Keno() {
 
 		setLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const response = await fetch(`${API_BASE}/api/keno/${editingId}`, {
+				const response = await authFetch(`${API_BASE}/api/keno/${editingId}`, {
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						sales: sales,
@@ -198,11 +175,10 @@ export function Keno() {
 				setLogs((prev) => prev.map((l) => (l.id === editingId ? updated : l)));
 				cancelEdit();
 			} else {
-				const response = await fetch(`${API_BASE}/api/keno`, {
+				const response = await authFetch(`${API_BASE}/api/keno`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						sales: sales,

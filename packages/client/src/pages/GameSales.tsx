@@ -18,8 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function GameSales() {
@@ -44,24 +43,10 @@ export function GameSales() {
 
 		const loadSalesData = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) {
-					throw new Error("Not authenticated");
-				}
-
 				const [ratesResponse, salesResponse] = await Promise.all([
-					fetch(`${API_BASE}/api/rates`, {
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					}),
-					fetch(
+					authFetch(`${API_BASE}/api/rates`),
+					authFetch(
 						`${API_BASE}/api/sales?startDate=${encodeURIComponent(getShopStartOfDay().toISOString())}&endDate=${encodeURIComponent(getShopEndOfDay().toISOString())}`,
-						{
-							headers: {
-								Authorization: `Bearer ${token}`,
-							},
-						},
 					),
 				]);
 
@@ -134,14 +119,10 @@ export function GameSales() {
 			return;
 		}
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/sales/${id}`, {
+			const response = await authFetch(`${API_BASE}/api/sales/${id}`, {
 				method: "DELETE",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({ deleteReason }),
 			});
@@ -164,20 +145,16 @@ export function GameSales() {
 
 		setLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			if (editingId) {
 				if (!editReason) {
 					toast.error("Please provide a reason for editing.");
 					setLoading(false);
 					return;
 				}
-				const response = await fetch(`${API_BASE}/api/sales/${editingId}`, {
+				const response = await authFetch(`${API_BASE}/api/sales/${editingId}`, {
 					method: "PUT",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						game_id: selectedRate.id,
@@ -197,11 +174,10 @@ export function GameSales() {
 				setLogs((prev) => prev.map((l) => (l.id === editingId ? updated : l)));
 				cancelEdit();
 			} else {
-				const response = await fetch(`${API_BASE}/api/sales`, {
+				const response = await authFetch(`${API_BASE}/api/sales`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({
 						game_id: selectedRate.id,
@@ -249,15 +225,12 @@ export function GameSales() {
 						onClick={async () => {
 							try {
 								setLoadingDefaults(true);
-								const token = await auth.currentUser?.getIdToken();
-								if (!token) return;
 
 								const [res1, res2] = await Promise.all([
-									fetch(`${API_BASE}/api/rates`, {
+									authFetch(`${API_BASE}/api/rates`, {
 										method: "POST",
 										headers: {
 											"Content-Type": "application/json",
-											Authorization: `Bearer ${token}`,
 										},
 										body: JSON.stringify({
 											game_name: DEFAULT_GAME_RATES[0].game_name,
@@ -266,11 +239,10 @@ export function GameSales() {
 											isActive: true,
 										}),
 									}),
-									fetch(`${API_BASE}/api/rates`, {
+									authFetch(`${API_BASE}/api/rates`, {
 										method: "POST",
 										headers: {
 											"Content-Type": "application/json",
-											Authorization: `Bearer ${token}`,
 										},
 										body: JSON.stringify({
 											game_name: DEFAULT_GAME_RATES[1].game_name,

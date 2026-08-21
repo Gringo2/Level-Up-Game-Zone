@@ -8,8 +8,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { useAuth } from "./AuthContext";
 
 interface ShiftContextType {
@@ -37,16 +36,9 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 		}
 
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			const [shiftsRes, missedRes] = await Promise.all([
-				fetch(`${API_BASE}/api/shifts`, {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
-				fetch(`${API_BASE}/api/shifts/missed`, {
-					headers: { Authorization: `Bearer ${token}` },
-				}),
+				authFetch(`${API_BASE}/api/shifts`),
+				authFetch(`${API_BASE}/api/shifts/missed`),
 			]);
 
 			if (!shiftsRes.ok || !missedRes.ok) {

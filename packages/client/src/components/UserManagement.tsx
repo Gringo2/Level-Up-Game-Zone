@@ -4,8 +4,7 @@ import { format } from "date-fns";
 import { Loader2, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { ConfirmDialog } from "./ui/confirm-dialog";
@@ -33,14 +32,7 @@ export function UserManagement() {
 		let mounted = true;
 		const loadUsers = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
-				const response = await fetch(`${API_BASE}/api/users`, {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
+				const response = await authFetch(`${API_BASE}/api/users`);
 				if (!response.ok) {
 					throw new Error(
 						(await safeJson(response)).error || "Failed to fetch users",
@@ -72,21 +64,20 @@ export function UserManagement() {
 		newRole: (typeof ROLES)[keyof typeof ROLES],
 	) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			const oldRole = user.role;
-			const response = await fetch(`${API_BASE}/api/users/${user.uid}/role`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await authFetch(
+				`${API_BASE}/api/users/${user.uid}/role`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						role: newRole,
+						editReason: `Role updated from ${oldRole} to ${newRole}`,
+					}),
 				},
-				body: JSON.stringify({
-					role: newRole,
-					editReason: `Role updated from ${oldRole} to ${newRole}`,
-				}),
-			});
+			);
 
 			if (!response.ok)
 				throw new Error(
@@ -108,16 +99,12 @@ export function UserManagement() {
 
 		setDeleteLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(
+			const response = await authFetch(
 				`${API_BASE}/api/users/${deletingUser.uid}`,
 				{
 					method: "DELETE",
 					headers: {
 						"Content-Type": "application/json",
-						Authorization: `Bearer ${token}`,
 					},
 					body: JSON.stringify({ deleteReason }),
 				},
@@ -147,14 +134,10 @@ export function UserManagement() {
 
 		setInviteLoading(true);
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
-			const response = await fetch(`${API_BASE}/api/users/invite`, {
+			const response = await authFetch(`${API_BASE}/api/users/invite`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					email: inviteEmail.toLowerCase(),

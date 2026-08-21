@@ -10,8 +10,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 
 export function AuditLogs() {
 	const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -21,17 +20,10 @@ export function AuditLogs() {
 
 	const fetchLogs = useCallback(async (cursor?: string) => {
 		try {
-			const token = await auth.currentUser?.getIdToken();
-			if (!token) throw new Error("Not authenticated");
-
 			let url = `${API_BASE}/api/audit-logs?limit=50`;
 			if (cursor) url += `&cursor=${cursor}`;
 
-			const response = await fetch(url, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
+			const response = await authFetch(url);
 
 			if (!response.ok) {
 				throw new Error(

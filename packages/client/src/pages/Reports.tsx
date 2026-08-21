@@ -40,8 +40,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { SHOP_TIMEZONE } from "../lib/dateUtils";
 
 const toShopDateStr = (d: Date) =>
@@ -107,9 +106,6 @@ export function Reports() {
 
 		const loadReports = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
 				const queryParams = `?startDate=${encodeURIComponent(startIso)}&endDate=${encodeURIComponent(endIso)}`;
 
 				const [
@@ -119,21 +115,11 @@ export function Reports() {
 					creditsResponse,
 					expensesResponse,
 				] = await Promise.all([
-					fetch(`${API_BASE}/api/shifts${queryParams}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
-					fetch(`${API_BASE}/api/sales${queryParams}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
-					fetch(`${API_BASE}/api/keno${queryParams}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
-					fetch(`${API_BASE}/api/credits${queryParams}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
-					fetch(`${API_BASE}/api/expenses${queryParams}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
+					authFetch(`${API_BASE}/api/shifts${queryParams}`),
+					authFetch(`${API_BASE}/api/sales${queryParams}`),
+					authFetch(`${API_BASE}/api/keno${queryParams}`),
+					authFetch(`${API_BASE}/api/credits${queryParams}`),
+					authFetch(`${API_BASE}/api/expenses${queryParams}`),
 				]);
 
 				if (!shiftsResponse.ok) {

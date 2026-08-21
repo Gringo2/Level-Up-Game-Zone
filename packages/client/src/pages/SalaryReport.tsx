@@ -14,8 +14,7 @@ import {
 	CardTitle,
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { auth } from "../firebase";
-import { API_BASE, safeJson } from "../lib/api";
+import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { SHOP_TIMEZONE } from "../lib/dateUtils";
 
 export function SalaryReport() {
@@ -38,9 +37,6 @@ export function SalaryReport() {
 
 		const loadPayrollData = async () => {
 			try {
-				const token = await auth.currentUser?.getIdToken();
-				if (!token) throw new Error("Not authenticated");
-
 				const startIso = new Date(
 					`${appliedStartDate}T00:00:00+03:00`,
 				).toISOString();
@@ -51,12 +47,8 @@ export function SalaryReport() {
 				const queryParams = `?startDate=${encodeURIComponent(startIso)}&endDate=${encodeURIComponent(endIso)}`;
 
 				const [creditsResponse, employeesResponse] = await Promise.all([
-					fetch(`${API_BASE}/api/credits${queryParams}`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
-					fetch(`${API_BASE}/api/employees`, {
-						headers: { Authorization: `Bearer ${token}` },
-					}),
+					authFetch(`${API_BASE}/api/credits${queryParams}`),
+					authFetch(`${API_BASE}/api/employees`),
 				]);
 
 				if (!creditsResponse.ok) {
