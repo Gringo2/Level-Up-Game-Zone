@@ -27,6 +27,7 @@ vi.mock("../firebase.js", () => {
 					exists: true,
 					data: () => ({ status: "OPEN", opening_float: 100 }), // Common shift data needed
 				}),
+				getAll: vi.fn().mockResolvedValue([]),
 				set: vi.fn(),
 				update: vi.fn(),
 				delete: vi.fn(),

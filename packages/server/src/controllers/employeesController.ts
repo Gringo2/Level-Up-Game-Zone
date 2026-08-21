@@ -22,23 +22,19 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 	const { name, position, base_salary, hired_date, break_day } = req.body;
 
 	try {
+		const trimmedName = name.trim();
+		const normalizedTarget = trimmedName.toLowerCase();
+
 		const existingSnapshot = await db.collection(COLLECTIONS.EMPLOYEES).get();
-		const duplicate = existingSnapshot.docs.some(
-			(doc) =>
-				doc.data().isActive &&
-				doc.data().name.trim().toLowerCase() === name.trim().toLowerCase(),
+		const allDocRefs = existingSnapshot.docs.map((doc) =>
+			db.collection(COLLECTIONS.EMPLOYEES).doc(doc.id),
 		);
-		if (duplicate) {
-			return res
-				.status(409)
-				.json({ error: "An active employee with this name already exists" });
-		}
 
 		const newDocRef = db.collection(COLLECTIONS.EMPLOYEES).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
-			name: name.trim(),
+			name: trimmedName,
 			position,
 			base_salary: parseFloat(base_salary),
 			hired_date,
@@ -48,6 +44,21 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 		};
 
 		await db.runTransaction(async (transaction) => {
+			const allDocs =
+				allDocRefs.length > 0 ? await transaction.getAll(...allDocRefs) : [];
+			const duplicate = allDocs.some((doc) => {
+				// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+				const d = doc.data() as Record<string, any> | undefined;
+				return (
+					doc.exists &&
+					d?.isActive &&
+					d?.name?.trim().toLowerCase() === normalizedTarget
+				);
+			});
+			if (duplicate) {
+				throw new Error("DUPLICATE_NAME");
+			}
+
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
 				table_affected: "employees",
@@ -62,6 +73,11 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 
 		return res.status(201).json({ id: newDocRef.id, ...data });
 	} catch (error: unknown) {
+		if ((error as Error).message === "DUPLICATE_NAME") {
+			return res
+				.status(409)
+				.json({ error: "An active employee with this name already exists" });
+		}
 		console.error("Error creating employee:", error);
 		return res
 			.status(500)
@@ -87,22 +103,37 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 		const docRef = db.collection(COLLECTIONS.EMPLOYEES).doc(id);
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
-		if (name !== undefined) {
+		const normalizedTarget =
+			name !== undefined ? name.trim().toLowerCase() : null;
+
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore document reference type
+		let allDocRefs: any[] = [];
+		if (normalizedTarget !== null) {
 			const existingSnapshot = await db.collection(COLLECTIONS.EMPLOYEES).get();
-			const duplicate = existingSnapshot.docs.some(
-				(doc) =>
-					doc.id !== id &&
-					doc.data().isActive &&
-					doc.data().name.trim().toLowerCase() === name.trim().toLowerCase(),
+			allDocRefs = existingSnapshot.docs.map((doc) =>
+				db.collection(COLLECTIONS.EMPLOYEES).doc(doc.id),
 			);
-			if (duplicate) {
-				return res
-					.status(409)
-					.json({ error: "An active employee with this name already exists" });
-			}
 		}
 
 		await db.runTransaction(async (transaction) => {
+			if (normalizedTarget !== null && allDocRefs) {
+				const allDocs =
+					allDocRefs.length > 0 ? await transaction.getAll(...allDocRefs) : [];
+				const duplicate = allDocs.some((doc) => {
+					// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+					const d = doc.data() as Record<string, any> | undefined;
+					return (
+						doc.exists &&
+						doc.id !== id &&
+						d?.isActive &&
+						d?.name?.trim().toLowerCase() === normalizedTarget
+					);
+				});
+				if (duplicate) {
+					throw new Error("DUPLICATE_NAME");
+				}
+			}
+
 			const docSnap = await transaction.get(docRef);
 			if (!docSnap.exists) {
 				throw new Error("Employee not found");
@@ -135,6 +166,11 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 		const updatedDoc = await db.collection(COLLECTIONS.EMPLOYEES).doc(id).get();
 		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
+		if ((error as Error).message === "DUPLICATE_NAME") {
+			return res
+				.status(409)
+				.json({ error: "An active employee with this name already exists" });
+		}
 		console.error("Error updating employee:", error);
 		return res
 			.status(500)

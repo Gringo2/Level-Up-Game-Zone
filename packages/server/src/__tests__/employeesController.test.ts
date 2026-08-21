@@ -191,6 +191,13 @@ describe("Employees Integration Tests", () => {
 						id: "emp-123",
 						data: () => ({ name: "Bob", position: "Manager" }),
 					}),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "emp-123",
+							data: () => ({ name: "Bob", isActive: true }),
+						},
+					]),
 					set: vi.fn(),
 					update: vi.fn(),
 					delete: vi.fn(),
@@ -264,6 +271,24 @@ describe("Employees Integration Tests", () => {
 				} as any;
 			});
 
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: true }),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "existing-emp",
+							data: () => ({ name: "Bob", isActive: true }),
+						},
+					]),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
 			const response = await request(app)
 				.post("/api/employees")
 				.set("Authorization", authHeader)
@@ -311,6 +336,24 @@ describe("Employees Integration Tests", () => {
 				} as any;
 			});
 
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: true }),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "existing-emp",
+							data: () => ({ name: "Bob", isActive: true }),
+						},
+					]),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
 			const response = await request(app)
 				.post("/api/employees")
 				.set("Authorization", authHeader)
@@ -356,6 +399,24 @@ describe("Employees Integration Tests", () => {
 					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: true }),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "existing-emp",
+							data: () => ({ name: "Bob", isActive: false }),
+						},
+					]),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
 			});
 
 			const response = await request(app)
@@ -407,6 +468,33 @@ describe("Employees Integration Tests", () => {
 					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "emp-123",
+						data: () => ({ name: "Bob", isActive: true }),
+					}),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "emp-123",
+							data: () => ({ name: "Bob", isActive: true }),
+						},
+						{
+							exists: true,
+							id: "emp-456",
+							data: () => ({ name: "Alice", isActive: true }),
+						},
+					]),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
 			});
 
 			const response = await request(app)
@@ -464,6 +552,13 @@ describe("Employees Integration Tests", () => {
 						id: "emp-123",
 						data: () => ({ name: "Bob", position: "Manager" }),
 					}),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "emp-123",
+							data: () => ({ name: "Bob", isActive: true }),
+						},
+					]),
 					set: vi.fn(),
 					update: vi.fn(),
 					delete: vi.fn(),
