@@ -191,7 +191,12 @@ export function Reports() {
 	const avgVariance =
 		closedShifts.length > 0 ? totalVariance / closedShifts.length : 0;
 
-	const netProfit = totalGameSales + totalKenoNet - totalExpenses;
+	const pendingCredits = credits
+		.filter((c) => c.status === CREDIT_STATUSES.PENDING)
+		.reduce((sum, c) => sum + c.amount, 0);
+
+	const netProfit =
+		totalGameSales + totalKenoNet - totalExpenses - pendingCredits;
 
 	// Revenue Mix
 	const revenueMix = [

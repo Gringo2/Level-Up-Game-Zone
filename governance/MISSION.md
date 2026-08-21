@@ -1,27 +1,26 @@
 # CURRENT MISSION
 
-**Type:** Feature
-**Mission:** M-61 UX Polish Batch — Issues #22–#27
+**Type:** Debt Resolution (Functional Defect)
+**Mission:** M-62 Resolve TD-027 — Reports Net Profit Ignores Credits
 **Status:** Locked
 
 ## 1. Objective
-Batch-close 6 open UX polish issues (#22–#27) covering refetch-on-focus, auth failure handling, confirmation dialogs, audit log action storage, and form guard consistency.
+Correct the Reports page net profit calculation to subtract pending credit deductions, aligning it with Dashboard semantics and eliminating the overstated profit figure (DEBT.md TD-027).
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - #22: Add `visibilitychange` refetch-on-focus to GameSales, Keno, Credits, Expenses
-  - #23: Central `authFetch` wrapper with 401 → signOut handling (user-approved extension: wired into all 12 API-calling files / 56 call sites; AuthContext excluded as the auth bootstrap handler)
-  - #24: Confirmation dialog before role change in UserManagement
-  - #25: Confirmation dialog before logout in Layout
-  - #26: Store `action` field in audit log documents (shared type + 9 controllers + client display)
-  - #27: Add `!itemName` to Expenses submit guard
-- **Out of Scope:** WebSocket/polling real-time sync, architectural changes to auth flow, audit log migration of existing records.
+  - `Reports.tsx`: subtract PENDING credits from `netProfit`
+  - One Red-Green-proven unit test covering pending-only subtraction
+- **Out of Scope:** Dashboard calculation semantics, server reconciliation logic, TD-028 shared Credit type fix, pagination/RBAC debts.
 
 ## 4. Referenced Architecture
-ADR-001 (Thin Client / Composition Roots) — all changes stay within existing boundaries. No new dependencies. No server→client or client→server forbidden imports.
+ADR-001 (Thin Client / Composition Roots) — presentation-layer arithmetic only; no API contract, shared-type, or server changes. No new dependencies.
+
+## Design Decision
+Pending-only subtraction mirrors the Dashboard precedent (`Dashboard.tsx` sums `CREDIT_STATUSES.PENDING`): a pending credit is unrecovered staff debt and reduces true profit; Deducted/Resolved credits are already recovered via payroll and must not double-reduce profit. Approved by Product Owner 2026-08-21.
 
 ## Evidence Payload
-- [x] Functional Verification: 419/419 unit tests passing across 34 files (406 core + 13 gate-closure tests); TypeScript clean; Biome clean; Playwright E2E 6/6.
-- [x] Architectural Verification (AVP-001): depcruise clean — 143 modules, 412 dependencies, 0 boundary violations; knip exit 0 (no dead code).
-- [x] Dependency Graph Clean: no new npm dependencies; only remaining raw fetch() calls are lib/api.ts (wrapper internals) and AuthContext.tsx (sanctioned exclusion); zero Authorization-header construction outside api.ts.
-- [x] ADR Compliance: ADR-001 upheld (Thin Client boundaries intact; composition roots unchanged). Evidence commits: 0b9edb9 (#22–#27 core), 64f20ee (authFetch wiring).
+- [x] Functional Verification: 420/420 unit tests across 34 files green (was 419; +1 new test, Red-proven against unfixed code before the fix was applied); `tsc --noEmit` clean; Biome clean.
+- [x] Architectural Verification (AVP-001): depcruise exit 0 — no import-graph changes (`CREDIT_STATUSES` import pre-existing); knip surface unchanged (no new exports/deps).
+- [x] ADR Compliance: ADR-001 upheld — Thin Client boundaries intact.
+- [ ] Playwright E2E: not executed — pure arithmetic change inside one component, fully covered by the new unit test; no route/auth/API surface touched.

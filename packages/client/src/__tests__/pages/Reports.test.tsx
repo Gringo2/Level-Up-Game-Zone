@@ -90,6 +90,24 @@ const creditLog = {
 	date: "2026-08-01T13:00:00.000+03:00",
 };
 
+const pendingCreditLog = {
+	id: "c2",
+	employee_name: "Bob",
+	amount: 10,
+	status: "Pending" as const,
+	user_id: "u1",
+	date: "2026-08-01T13:30:00.000+03:00",
+};
+
+const resolvedCreditLog = {
+	id: "c3",
+	employee_name: "Bob",
+	amount: 10,
+	status: "Resolved" as const,
+	user_id: "u1",
+	date: "2026-08-01T13:45:00.000+03:00",
+};
+
 describe("Reports", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -150,6 +168,41 @@ describe("Reports", () => {
 		expect(screen.getByText("Avg Shift Variance")).toBeDefined();
 		expect(screen.getByText("Utilities")).toBeDefined();
 		expect(screen.getByText("Alice")).toBeDefined();
+	});
+
+	it("subtracts only pending credits from net profit", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([salesLog]))
+			.mockResolvedValueOnce(jsonResponse([kenoLog]))
+			.mockResolvedValueOnce(
+				jsonResponse([creditLog, pendingCreditLog, resolvedCreditLog]),
+			)
+			.mockResolvedValueOnce(jsonResponse([expenseLog]));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-31" } });
+
+		fireEvent.click(screen.getByText("Apply"));
+
+		await waitFor(() => {
+			expect(screen.getByText("PS4")).toBeDefined();
+		});
+
+		// 20 sales + 60 keno - 30 expenses - 10 pending credit = 40
+		// Deducted (10) and Resolved (10) credits must NOT reduce profit.
+		expect(screen.getAllByText("$40.00").length).toBeGreaterThanOrEqual(1);
 	});
 
 	it("shows empty state when all data arrays are empty", async () => {
