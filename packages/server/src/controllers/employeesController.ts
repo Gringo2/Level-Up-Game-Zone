@@ -61,6 +61,7 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "employees",
 				record_id: newDocRef.id,
 				old_value: null,
@@ -153,6 +154,7 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 
 			transaction.update(docRef, newValues);
 			transaction.set(auditRef, {
+				action: "UPDATE",
 				table_affected: "employees",
 				record_id: id,
 				old_value: oldDoc,

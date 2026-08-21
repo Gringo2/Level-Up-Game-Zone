@@ -76,8 +76,17 @@ export function Keno() {
 		};
 
 		void loadKenoLogs();
+
+		const handleVisibility = () => {
+			if (document.visibilityState === "visible") {
+				void loadKenoLogs();
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+
 		return () => {
 			mounted = false;
+			document.removeEventListener("visibilitychange", handleVisibility);
 		};
 	}, []);
 
@@ -406,6 +415,8 @@ export function Keno() {
 				message="Are you sure you want to delete this keno ticket? This action cannot be undone."
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
+				requireReason
+				confirmLabel="Confirm Delete"
 				onConfirm={() => {
 					if (deletingId) handleDelete(deletingId);
 				}}

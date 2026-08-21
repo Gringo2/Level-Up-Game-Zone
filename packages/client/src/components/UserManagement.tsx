@@ -24,6 +24,11 @@ export function UserManagement() {
 	const [deleteReason, setDeleteReason] = useState("");
 	const [deleteLoading, setDeleteLoading] = useState(false);
 
+	const [roleChangeTarget, setRoleChangeTarget] = useState<{
+		user: AppUser;
+		newRole: (typeof ROLES)[keyof typeof ROLES];
+	} | null>(null);
+
 	useEffect(() => {
 		let mounted = true;
 		const loadUsers = async () => {
@@ -258,10 +263,13 @@ export function UserManagement() {
 									<td className="px-4 py-3">
 										<select
 											value={user.role}
-											onChange={(e) =>
+											onChange={(e) => {
 												// biome-ignore lint/suspicious/noExplicitAny: DOM event value
-												handleUpdateRole(user, e.target.value as any)
-											}
+												const newRole = e.target.value as any;
+												if (newRole !== user.role) {
+													setRoleChangeTarget({ user, newRole });
+												}
+											}}
 											className="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
 										>
 											<option value={ROLES.ADMIN}>Admin</option>
@@ -301,12 +309,28 @@ export function UserManagement() {
 				message={`Are you sure you want to delete user ${deletingUser?.displayName || deletingUser?.email}? This action cannot be undone.`}
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
+				requireReason
+				confirmLabel="Confirm Delete"
 				onConfirm={handleDeleteUser}
 				onCancel={() => {
 					setDeletingUser(null);
 					setDeleteReason("");
 				}}
 				loading={deleteLoading}
+			/>
+			<ConfirmDialog
+				open={!!roleChangeTarget}
+				title="Change User Role"
+				message={`Change ${roleChangeTarget?.user.displayName || roleChangeTarget?.user.email}'s role from ${roleChangeTarget?.user.role} to ${roleChangeTarget?.newRole}?`}
+				confirmLabel="Change Role"
+				confirmVariant="default"
+				onConfirm={() => {
+					if (roleChangeTarget) {
+						handleUpdateRole(roleChangeTarget.user, roleChangeTarget.newRole);
+						setRoleChangeTarget(null);
+					}
+				}}
+				onCancel={() => setRoleChangeTarget(null)}
 			/>
 		</div>
 	);

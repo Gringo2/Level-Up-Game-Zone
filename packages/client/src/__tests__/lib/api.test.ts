@@ -3,8 +3,21 @@
  * requires the jsdom environment even though safeJson itself is pure.
  * @vitest-environment jsdom
  */
-import { describe, expect, it } from "vitest";
-import { API_BASE, safeJson } from "../../lib/api.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { API_BASE, authFetch, safeJson } from "../../lib/api.js";
+
+vi.mock("../../firebase.js", () => {
+	const mockUser = {
+		getIdToken: vi.fn().mockResolvedValue("mock-token"),
+	};
+	return {
+		auth: { currentUser: mockUser },
+	};
+});
+
+vi.mock("firebase/auth", () => ({
+	signOut: vi.fn().mockResolvedValue(undefined),
+}));
 
 function jsonResponse(body: unknown, contentType = "application/json") {
 	return new Response(JSON.stringify(body), {
@@ -40,5 +53,59 @@ describe("safeJson", () => {
 		const res = jsonResponse({ error: "User already exists" });
 		const data = await safeJson(res);
 		expect(data.error).toBe("User already exists");
+	});
+});
+
+describe("authFetch", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("attaches Bearer token and returns the response", async () => {
+		const fetchSpy = vi
+			.spyOn(global, "fetch")
+			.mockResolvedValue(jsonResponse({ ok: true }));
+
+		const res = await authFetch("http://localhost:4000/api/test");
+		expect(res.status).toBe(200);
+		expect(fetchSpy).toHaveBeenCalledWith(
+			"http://localhost:4000/api/test",
+			expect.objectContaining({
+				headers: expect.any(Headers),
+			}),
+		);
+
+		const sentHeaders = fetchSpy.mock.calls[0][1]?.headers as Headers;
+		expect(sentHeaders.get("Authorization")).toBe("Bearer mock-token");
+	});
+
+	it("signs out and throws on 401 response", async () => {
+		vi.spyOn(global, "fetch").mockResolvedValue(
+			new Response("Unauthorized", { status: 401 }),
+		);
+		const { signOut } = await import("firebase/auth");
+		const { auth } = await import("../../firebase.js");
+
+		await expect(authFetch("http://localhost:4000/api/test")).rejects.toThrow(
+			"Session expired",
+		);
+		expect(signOut).toHaveBeenCalledWith(auth);
+	});
+
+	it("signs out and throws when no user is logged in", async () => {
+		const { auth } = await import("../../firebase.js");
+		const { signOut } = await import("firebase/auth");
+		Object.defineProperty(auth, "currentUser", { value: null, writable: true });
+
+		await expect(authFetch("http://localhost:4000/api/test")).rejects.toThrow(
+			"Not authenticated",
+		);
+		expect(signOut).toHaveBeenCalledWith(auth);
+
+		// Restore
+		Object.defineProperty(auth, "currentUser", {
+			value: { getIdToken: vi.fn().mockResolvedValue("mock-token") },
+			writable: true,
+		});
 	});
 });

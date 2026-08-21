@@ -80,6 +80,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
 			transaction.set(docRef, data);
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "users",
 				record_id: user.uid,
 				old_value: null,
@@ -145,6 +146,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 			transaction.set(inviteRef, inviteData);
 
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "user_invites",
 				record_id: email,
 				old_value: null,
@@ -195,6 +197,7 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 			transaction.update(docRef, { role });
 
 			transaction.set(auditRef, {
+				action: "UPDATE",
 				table_affected: "users",
 				record_id: id,
 				old_value: oldDoc,
@@ -257,6 +260,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 				const oldDoc = { uid: userSnap.id, ...userData };
 				transaction.delete(userRef);
 				transaction.set(auditRef, {
+					action: "DELETE",
 					table_affected: "users",
 					record_id: id,
 					old_value: oldDoc,
@@ -269,6 +273,7 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
 				const oldInvite = { email: inviteSnap.id, ...inviteSnap.data() };
 				transaction.delete(inviteRef);
 				transaction.set(auditRef, {
+					action: "DELETE",
 					table_affected: "user_invites",
 					record_id: id,
 					old_value: oldInvite,

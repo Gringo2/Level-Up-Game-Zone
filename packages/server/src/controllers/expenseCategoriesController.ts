@@ -49,6 +49,7 @@ export const createExpenseCategory = async (
 		await db.runTransaction(async (transaction) => {
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "expense_categories",
 				record_id: newDocRef.id,
 				old_value: null,
@@ -96,6 +97,7 @@ export const updateExpenseCategory = async (
 			transaction.update(docRef, newValues);
 
 			transaction.set(auditRef, {
+				action: "UPDATE",
 				table_affected: "expense_categories",
 				record_id: id,
 				old_value: oldDoc,

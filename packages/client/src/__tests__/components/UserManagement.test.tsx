@@ -123,6 +123,11 @@ describe("UserManagement", () => {
 		});
 
 		await waitFor(() => {
+			expect(screen.getByText("Change User Role")).toBeInTheDocument();
+		});
+		fireEvent.click(screen.getByText("Change Role"));
+
+		await waitFor(() => {
 			expect(mockFetch).toHaveBeenCalledWith(
 				expect.stringContaining("/api/users/u1/role"),
 				expect.objectContaining({ method: "PUT" }),
@@ -269,6 +274,11 @@ describe("UserManagement", () => {
 		});
 
 		await waitFor(() => {
+			expect(screen.getByText("Change User Role")).toBeInTheDocument();
+		});
+		fireEvent.click(screen.getByText("Change Role"));
+
+		await waitFor(() => {
 			expect(toast.error).toHaveBeenCalled();
 		});
 	});
@@ -288,6 +298,11 @@ describe("UserManagement", () => {
 		fireEvent.change(firstDataRowSelect, {
 			target: { value: "manager" },
 		});
+
+		await waitFor(() => {
+			expect(screen.getByText("Change User Role")).toBeInTheDocument();
+		});
+		fireEvent.click(screen.getByText("Change Role"));
 
 		await waitFor(() => {
 			expect(toast.error).toHaveBeenCalled();

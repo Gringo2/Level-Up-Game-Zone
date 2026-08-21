@@ -190,6 +190,16 @@ describe("Layout", () => {
 		fireEvent.click(screen.getByText("Sign Out"));
 
 		await waitFor(() => {
+			expect(
+				screen.getByText("Are you sure you want to sign out?"),
+			).toBeInTheDocument();
+		});
+
+		const confirmButtons = screen.getAllByText("Sign Out");
+		const confirmBtn = confirmButtons[confirmButtons.length - 1];
+		fireEvent.click(confirmBtn);
+
+		await waitFor(() => {
 			expect(signOut).toHaveBeenCalled();
 		});
 	});

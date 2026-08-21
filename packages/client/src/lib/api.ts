@@ -1,3 +1,6 @@
+import { signOut } from "firebase/auth";
+import { auth } from "../firebase";
+
 /**
  * API_BASE resolves from the VITE_API_URL environment variable if set
  * (useful for staging/production deployments behind HTTPS proxies),
@@ -19,4 +22,32 @@ export async function safeJson<T = Record<string, unknown>>(
 	if (!contentType.includes("application/json"))
 		return {} as T & { error?: string };
 	return res.json() as Promise<T & { error?: string }>;
+}
+
+/**
+ * Authenticated fetch wrapper.
+ * Automatically attaches the Firebase ID token and handles 401 responses
+ * by signing the user out.
+ */
+export async function authFetch(
+	input: RequestInfo | URL,
+	init?: RequestInit,
+): Promise<Response> {
+	const token = await auth.currentUser?.getIdToken();
+	if (!token) {
+		await signOut(auth);
+		throw new Error("Not authenticated");
+	}
+
+	const headers = new Headers(init?.headers);
+	headers.set("Authorization", `Bearer ${token}`);
+
+	const response = await fetch(input, { ...init, headers });
+
+	if (response.status === 401) {
+		await signOut(auth);
+		throw new Error("Session expired. Please sign in again.");
+	}
+
+	return response;
 }

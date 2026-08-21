@@ -95,8 +95,16 @@ export function GameSales() {
 
 		void loadSalesData();
 
+		const handleVisibility = () => {
+			if (document.visibilityState === "visible") {
+				void loadSalesData();
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+
 		return () => {
 			mounted = false;
+			document.removeEventListener("visibilitychange", handleVisibility);
 		};
 	}, []);
 
@@ -472,6 +480,8 @@ export function GameSales() {
 				message="Are you sure you want to delete this game sale entry? This action cannot be undone."
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
+				requireReason
+				confirmLabel="Confirm Delete"
 				onConfirm={() => {
 					if (deletingId) handleDelete(deletingId);
 				}}

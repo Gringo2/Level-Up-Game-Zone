@@ -91,6 +91,7 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 		await db.runTransaction(async (transaction) => {
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "shifts",
 				record_id: newDocRef.id,
 				old_value: null,
@@ -271,6 +272,7 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 
 			const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 			transaction.set(auditRef, {
+				action: "UPDATE",
 				table_affected: "shifts",
 				record_id: id,
 				old_value: { opening_float: shiftDoc.data()?.opening_float },
@@ -374,6 +376,7 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 
 					transaction.set(newDocRef, data);
 					transaction.set(auditRef, {
+						action: "CREATE",
 						table_affected: "shifts",
 						record_id: newDocRef.id,
 						old_value: null,

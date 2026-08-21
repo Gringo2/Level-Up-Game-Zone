@@ -93,8 +93,17 @@ export function Credits() {
 		};
 
 		void loadCredits();
+
+		const handleVisibility = () => {
+			if (document.visibilityState === "visible") {
+				void loadCredits();
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+
 		return () => {
 			mounted = false;
+			document.removeEventListener("visibilitychange", handleVisibility);
 		};
 	}, [filterEmployeeId]);
 
@@ -502,6 +511,8 @@ export function Credits() {
 				message="Are you sure you want to delete this credit? This action cannot be undone."
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
+				requireReason
+				confirmLabel="Confirm Delete"
 				onConfirm={() => {
 					if (deletingId) handleDelete(deletingId);
 				}}

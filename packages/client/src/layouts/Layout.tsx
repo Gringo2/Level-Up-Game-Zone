@@ -14,14 +14,17 @@ import {
 	Users,
 } from "lucide-react";
 import type React from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { useAuth } from "../contexts/AuthContext";
 import { auth } from "../firebase";
 
 export function Layout({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
 	const location = useLocation();
+	const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
 	const navItems = [
 		{
@@ -123,12 +126,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
 					<Button
 						variant="ghost"
 						className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-800"
-						onClick={() => signOut(auth)}
+						onClick={() => setShowSignOutConfirm(true)}
 					>
 						<LogOut size={18} className="mr-3" />
 						Sign Out
 					</Button>
 				</div>
+				<ConfirmDialog
+					open={showSignOutConfirm}
+					title="Sign Out"
+					message="Are you sure you want to sign out?"
+					confirmLabel="Sign Out"
+					confirmVariant="destructive"
+					onConfirm={() => {
+						setShowSignOutConfirm(false);
+						signOut(auth);
+					}}
+					onCancel={() => setShowSignOutConfirm(false)}
+				/>
 			</aside>
 
 			{/* Main Content */}

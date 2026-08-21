@@ -71,6 +71,7 @@ export function AuditLogs() {
 	};
 
 	const getActionType = (log: AuditLog) => {
+		if (log.action) return log.action;
 		if (log.old_value && log.new_value) return "UPDATE";
 		if (log.old_value && !log.new_value) return "DELETE";
 		return "CREATE";

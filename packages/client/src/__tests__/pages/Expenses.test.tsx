@@ -372,6 +372,9 @@ describe("Expenses", () => {
 			});
 		global.fetch = failFetch as unknown as typeof fetch;
 
+		fireEvent.change(screen.getByLabelText("Item Name"), {
+			target: { value: "Mop" },
+		});
 		fireEvent.change(
 			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
 			{ target: { value: "New mop" } },
@@ -430,6 +433,9 @@ describe("Expenses", () => {
 		render(<Expenses />);
 		await screen.findByText("Cleaning supplies");
 
+		fireEvent.change(screen.getByLabelText("Item Name"), {
+			target: { value: "Payroll" },
+		});
 		fireEvent.change(
 			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
 			{ target: { value: "Payroll" } },

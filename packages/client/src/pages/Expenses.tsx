@@ -132,8 +132,17 @@ export function Expenses() {
 		};
 
 		void loadExpenses();
+
+		const handleVisibility = () => {
+			if (document.visibilityState === "visible") {
+				void loadExpenses();
+			}
+		};
+		document.addEventListener("visibilitychange", handleVisibility);
+
 		return () => {
 			mounted = false;
+			document.removeEventListener("visibilitychange", handleVisibility);
 		};
 	}, [filterDateFrom, filterDateTo]);
 
@@ -230,7 +239,7 @@ export function Expenses() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!description || !amount || !user) return;
+		if (!itemName || !description || !amount || !user) return;
 
 		setLoading(true);
 		try {
@@ -919,6 +928,8 @@ export function Expenses() {
 				message="Are you sure you want to delete this expense? This action cannot be undone."
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
+				requireReason
+				confirmLabel="Confirm Delete"
 				onConfirm={() => {
 					if (deletingId) handleDelete(deletingId);
 				}}

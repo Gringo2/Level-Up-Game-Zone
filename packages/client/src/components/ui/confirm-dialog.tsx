@@ -5,26 +5,39 @@ interface ConfirmDialogProps {
 	open: boolean;
 	title: string;
 	message: string;
-	reasonValue: string;
-	onReasonChange: (value: string) => void;
+	reasonValue?: string;
+	onReasonChange?: (value: string) => void;
 	onConfirm: () => void;
 	onCancel: () => void;
 	loading?: boolean;
 	minReasonLength?: number;
+	confirmLabel?: string;
+	confirmVariant?: "destructive" | "default";
+	loadingLabel?: string;
+	requireReason?: boolean;
+	reasonPlaceholder?: string;
 }
 
 export function ConfirmDialog({
 	open,
 	title,
 	message,
-	reasonValue,
+	reasonValue = "",
 	onReasonChange,
 	onConfirm,
 	onCancel,
 	loading = false,
 	minReasonLength = 3,
+	confirmLabel = "Confirm",
+	confirmVariant = "destructive",
+	loadingLabel,
+	requireReason = false,
+	reasonPlaceholder = "Reason for deletion...",
 }: ConfirmDialogProps) {
 	if (!open) return null;
+
+	const reasonValid =
+		!requireReason || reasonValue.trim().length >= minReasonLength;
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -38,12 +51,14 @@ export function ConfirmDialog({
 			<div className="relative bg-white rounded-lg shadow-lg w-full max-w-md mx-4 p-6 space-y-4">
 				<h3 className="text-lg font-semibold text-zinc-900">{title}</h3>
 				<p className="text-sm text-zinc-600">{message}</p>
-				<Input
-					type="text"
-					placeholder="Reason for deletion..."
-					value={reasonValue}
-					onChange={(e) => onReasonChange(e.target.value)}
-				/>
+				{requireReason && (
+					<Input
+						type="text"
+						placeholder={reasonPlaceholder}
+						value={reasonValue}
+						onChange={(e) => onReasonChange?.(e.target.value)}
+					/>
+				)}
 				<div className="flex justify-end gap-2">
 					<Button
 						size="sm"
@@ -55,11 +70,11 @@ export function ConfirmDialog({
 					</Button>
 					<Button
 						size="sm"
-						variant="destructive"
+						variant={confirmVariant}
 						onClick={onConfirm}
-						disabled={loading || reasonValue.trim().length < minReasonLength}
+						disabled={loading || !reasonValid}
 					>
-						{loading ? "Deleting..." : "Confirm Delete"}
+						{loading ? (loadingLabel ?? "Loading...") : confirmLabel}
 					</Button>
 				</div>
 			</div>

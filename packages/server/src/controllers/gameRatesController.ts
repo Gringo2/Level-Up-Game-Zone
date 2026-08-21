@@ -57,6 +57,7 @@ export const createRate = async (req: AuthRequest, res: Response) => {
 
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "game_rates",
 				record_id: newDocRef.id,
 				old_value: null,
@@ -142,6 +143,7 @@ export const updateRate = async (req: AuthRequest, res: Response) => {
 			transaction.update(docRef, newValues);
 
 			transaction.set(auditRef, {
+				action: "UPDATE",
 				table_affected: "game_rates",
 				record_id: id,
 				old_value: oldDoc,

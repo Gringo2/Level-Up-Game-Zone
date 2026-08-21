@@ -67,6 +67,7 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 		await db.runTransaction(async (transaction) => {
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
+				action: "CREATE",
 				table_affected: "game_sales_logs",
 				record_id: newDocRef.id,
 				old_value: null,
@@ -123,6 +124,7 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 			transaction.update(docRef, newValues);
 
 			transaction.set(auditRef, {
+				action: "UPDATE",
 				table_affected: "game_sales_logs",
 				record_id: id,
 				old_value: oldDoc,
@@ -168,6 +170,7 @@ export const deleteSale = async (req: AuthRequest, res: Response) => {
 			transaction.delete(docRef);
 
 			transaction.set(auditRef, {
+				action: "DELETE",
 				table_affected: "game_sales_logs",
 				record_id: id,
 				old_value: oldDoc,

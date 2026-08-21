@@ -113,6 +113,7 @@ export interface Shift {
 
 export interface AuditLog {
 	id: string;
+	action: "CREATE" | "UPDATE" | "DELETE";
 	table_affected: string;
 	record_id: string;
 	old_value: unknown;

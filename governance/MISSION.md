@@ -1,27 +1,26 @@
 # CURRENT MISSION
 
 **Type:** Feature
-**Mission:** M-50 Shift Non-Blocking + Backdated Data Entry
-**Status:** Locked
+**Mission:** M-61 UX Polish Batch — Issues #22–#27
+**Status:** Active
 
 ## 1. Objective
-Remove the MissedDataBlocker hard gate to make the shift system non-blocking, and add date pickers to all 4 financial forms (GameSales, Keno, Expenses, Credits) for backdated data entry. All shift infrastructure (open/close/reconciliation, Safe Slip, auto-open via `GET /missed`) remains intact.
-
-## 2. Evidence Payload
-- [x] Functional — 372/372 tests passing; MissedDataBlocker removed (12 tests deleted); resolve-missed tests removed (7 tests); validation negative-float test removed (1 redundant, covered by shiftsController); Layout MissedDataBlocker test removed (1); date pickers added to 4 forms; `date` field added to 4 create schemas + handlers; all POST body assertions updated with `date: expect.any(String)`.
-- [x] Architectural — MissedDataBlocker component deleted; `POST /resolve-missed` endpoint removed; `ResolveMissedDaySchema` removed; ShiftContext cleaned (missedData removed, auto-open kept); ADR-008 documents the decision; ACP-006 records the change proposal.
-- [x] Dependency Graph Clean — no new imports/dependencies; only component/schema/route removals and date field additions.
-- [x] ADR Compliance — ADR-008 (Non-Blocking Shifts + Backdated Entry); AGENTS.md Rules 11 (verification gates), 16 (verify), 28 (red-proof via test removal + date assertions).
+Batch-close 6 open UX polish issues (#22–#27) covering refetch-on-focus, auth failure handling, confirmation dialogs, audit log action storage, and form guard consistency.
 
 ## 3. Scope & Boundaries
-- **In Scope:** MissedDataBlocker deletion, ShiftContext cleanup, resolve-missed removal, date field on 4 schemas/handlers, date pickers on 4 forms, test updates.
-- **Out of Scope:** Shift open/close/reconciliation logic (unchanged), Safe Slip (unchanged), `GET /missed` auto-open (unchanged), shift reporting (unchanged).
+- **In Scope:**
+  - #22: Add `visibilitychange` refetch-on-focus to GameSales, Keno, Credits, Expenses
+  - #23: Central `authFetch` wrapper with 401 → signOut handling
+  - #24: Confirmation dialog before role change in UserManagement
+  - #25: Confirmation dialog before logout in Layout
+  - #26: Store `action` field in audit log documents (shared type + 8 controllers + client)
+  - #27: Add `!itemName` to Expenses submit guard
+- **Out of Scope:** WebSocket/polling real-time sync, architectural changes to auth flow, audit log migration of existing records.
 
 ## 4. Referenced Architecture
-ACP-006 (Shift Non-Blocking + Date Pickers), ADR-008 (Non-Blocking Shifts + Backdated Entry), AGENTS.md Rules 11/16/28.
+ADR-001 (Thin Client / Composition Roots) — all changes stay within existing boundaries. No new dependencies. No server→client or client→server forbidden imports.
 
-## 5. Verification Gates (Rule 11)
-- [x] Functional Verification: 372/372 tests passing; Biome clean; TypeScript clean.
-- [x] AVP-001 Architecture Verification: passed via lock gates.
-- [x] Evidence Package: this document + TASKS/ROADMAP rows + M-50 evidence packet.
-- [ ] User Approval — commit is the Rule 11 approval moment (ACP-005).
+## 5. Verification Gates
+- [ ] Functional: All 403+ tests passing, TypeScript clean, Biome clean
+- [ ] AVP-001: No boundary violations
+- [ ] Evidence Package: This document + test results
