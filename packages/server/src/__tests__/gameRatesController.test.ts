@@ -157,19 +157,36 @@ describe("Game Rates Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
-				return {
-					doc: vi.fn().mockReturnValue({
-						id: "rate-123",
+				if (path === "game_rates") {
+					return {
 						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "rate-123",
+									data: () => ({
+										game_name: "Darts",
+										isActive: true,
+									}),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({
 							id: "rate-123",
-							data: () => ({
-								game_name: "Darts",
-								price_per_unit: 25,
-								unit_type: "Game",
-								isActive: false,
+							get: vi.fn().mockResolvedValue({
+								id: "rate-123",
+								data: () => ({
+									game_name: "Darts",
+									price_per_unit: 25,
+									unit_type: "Game",
+									isActive: false,
+								}),
 							}),
 						}),
-					}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
@@ -181,6 +198,13 @@ describe("Game Rates Integration Tests", () => {
 						id: "rate-123",
 						data: () => ({ game_name: "Billiards", price_per_unit: 15 }),
 					}),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "rate-123",
+							data: () => ({ game_name: "Darts", isActive: true }),
+						},
+					]),
 					set: vi.fn(),
 					update: vi.fn(),
 					delete: vi.fn(),
@@ -453,6 +477,165 @@ describe("Game Rates Integration Tests", () => {
 			expect(response.status).toBe(201);
 			expect(response.body.game_name).toBe("Pool");
 		});
+
+		it("should return 409 when updating rate name to a duplicate", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "rate-123",
+									data: () => ({
+										game_name: "PS4",
+										isActive: true,
+									}),
+								},
+								{
+									id: "rate-456",
+									data: () => ({
+										game_name: "Pool",
+										isActive: true,
+									}),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({ id: "rate-123" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "rate-123",
+						data: () => ({ game_name: "PS4", price_per_unit: 5 }),
+					}),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "rate-123",
+							data: () => ({ game_name: "PS4", isActive: true }),
+						},
+						{
+							exists: true,
+							id: "rate-456",
+							data: () => ({ game_name: "Pool", isActive: true }),
+						},
+					]),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/rates/rate-123")
+				.set("Authorization", authHeader)
+				.send({ game_name: "Pool", editReason: "Rename to match other" });
+
+			expect(response.status).toBe(409);
+			expect(response.body.error).toContain("already exists");
+		});
+
+		it("should allow keeping the same name on update", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "rate-123",
+									data: () => ({
+										game_name: "PS4",
+										isActive: true,
+									}),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({
+							id: "rate-123",
+							get: vi.fn().mockResolvedValue({
+								id: "rate-123",
+								data: () => ({
+									game_name: "PS4",
+									price_per_unit: 5,
+									unit_type: "Hour",
+								}),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "rate-123",
+						data: () => ({
+							game_name: "PS4",
+							price_per_unit: 5,
+							unit_type: "Hour",
+						}),
+					}),
+					getAll: vi.fn().mockResolvedValue([
+						{
+							exists: true,
+							id: "rate-123",
+							data: () => ({ game_name: "PS4", isActive: true }),
+						},
+					]),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/rates/rate-123")
+				.set("Authorization", authHeader)
+				.send({ game_name: "PS4", editReason: "No change to name" });
+
+			expect(response.status).toBe(200);
+		});
 	});
 
 	describe("Not Found Contract (non-existent documents)", () => {
@@ -474,6 +657,23 @@ describe("Game Rates Integration Tests", () => {
 		};
 
 		it("returns 500 when updating a non-existent game rate (documented contract)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing-rate" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			notFoundTransaction();
 
 			const response = await request(app)

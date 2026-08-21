@@ -92,7 +92,39 @@ export const updateRate = async (req: AuthRequest, res: Response) => {
 		const docRef = db.collection(COLLECTIONS.GAME_RATES).doc(id);
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
+		const normalizedTarget =
+			game_name !== undefined ? game_name.trim().toLowerCase() : null;
+
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore document reference type
+		let allDocRefs: any[] = [];
+		if (normalizedTarget !== null) {
+			const existingSnapshot = await db
+				.collection(COLLECTIONS.GAME_RATES)
+				.get();
+			allDocRefs = existingSnapshot.docs.map((doc) =>
+				db.collection(COLLECTIONS.GAME_RATES).doc(doc.id),
+			);
+		}
+
 		await db.runTransaction(async (transaction) => {
+			if (normalizedTarget !== null && allDocRefs) {
+				const allDocs =
+					allDocRefs.length > 0 ? await transaction.getAll(...allDocRefs) : [];
+				const duplicate = allDocs.some((doc) => {
+					// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+					const d = doc.data() as Record<string, any> | undefined;
+					return (
+						doc.exists &&
+						doc.id !== id &&
+						d?.isActive &&
+						d?.game_name?.trim().toLowerCase() === normalizedTarget
+					);
+				});
+				if (duplicate) {
+					throw new Error("DUPLICATE_NAME");
+				}
+			}
+
 			const docSnap = await transaction.get(docRef);
 			if (!docSnap.exists) {
 				throw new Error("Rate not found");
@@ -126,6 +158,11 @@ export const updateRate = async (req: AuthRequest, res: Response) => {
 			.get();
 		return res.status(200).json({ id: updatedDoc.id, ...updatedDoc.data() });
 	} catch (error: unknown) {
+		if ((error as Error).message === "DUPLICATE_NAME") {
+			return res.status(409).json({
+				error: "An active game rate with this name already exists",
+			});
+		}
 		console.error("Error updating rate:", error);
 		return res
 			.status(500)
