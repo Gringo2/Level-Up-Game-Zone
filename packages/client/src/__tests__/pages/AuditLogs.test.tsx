@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuditLogs } from "../../pages/AuditLogs.js";
@@ -120,5 +120,28 @@ describe("AuditLogs", () => {
 		expect(
 			await screen.findByText("No activity logs recorded."),
 		).toBeInTheDocument();
+	});
+
+	it("loads the next page when Load More is clicked", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("cursor=")) {
+				return jsonResponse({ data: [deleteLog], nextCursor: null });
+			}
+			return jsonResponse({
+				data: [createLog, updateLog],
+				nextCursor: "cursor-1",
+			});
+		});
+		render(<AuditLogs />);
+		await screen.findByText("Initial entry");
+
+		fireEvent.click(screen.getByRole("button", { name: "Load More" }));
+
+		await waitFor(() =>
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringContaining("cursor=cursor-1"),
+				expect.anything(),
+			),
+		);
 	});
 });

@@ -2,7 +2,13 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
@@ -569,5 +575,52 @@ describe("Credits - Edit & Failure Paths", () => {
 		).toBeDefined();
 
 		expect(fetchMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("refetches credits when the tab becomes visible again", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+		await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+		const callsBefore = fetchMock.mock.calls.length;
+		document.dispatchEvent(new Event("visibilitychange"));
+
+		await waitFor(() => {
+			expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore);
+		});
+	});
+
+	it("filters credits by employee via the roster select", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const view = render(<Credits />);
+		await waitFor(() => {
+			expect(within(view.container).getByText("Bob (Cashier)")).toBeDefined();
+		});
+
+		const selects = within(view.container).getAllByRole("combobox");
+		fireEvent.change(selects[selects.length - 1], {
+			target: { value: "e1" },
+		});
+
+		await waitFor(() =>
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("employee_id=e1"),
+				expect.anything(),
+			),
+		);
 	});
 });

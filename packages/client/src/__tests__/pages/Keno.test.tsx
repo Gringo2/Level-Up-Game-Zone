@@ -360,4 +360,27 @@ describe("Keno", () => {
 			expect(toast.error).toHaveBeenCalledWith("Failed to verify keno log"),
 		);
 	});
+
+	it("refetches keno logs when the tab becomes visible again", async () => {
+		render(<Keno />);
+		await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+
+		const callsBefore = mockFetch.mock.calls.length;
+		document.dispatchEvent(new Event("visibilitychange"));
+
+		await waitFor(() => {
+			expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBefore);
+		});
+	});
+
+	it("updates the entry date field", async () => {
+		render(<Keno />);
+		await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+
+		fireEvent.change(screen.getByLabelText("Date"), {
+			target: { value: "2025-06-01" },
+		});
+
+		expect(screen.getByLabelText("Date")).toHaveValue("2025-06-01");
+	});
 });

@@ -204,6 +204,34 @@ describe("Layout", () => {
 		});
 	});
 
+	it("does not sign out when Cancel is clicked in the sign-out dialog", async () => {
+		mockUseAuth.mockReturnValue({
+			user: adminUser,
+			loading: false,
+		});
+
+		render(
+			<Layout>
+				<div>Content</div>
+			</Layout>,
+		);
+
+		fireEvent.click(screen.getByText("Sign Out"));
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Are you sure you want to sign out?"),
+			).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+		expect(signOut).not.toHaveBeenCalled();
+		expect(
+			screen.queryByText("Are you sure you want to sign out?"),
+		).not.toBeInTheDocument();
+	});
+
 	it("highlights active nav item based on current path", () => {
 		mockUseLocation.mockReturnValue({
 			pathname: "/admin",

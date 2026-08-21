@@ -358,4 +358,16 @@ describe("GameSales", () => {
 			expect(toast.error).toHaveBeenCalledWith("Failed to delete sale"),
 		);
 	});
+
+	it("refetches sales data when the tab becomes visible again", async () => {
+		render(<GameSales />);
+		await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+
+		const callsBefore = mockFetch.mock.calls.length;
+		document.dispatchEvent(new Event("visibilitychange"));
+
+		await waitFor(() => {
+			expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBefore);
+		});
+	});
 });

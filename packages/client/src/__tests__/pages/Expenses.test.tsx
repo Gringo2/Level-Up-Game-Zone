@@ -8,6 +8,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -684,5 +685,214 @@ describe("Expenses", () => {
 		await waitFor(() =>
 			expect(toast.success).toHaveBeenCalledWith("Category deactivated!"),
 		);
+	});
+
+	it("refetches expenses when the tab becomes visible again", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+
+		const callsBefore = mockFetch.mock.calls.length;
+		document.dispatchEvent(new Event("visibilitychange"));
+
+		await waitFor(() => {
+			expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBefore);
+		});
+	});
+
+	it("updates a category name with an edit reason via PUT", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([
+					{ id: "c1", name: "Supplies", isActive: true },
+					{ id: "c2", name: "Wages", isActive: true },
+				]);
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const suppliesRow = screen
+			.getAllByText("Supplies")
+			.find((el) => el.tagName === "SPAN")!
+			.closest(".rounded-md") as HTMLElement;
+		const editBtn = within(suppliesRow)
+			.getAllByRole("button")
+			.filter((btn) => btn.querySelector("svg"))[0];
+		fireEvent.click(editBtn);
+
+		const nameInput = await screen.findByPlaceholderText("Category name");
+		expect(nameInput).toHaveValue("Supplies");
+		fireEvent.change(screen.getByPlaceholderText("Reason for change"), {
+			target: { value: "Renamed for clarity" },
+		});
+
+		const putFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "PUT" && url.includes("expense-categories")) {
+					return jsonResponse({
+						id: "c1",
+						name: "Supplies Pro",
+						isActive: true,
+					});
+				}
+				if (url.includes("expense-categories")) {
+					return jsonResponse([
+						{ id: "c1", name: "Supplies", isActive: true },
+						{ id: "c2", name: "Wages", isActive: true },
+					]);
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = putFetch as unknown as typeof fetch;
+
+		fireEvent.click(screen.getByText("Save"));
+
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Category updated!"),
+		);
+		expect(putFetch).toHaveBeenCalledWith(
+			expect.stringContaining("expense-categories/c1"),
+			expect.objectContaining({ method: "PUT" }),
+		);
+	});
+
+	it("clears the inline category editor when Cancel is clicked", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const suppliesRow = screen
+			.getAllByText("Supplies")
+			.find((el) => el.tagName === "SPAN")!
+			.closest(".rounded-md") as HTMLElement;
+		const editBtn = within(suppliesRow)
+			.getAllByRole("button")
+			.filter((btn) => btn.querySelector("svg"))[0];
+		fireEvent.click(editBtn);
+
+		const nameInput = await screen.findByPlaceholderText("Category name");
+		fireEvent.change(nameInput, { target: { value: "Changed" } });
+
+		fireEvent.click(screen.getByText("Cancel"));
+
+		await waitFor(() => {
+			expect(
+				screen.queryByPlaceholderText("Category name"),
+			).not.toBeInTheDocument();
+		});
+		expect(
+			mockFetch.mock.calls.filter(
+				([, init]) => (init as RequestInit)?.method === "PUT",
+			),
+		).toHaveLength(0);
+	});
+
+	it("reactivates an inactive category via PUT", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([
+					{ id: "c1", name: "Supplies", isActive: true },
+					{ id: "c2", name: "Wages", isActive: false },
+				]);
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const wagesRow = screen
+			.getByText("Wages")
+			.closest(".rounded-md") as HTMLElement;
+		const reactivateBtn = within(wagesRow)
+			.getAllByRole("button")
+			.filter((btn) => btn.querySelector("svg"))[0];
+
+		const putFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "PUT" && url.includes("expense-categories")) {
+					return jsonResponse({ id: "c2", name: "Wages", isActive: true });
+				}
+				if (url.includes("expense-categories")) {
+					return jsonResponse([
+						{ id: "c1", name: "Supplies", isActive: true },
+						{ id: "c2", name: "Wages", isActive: false },
+					]);
+				}
+				return jsonResponse([expense]);
+			});
+		global.fetch = putFetch as unknown as typeof fetch;
+
+		fireEvent.click(reactivateBtn);
+
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Category activated!"),
+		);
+	});
+
+	it("auto-calculates amount from quantity and unit price", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		fireEvent.change(screen.getByLabelText("Item Name"), {
+			target: { value: "Rope" },
+		});
+		fireEvent.change(
+			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
+			{
+				target: { value: "Climbing rope" },
+			},
+		);
+		fireEvent.change(screen.getByLabelText("Qty"), {
+			target: { value: "4" },
+		});
+		fireEvent.change(screen.getByLabelText("Unit Price ($)"), {
+			target: { value: "2.5" },
+		});
+		fireEvent.change(screen.getByLabelText("Unit"), {
+			target: { value: "m" },
+		});
+
+		expect(screen.getByLabelText("Amount ($)")).toHaveValue(10);
+		expect(screen.getByLabelText("Unit")).toHaveValue("m");
+	});
+
+	it("filters expenses by date range", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ id: "c1", name: "Supplies", isActive: true }]);
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		fireEvent.change(screen.getByLabelText("From"), {
+			target: { value: "2024-01-01" },
+		});
+		fireEvent.change(screen.getByLabelText("To"), {
+			target: { value: "2030-12-31" },
+		});
+
+		expect(screen.getByText("Cleaning supplies")).toBeInTheDocument();
 	});
 });
