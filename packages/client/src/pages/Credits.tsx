@@ -36,6 +36,7 @@ export function Credits() {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
+	const [reason, setReason] = useState("");
 
 	useEffect(() => {
 		let mounted = true;
@@ -131,6 +132,7 @@ export function Credits() {
 		setEmployeeId(credit.employee_id || "");
 		setEmployeeName(credit.employee_name);
 		setAmount(credit.amount.toString());
+		setReason(credit.reason || "");
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	};
 
@@ -139,6 +141,7 @@ export function Credits() {
 		setEmployeeId("");
 		setEmployeeName("");
 		setAmount("");
+		setReason("");
 		setEditReason("");
 	};
 
@@ -191,6 +194,7 @@ export function Credits() {
 							employee_id: employeeId,
 							employee_name: employeeName,
 							amount: amount,
+							...(reason.trim() && { reason: reason.trim() }),
 							editReason,
 						}),
 					},
@@ -215,6 +219,7 @@ export function Credits() {
 						employee_id: employeeId,
 						employee_name: employeeName,
 						amount: amount,
+						...(reason.trim() && { reason: reason.trim() }),
 						date: new Date(entryDate).toISOString(),
 					}),
 				});
@@ -227,6 +232,7 @@ export function Credits() {
 				setEmployeeId("");
 				setEmployeeName("");
 				setAmount("");
+				setReason("");
 				toast.success("Credit logged successfully!");
 			}
 		} catch (err: unknown) {
@@ -308,6 +314,16 @@ export function Credits() {
 									required
 								/>
 							</div>
+							<div className="space-y-2">
+								<Label htmlFor="creditReason">Reason</Label>
+								<Input
+									id="creditReason"
+									type="text"
+									value={reason}
+									onChange={(e) => setReason(e.target.value)}
+									placeholder="e.g., Bus fare advance"
+								/>
+							</div>
 							{editingId && (
 								<div className="space-y-2">
 									<Label htmlFor="editReason" className="text-amber-600">
@@ -386,6 +402,11 @@ export function Credits() {
 									>
 										<div>
 											<div className="font-medium">{credit.employee_name}</div>
+											{credit.reason && (
+												<div className="text-xs text-zinc-500 italic">
+													{credit.reason}
+												</div>
+											)}
 											<div className="text-sm text-zinc-500">
 												${credit.amount.toFixed(2)}
 											</div>

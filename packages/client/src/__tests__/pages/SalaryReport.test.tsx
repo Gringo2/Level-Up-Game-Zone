@@ -151,6 +151,28 @@ describe("SalaryReport", () => {
 		expect(screen.getByText(/Deduction History/)).toBeDefined();
 	});
 
+	it("shows deduction reason in history rows", async () => {
+		const deductedWithReason = {
+			...deductedCredit,
+			id: "cr9",
+			reason: "Register shortage",
+		};
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([deductedWithReason]))
+				.mockResolvedValueOnce(jsonResponse([employee])),
+		);
+
+		render(<SalaryReport />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+		expect(screen.getByText("Register shortage")).toBeDefined();
+	});
+
 	it("calls window.print on Print button click", async () => {
 		vi.stubGlobal(
 			"fetch",

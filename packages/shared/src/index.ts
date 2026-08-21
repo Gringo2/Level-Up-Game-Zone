@@ -68,6 +68,7 @@ export interface Credit {
 	employee_id?: string;
 	employee_name: string;
 	amount: number;
+	reason?: string;
 	status: "Pending" | "Resolved" | "Deducted";
 	user_id: string;
 	user_name?: string;

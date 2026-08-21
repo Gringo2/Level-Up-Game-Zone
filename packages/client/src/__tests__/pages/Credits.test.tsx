@@ -182,6 +182,75 @@ describe("Credits", () => {
 		expect(toast.success).toHaveBeenCalledWith("Credit logged successfully!");
 	});
 
+	it("displays credit reason when present", async () => {
+		const creditWithReason = {
+			...credit,
+			id: "c9",
+			reason: "Bus fare advance",
+		};
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([creditWithReason]))
+				.mockResolvedValueOnce(jsonResponse(employees)),
+		);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bus fare advance")).toBeDefined();
+		});
+	});
+
+	it("sends reason when logging a new credit", async () => {
+		const newCredit = { ...credit, id: "c3", amount: 15 };
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(jsonResponse(newCredit));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob (Cashier)")).toBeDefined();
+		});
+
+		fireEvent.change(screen.getByLabelText("Employee Name"), {
+			target: { value: "e1" },
+		});
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "15" },
+		});
+		fireEvent.change(screen.getByLabelText("Reason"), {
+			target: { value: "Bus fare advance" },
+		});
+
+		fireEvent.click(screen.getByText("Log Credit"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/credits"),
+				expect.objectContaining({ method: "POST" }),
+			);
+		});
+		const postCall = fetchMock.mock.calls.find(
+			(c) => (c[1] as RequestInit | undefined)?.method === "POST",
+		);
+		if (!postCall) {
+			throw new Error("Expected POST call to /api/credits");
+		}
+		const postBody = JSON.parse(
+			(postCall[1] as RequestInit).body as string,
+		) as Record<string, unknown>;
+		expect(postBody).toEqual(
+			expect.objectContaining({ reason: "Bus fare advance" }),
+		);
+	});
+
 	it("marks credit as Resolved via PUT", async () => {
 		const fetchMock = vi
 			.fn()

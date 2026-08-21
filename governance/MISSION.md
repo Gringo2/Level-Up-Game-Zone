@@ -1,26 +1,30 @@
 # CURRENT MISSION
 
-**Type:** Debt Resolution (Functional Defect)
-**Mission:** M-62 Resolve TD-027 — Reports Net Profit Ignores Credits
+**Type:** Debt Resolution (Functional Gap)
+**Mission:** M-63 Resolve TD-028 — Credit `reason` Field Round-Trip & Display
 **Status:** Locked
 
 ## 1. Objective
-Correct the Reports page net profit calculation to subtract pending credit deductions, aligning it with Dashboard semantics and eliminating the overstated profit figure (DEBT.md TD-027).
+Close the TD-028 data-model mismatch: the server stores an optional `reason` on credits but the shared type omitted it and no UI could capture or display it. Operators can now record why a credit (IOU) was issued and see that reason in the Credits register and payroll deduction history.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `Reports.tsx`: subtract PENDING credits from `netProfit`
-  - One Red-Green-proven unit test covering pending-only subtraction
-- **Out of Scope:** Dashboard calculation semantics, server reconciliation logic, TD-028 shared Credit type fix, pagination/RBAC debts.
+  - Shared `Credit` interface += `reason?: string`
+  - Credits.tsx: Reason input on create form (POST body), prefill + send on edit (PUT body), muted display line in credit rows, state resets in `cancelEdit`/post-create (stale-reason leak prevention)
+  - SalaryReport.tsx: render per-credit reason in Deduction History rows
+  - Red-Green tests for all three surfaces
+- **Out of Scope:** making `reason` required (validation-policy decision = separate proposal), audit-log UI changes, TD-030/038/040.
 
 ## 4. Referenced Architecture
-ADR-001 (Thin Client / Composition Roots) — presentation-layer arithmetic only; no API contract, shared-type, or server changes. No new dependencies.
+ADR-001 (Thin Client / Composition Roots) — shared type extension + presentation-layer only. Server zero-change (verified: create/update already persist and return `reason`). No new dependencies.
 
-## Design Decision
-Pending-only subtraction mirrors the Dashboard precedent (`Dashboard.tsx` sums `CREDIT_STATUSES.PENDING`): a pending credit is unrecovered staff debt and reduces true profit; Deducted/Resolved credits are already recovered via payroll and must not double-reduce profit. Approved by Product Owner 2026-08-21.
+## Design Decisions
+- Optional field (not required) — legacy documents lack it; schema already optional (`CreateCreditSchema.reason: z.string().optional()`).
+- Body sends reason only when non-empty after trim (conditional spread) — avoids storing empty strings.
+- State resets wired in both `cancelEdit` and post-create path (self-review Amendment 1: stale-reason leak prevention).
 
 ## Evidence Payload
-- [x] Functional Verification: 420/420 unit tests across 34 files green (was 419; +1 new test, Red-proven against unfixed code before the fix was applied); `tsc --noEmit` clean; Biome clean.
-- [x] Architectural Verification (AVP-001): depcruise exit 0 — no import-graph changes (`CREDIT_STATUSES` import pre-existing); knip surface unchanged (no new exports/deps).
+- [x] Functional Verification: 423/423 unit tests across 34 files green (was 420; +3 new tests, each Red-proven before implementation); `tsc --noEmit` clean; Biome clean.
+- [x] Architectural Verification (AVP-001): depcruise exit 0; knip exit 0 (no new exports/deps); shared-type ripple proven safe via server build (`tsc`) exit 0.
 - [x] ADR Compliance: ADR-001 upheld — Thin Client boundaries intact.
-- [ ] Playwright E2E: not executed — pure arithmetic change inside one component, fully covered by the new unit test; no route/auth/API surface touched.
+- [ ] Playwright E2E: not executed — additive optional field + conditional renders fully covered by unit tests; no route/auth/API contract change.

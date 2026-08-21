@@ -280,6 +280,11 @@ export function SalaryReport() {
 																	<span className="text-zinc-600">
 																		{format(new Date(c.date), "MMM d, yyyy")}
 																	</span>
+																	{c.reason && (
+																		<span className="text-zinc-400 truncate px-1">
+																			{c.reason}
+																		</span>
+																	)}
 																	<span className="font-semibold text-red-600">
 																		-${c.amount.toFixed(2)}
 																	</span>
