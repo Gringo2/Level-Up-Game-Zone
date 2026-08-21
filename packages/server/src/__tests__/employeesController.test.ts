@@ -54,8 +54,15 @@ describe("Employees Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({ docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
-					doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
@@ -141,21 +148,38 @@ describe("Employees Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
-				return {
-					doc: vi.fn().mockReturnValue({
-						id: "emp-123",
+				if (path === "employees") {
+					return {
 						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "emp-123",
+									data: () => ({
+										name: "Bob",
+										isActive: true,
+									}),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({
 							id: "emp-123",
-							data: () => ({
-								name: "Robert",
-								position: "Supervisor",
-								base_salary: 3800,
-								hired_date: "2025-06-01",
-								break_day: "Saturday",
-								isActive: false,
+							get: vi.fn().mockResolvedValue({
+								id: "emp-123",
+								data: () => ({
+									name: "Robert",
+									position: "Supervisor",
+									base_salary: 3800,
+									hired_date: "2025-06-01",
+									break_day: "Saturday",
+									isActive: false,
+								}),
 							}),
 						}),
-					}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
@@ -207,6 +231,255 @@ describe("Employees Integration Tests", () => {
 			expect(response.body.error).toContain("Required");
 		});
 
+		it("should return 409 when creating employee with duplicate name", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "existing-emp",
+									data: () => ({ name: "Bob", isActive: true }),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/employees")
+				.set("Authorization", authHeader)
+				.send({
+					name: "Bob",
+					position: "Manager",
+					base_salary: 3000,
+					hired_date: "2026-01-01",
+				});
+
+			expect(response.status).toBe(409);
+			expect(response.body.error).toContain("already exists");
+		});
+
+		it("should return 409 when creating employee with case-insensitive duplicate name", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "existing-emp",
+									data: () => ({ name: "Bob", isActive: true }),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/employees")
+				.set("Authorization", authHeader)
+				.send({
+					name: "  bob  ",
+					position: "Manager",
+					base_salary: 3000,
+					hired_date: "2026-01-01",
+				});
+
+			expect(response.status).toBe(409);
+			expect(response.body.error).toContain("already exists");
+		});
+
+		it("should allow creating employee if duplicate is inactive", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "existing-emp",
+									data: () => ({ name: "Bob", isActive: false }),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({ id: "new-emp-123" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/employees")
+				.set("Authorization", authHeader)
+				.send({
+					name: "Bob",
+					position: "Manager",
+					base_salary: 3000,
+					hired_date: "2026-01-01",
+				});
+
+			expect(response.status).toBe(201);
+			expect(response.body.name).toBe("Bob");
+		});
+
+		it("should return 409 when updating employee name to a duplicate", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "emp-123",
+									data: () => ({ name: "Bob", isActive: true }),
+								},
+								{
+									id: "emp-456",
+									data: () => ({ name: "Alice", isActive: true }),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({ id: "emp-123" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.put("/api/employees/emp-123")
+				.set("Authorization", authHeader)
+				.send({ name: "Alice", editReason: "Typo correction" });
+
+			expect(response.status).toBe(409);
+			expect(response.body.error).toContain("already exists");
+		});
+
+		it("should allow keeping the same name on update", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "emp-123",
+									data: () => ({ name: "Bob", isActive: true }),
+								},
+							],
+						}),
+						doc: vi.fn().mockReturnValue({
+							id: "emp-123",
+							get: vi.fn().mockResolvedValue({
+								id: "emp-123",
+								data: () => ({ name: "Bob", position: "Manager" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "emp-123",
+						data: () => ({ name: "Bob", position: "Manager" }),
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/employees/emp-123")
+				.set("Authorization", authHeader)
+				.send({ name: "Bob", editReason: "No change to name" });
+
+			expect(response.status).toBe(200);
+		});
+
 		it("should return 400 when updating employee without editReason (Zod)", async () => {
 			const response = await request(app)
 				.put("/api/employees/emp-123")
@@ -239,6 +512,13 @@ describe("Employees Integration Tests", () => {
 								data: () => ({ role: "admin" }),
 							}),
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({ docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "missing-emp" }),
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
@@ -287,6 +567,13 @@ describe("Employees Integration Tests", () => {
 								data: () => ({ role: "admin" }),
 							}),
 						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						get: vi.fn().mockResolvedValue({ docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "emp-123" }),
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}

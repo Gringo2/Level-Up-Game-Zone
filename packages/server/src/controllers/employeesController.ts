@@ -22,11 +22,23 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 	const { name, position, base_salary, hired_date, break_day } = req.body;
 
 	try {
+		const existingSnapshot = await db.collection(COLLECTIONS.EMPLOYEES).get();
+		const duplicate = existingSnapshot.docs.some(
+			(doc) =>
+				doc.data().isActive &&
+				doc.data().name.trim().toLowerCase() === name.trim().toLowerCase(),
+		);
+		if (duplicate) {
+			return res
+				.status(409)
+				.json({ error: "An active employee with this name already exists" });
+		}
+
 		const newDocRef = db.collection(COLLECTIONS.EMPLOYEES).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
-			name,
+			name: name.trim(),
 			position,
 			base_salary: parseFloat(base_salary),
 			hired_date,
@@ -75,6 +87,21 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 		const docRef = db.collection(COLLECTIONS.EMPLOYEES).doc(id);
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
+		if (name !== undefined) {
+			const existingSnapshot = await db.collection(COLLECTIONS.EMPLOYEES).get();
+			const duplicate = existingSnapshot.docs.some(
+				(doc) =>
+					doc.id !== id &&
+					doc.data().isActive &&
+					doc.data().name.trim().toLowerCase() === name.trim().toLowerCase(),
+			);
+			if (duplicate) {
+				return res
+					.status(409)
+					.json({ error: "An active employee with this name already exists" });
+			}
+		}
+
 		await db.runTransaction(async (transaction) => {
 			const docSnap = await transaction.get(docRef);
 			if (!docSnap.exists) {
@@ -85,7 +112,7 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
 			const newValues: Record<string, any> = {};
 
-			if (name !== undefined) newValues.name = name;
+			if (name !== undefined) newValues.name = name.trim();
 			if (position !== undefined) newValues.position = position;
 			if (base_salary !== undefined)
 				newValues.base_salary = parseFloat(base_salary);
