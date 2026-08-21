@@ -82,7 +82,10 @@ describe("GameSales", () => {
 				);
 			}
 			if (init?.method === "POST" && url.endsWith("/api/rates")) {
-				return Promise.resolve(jsonResponse({ ok: true }));
+				const body = JSON.parse(String(init.body || "{}"));
+				return Promise.resolve(
+					jsonResponse({ id: `rate-${Date.now()}`, ...body }),
+				);
 			}
 			if (init?.method === "POST") {
 				return Promise.resolve(jsonResponse({ ...salesLog, id: "sale-new" }));
@@ -104,7 +107,13 @@ describe("GameSales", () => {
 	});
 
 	it("shows the no-games banner and configures default games", async () => {
-		mockFetch.mockImplementation((url: string) => {
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (init?.method === "POST" && url.endsWith("/api/rates")) {
+				const body = JSON.parse(String(init.body || "{}"));
+				return Promise.resolve(
+					jsonResponse({ id: `rate-new-${Date.now()}`, ...body }),
+				);
+			}
 			if (url.endsWith("/api/rates")) {
 				return Promise.resolve(jsonResponse([]));
 			}
@@ -290,8 +299,14 @@ describe("GameSales", () => {
 	});
 
 	it("shows error toast when Add Default Games fails", async () => {
-		mockFetch.mockImplementation((url: string) => {
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
 			if (url.endsWith("/api/rates")) {
+				if (init?.method === "POST") {
+					const body = JSON.parse(String(init.body || "{}"));
+					return Promise.resolve(
+						jsonResponse({ id: `rate-new-${Date.now()}`, ...body }),
+					);
+				}
 				return Promise.resolve(jsonResponse([]));
 			}
 			return Promise.resolve(jsonResponse([]));

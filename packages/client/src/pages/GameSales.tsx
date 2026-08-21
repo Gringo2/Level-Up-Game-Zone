@@ -37,6 +37,7 @@ export function GameSales() {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
+	const [loadingDefaults, setLoadingDefaults] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
@@ -236,40 +237,57 @@ export function GameSales() {
 						size="sm"
 						variant="outline"
 						className="bg-white whitespace-nowrap"
+						disabled={loadingDefaults}
 						onClick={async () => {
 							try {
+								setLoadingDefaults(true);
 								const token = await auth.currentUser?.getIdToken();
 								if (!token) return;
 
-								await fetch(`${API_BASE}/api/rates`, {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/json",
-										Authorization: `Bearer ${token}`,
-									},
-									body: JSON.stringify({
-										game_name: DEFAULT_GAME_RATES[0].game_name,
-										price_per_unit: DEFAULT_GAME_RATES[0].price_per_unit,
-										unit_type: DEFAULT_GAME_RATES[0].unit_type,
-										isActive: true,
+								const [res1, res2] = await Promise.all([
+									fetch(`${API_BASE}/api/rates`, {
+										method: "POST",
+										headers: {
+											"Content-Type": "application/json",
+											Authorization: `Bearer ${token}`,
+										},
+										body: JSON.stringify({
+											game_name: DEFAULT_GAME_RATES[0].game_name,
+											price_per_unit: DEFAULT_GAME_RATES[0].price_per_unit,
+											unit_type: DEFAULT_GAME_RATES[0].unit_type,
+											isActive: true,
+										}),
 									}),
-								});
-								await fetch(`${API_BASE}/api/rates`, {
-									method: "POST",
-									headers: {
-										"Content-Type": "application/json",
-										Authorization: `Bearer ${token}`,
-									},
-									body: JSON.stringify({
-										game_name: DEFAULT_GAME_RATES[1].game_name,
-										price_per_unit: DEFAULT_GAME_RATES[1].price_per_unit,
-										unit_type: DEFAULT_GAME_RATES[1].unit_type,
-										isActive: true,
+									fetch(`${API_BASE}/api/rates`, {
+										method: "POST",
+										headers: {
+											"Content-Type": "application/json",
+											Authorization: `Bearer ${token}`,
+										},
+										body: JSON.stringify({
+											game_name: DEFAULT_GAME_RATES[1].game_name,
+											price_per_unit: DEFAULT_GAME_RATES[1].price_per_unit,
+											unit_type: DEFAULT_GAME_RATES[1].unit_type,
+											isActive: true,
+										}),
 									}),
-								});
+								]);
+
+								if (!res1.ok || !res2.ok) {
+									throw new Error("Failed to create rates");
+								}
+
+								const [rate1, rate2] = await Promise.all([
+									safeJson<GameRate>(res1),
+									safeJson<GameRate>(res2),
+								]);
+
+								setRates((prev) => [...prev, rate1, rate2]);
 								toast.success("Default games configured!");
 							} catch (_err) {
 								toast.error("Failed to configure games");
+							} finally {
+								setLoadingDefaults(false);
 							}
 						}}
 					>

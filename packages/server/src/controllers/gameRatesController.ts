@@ -22,17 +22,39 @@ export const createRate = async (req: AuthRequest, res: Response) => {
 	const { game_name, price_per_unit, unit_type, isActive } = req.body;
 
 	try {
+		const normalizedTarget = game_name.trim().toLowerCase();
+
+		const existingSnapshot = await db.collection(COLLECTIONS.GAME_RATES).get();
+		const allDocRefs = existingSnapshot.docs.map((doc) =>
+			db.collection(COLLECTIONS.GAME_RATES).doc(doc.id),
+		);
+
 		const newDocRef = db.collection(COLLECTIONS.GAME_RATES).doc();
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
-			game_name,
+			game_name: game_name.trim(),
 			price_per_unit: parseFloat(price_per_unit),
 			unit_type,
 			isActive: isActive ?? true,
 		};
 
 		await db.runTransaction(async (transaction) => {
+			const allDocs =
+				allDocRefs.length > 0 ? await transaction.getAll(...allDocRefs) : [];
+			const duplicate = allDocs.some((doc) => {
+				// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+				const d = doc.data() as Record<string, any> | undefined;
+				return (
+					doc.exists &&
+					d?.isActive &&
+					d?.game_name?.trim().toLowerCase() === normalizedTarget
+				);
+			});
+			if (duplicate) {
+				throw new Error("DUPLICATE_NAME");
+			}
+
 			transaction.set(newDocRef, data);
 			transaction.set(auditRef, {
 				table_affected: "game_rates",
@@ -47,6 +69,11 @@ export const createRate = async (req: AuthRequest, res: Response) => {
 
 		return res.status(201).json({ id: newDocRef.id, ...data });
 	} catch (error: unknown) {
+		if ((error as Error).message === "DUPLICATE_NAME") {
+			return res.status(409).json({
+				error: "An active game rate with this name already exists",
+			});
+		}
 		console.error("Error creating rate:", error);
 		return res
 			.status(500)
