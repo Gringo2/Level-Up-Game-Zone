@@ -59,11 +59,12 @@ export const CloseShiftSchema = z.object({
 
 // Game Sales Schemas
 export const CreateSaleSchema = z.object({
-	game_id: z.string().optional(),
+	game_id: z
+		.string({ required_error: "Game selection is required" })
+		.min(1, "Game selection is required"),
 	game_name: z.string().trim().min(1, "Game name is required"),
 	quantity_sold: positiveNumber("Quantity sold"),
 	rate_applied: positiveNumber("Rate applied"),
-	calculated_total: nonNegativeNumber("Calculated total"),
 	date: z.string().optional(),
 });
 
@@ -257,16 +258,7 @@ export const InviteUserSchema = z.object({
 	}),
 });
 
-export const CreateUserSchema = z.object({
-	role: z
-		.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {
-			errorMap: () => ({
-				message: "Role must be 'admin', 'manager', or 'staff'",
-			}),
-		})
-		.optional()
-		.default(ROLES.STAFF),
-});
+export const CreateUserSchema = z.object({});
 
 export const UpdateRoleSchema = z.object({
 	role: z.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {

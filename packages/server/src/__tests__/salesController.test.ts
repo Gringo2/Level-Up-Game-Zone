@@ -48,6 +48,61 @@ describe("Sales Integration Tests", () => {
 			expect(response.body[0].game_name).toBe("Pool");
 		});
 
+		it("TD-026: returns 400 when the referenced game rate does not exist", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ displayName: "Test User" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "x" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/sales")
+				.set("Authorization", authHeader)
+				.send({
+					game_id: "bogus-rate",
+					game_name: "Ghost Game",
+					quantity_sold: 2,
+					rate_applied: 5,
+				});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toBe("Invalid game");
+		});
+
+		it("TD-026/TD-035: returns 400 when game_id is missing (Zod)", async () => {
+			const response = await request(app)
+				.post("/api/sales")
+				.set("Authorization", authHeader)
+				.send({
+					game_name: "Pool",
+					quantity_sold: 2,
+					rate_applied: 5,
+				});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Game selection is required");
+		});
+
 		it("filters sales server-side when a date range is provided", async () => {
 			const range: { start?: string; end?: string } = {};
 			vi.mocked(db.collection).mockImplementation((path: string) => {
@@ -121,6 +176,20 @@ describe("Sales Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									game_name: "Pool",
+									price_per_unit: 5,
+								}),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-sale-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -131,17 +200,19 @@ describe("Sales Integration Tests", () => {
 				.post("/api/sales")
 				.set("Authorization", authHeader)
 				.send({
+					game_id: "rate-1",
 					game_name: "Pool",
 					quantity_sold: 2,
-					rate_applied: 10,
-					calculated_total: 20,
+					rate_applied: 999,
+					calculated_total: 99999,
 				});
 
 			expect(response.status).toBe(201);
-			expect(response.body.calculated_total).toBe(20);
+			expect(response.body.rate_applied).toBe(5);
+			expect(response.body.calculated_total).toBe(10);
 		});
 
-		it("should successfully update a sale", async () => {
+		it("should successfully update a sale with server-authoritative math", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
 					return {
@@ -154,17 +225,102 @@ describe("Sales Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ game_name: "Pool", price_per_unit: 5 }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({
 						id: "sale-123",
 						get: vi.fn().mockResolvedValue({
 							id: "sale-123",
 							data: () => ({
+								game_id: "rate-1",
 								game_name: "Pool",
 								quantity_sold: 3,
-								rate_applied: 10,
-								calculated_total: 30,
+								rate_applied: 5,
+								calculated_total: 15,
 							}),
+						}),
+					}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			let capturedUpdate: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "sale-123",
+						data: () => ({
+							game_id: "rate-1",
+							game_name: "Pool",
+							quantity_sold: 2,
+						}),
+					}),
+					set: vi.fn(),
+					update: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						capturedUpdate = payload;
+					}),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({
+					game_id: "rate-1",
+					quantity_sold: 3,
+					calculated_total: 99999,
+					editReason: "Corrected qty",
+				});
+
+			expect(response.status).toBe(200);
+			expect(capturedUpdate).toBeDefined();
+			expect(capturedUpdate?.rate_applied).toBe(5);
+			expect(capturedUpdate?.calculated_total).toBe(15);
+			expect(response.body.calculated_total).toBe(15);
+			expect(response.body.rate_applied).toBe(5);
+		});
+
+		it("TD-026 A1: returns 400 when editing references a nonexistent rate", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({
+						id: "sale-123",
+						get: vi.fn().mockResolvedValue({
+							exists: true,
+							data: () => ({ game_id: "rate-x", quantity_sold: 2 }),
 						}),
 					}),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -175,8 +331,7 @@ describe("Sales Integration Tests", () => {
 				const mockTx = {
 					get: vi.fn().mockResolvedValue({
 						exists: true,
-						id: "sale-123",
-						data: () => ({ game_name: "Pool", quantity_sold: 2 }),
+						data: () => ({ game_id: "rate-x", quantity_sold: 2 }),
 					}),
 					set: vi.fn(),
 					update: vi.fn(),
@@ -189,9 +344,10 @@ describe("Sales Integration Tests", () => {
 			const response = await request(app)
 				.put("/api/sales/sale-123")
 				.set("Authorization", authHeader)
-				.send({ quantity_sold: 3, editReason: "Corrected qty" });
+				.send({ game_id: "ghost", editReason: "retarget" });
 
-			expect(response.status).toBe(200);
+			expect(response.status).toBe(400);
+			expect(response.body.error).toBe("Invalid game");
 		});
 
 		it("should successfully delete a sale", async () => {
@@ -243,10 +399,10 @@ describe("Sales Integration Tests", () => {
 				.post("/api/sales")
 				.set("Authorization", authHeader)
 				.send({
+					game_id: "rate-1",
 					game_name: "Pool",
 					quantity_sold: -5,
 					rate_applied: 10,
-					calculated_total: -50,
 				});
 
 			expect(response.status).toBe(400);
@@ -427,7 +583,34 @@ describe("Sales Integration Tests", () => {
 		});
 
 		it("returns 500 when creating sale crashes inside the transaction", async () => {
-			chainableCollection();
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ displayName: "Test User" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ game_name: "Pool", price_per_unit: 5 }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "new-sale-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
 			vi.mocked(db.runTransaction).mockRejectedValueOnce(
 				new Error("DB crashed"),
 			);
@@ -436,10 +619,10 @@ describe("Sales Integration Tests", () => {
 				.post("/api/sales")
 				.set("Authorization", authHeader)
 				.send({
+					game_id: "rate-1",
 					game_name: "Pool",
 					quantity_sold: 2,
 					rate_applied: 10,
-					calculated_total: 20,
 				});
 
 			expect(response.status).toBe(500);

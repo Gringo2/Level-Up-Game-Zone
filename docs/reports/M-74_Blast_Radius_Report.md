@@ -30,3 +30,9 @@ vitest **459/459 / 34 files** | tsc=0 | knip=0 | depcruise ✔ (148 modules, 443
 **Findings fixed during review:** stale "{/* Admin Only Routes */}" comment above the widened manager gate → renamed to Manager & Admin convention.
 
 **Post-review certification:** vitest **459/459 / 34 files** | tsc=0 | knip=0 | depcruise ✔ (148 modules, 443 deps) | Biome sweep over all 16 paths = 0 fails.
+
+## M-75/M-76 Server Hardening Addendum (2026-08-22)
+TD-025/TD-026/TD-035 resolved server-side (details in DEBT.md resolutions). WAKE infrastructure metatest failure root-caused to governance-format drift: wake_summary.sh extracts SCOPE only under literal '## 3. Scope & Boundaries' — mission files must preserve that canonical header; SYSTEM_CONTEXT Current Mission pointer was stale since M-66 and is now maintained.
+
+## M-76 Review Finding — PUT Bypass Closed (A1, 2026-08-22)
+Probe: `updateSale` accepted client `calculated_total`/`rate_applied` and unvalidated `game_id` — complete bypass of create-side integrity. Fix inside transaction resolves the effective game_rates doc (body override else inherited), throws Invalid game (catch-mapped 400), recomputes totals from authoritative price × (new|inherited) quantity; client money fields never persisted. Verified by captured tx payload assertions + post-update read. Suite 464/464.

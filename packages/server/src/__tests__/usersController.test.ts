@@ -2,6 +2,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { InviteUserSchema } from "../schemas/index.js";
 
 const { db, auth } = await import("../firebase.js");
 
@@ -527,15 +528,12 @@ describe("Users Integration Tests", () => {
 			);
 		});
 
-		it("createUser should return 400 if role is invalid (CreateUserSchema errorMap)", async () => {
-			const response = await request(app)
-				.post("/api/users")
-				.set("Authorization", authHeader)
-				.send({ role: "super_admin" });
-			expect(response.status).toBe(400);
-			expect(response.body.error).toContain(
-				"Role must be 'admin', 'manager', or 'staff'",
-			);
+		it("invite schema enforces role enum errorMap (create schema no longer carries role)", async () => {
+			const parsed = InviteUserSchema.safeParse({
+				email: "a@b.com",
+				role: "superadmin",
+			});
+			expect(parsed.success).toBe(false);
 		});
 
 		it("updateRole should return 403 if requester is not an admin", async () => {
@@ -717,6 +715,92 @@ describe("Users Integration Tests", () => {
 			expect(response.body.error).toBe(
 				"Forbidden: Insufficient role permissions",
 			);
+		});
+
+		it("TD-025: body role must be ignored — assigned role comes from the invite", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "user_invites") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: false }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/users")
+				.set("Authorization", authHeader)
+				.send({ email: "esc@x.com", role: "admin" });
+
+			expect(response.status).toBe(201);
+			expect(response.body.role).toBe("staff");
+		});
+
+		it("TD-025: re-registration by an existing user returns clean 400", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "user_invites") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
+			const response = await request(app)
+				.post("/api/users")
+				.set("Authorization", authHeader)
+				.send({ email: "esc@x.com" });
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toBe("User already exists");
 		});
 
 		it("createUser should return 403 for a non-root user without an invite", async () => {

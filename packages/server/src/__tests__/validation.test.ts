@@ -23,10 +23,10 @@ describe("Domain-Driven Schema Validation Middleware", () => {
 		const middleware = validateBody(CreateSaleSchema);
 		const req = {
 			body: {
+				game_id: "rate-1",
 				game_name: "PS5",
 				quantity_sold: "abc",
 				rate_applied: 10,
-				calculated_total: 10,
 			},
 		} as AuthRequest;
 		const res = makeRes();
