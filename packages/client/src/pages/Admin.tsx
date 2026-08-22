@@ -1,6 +1,12 @@
-import type { GameRate } from "@level-up/shared";
+import type {
+	BreakDay,
+	Employee,
+	ExpenseCategory,
+	GameRate,
+} from "@level-up/shared";
 import { UNIT_TYPES } from "@level-up/shared";
-import { Loader2, Pencil, X } from "lucide-react";
+import { format } from "date-fns";
+import { Edit2, Loader2, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -37,6 +43,53 @@ export function Admin() {
 	// Inline edit state — null means no row is being edited
 	const [editState, setEditState] = useState<EditState | null>(null);
 	const [editLoading, setEditLoading] = useState(false);
+
+	// Expense-category management (moved from Expenses, M-73)
+	const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
+	const [newCategoryName, setNewCategoryName] = useState("");
+	const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+		null,
+	);
+	const [editingCategoryName, setEditingCategoryName] = useState("");
+	const [categoryEditReason, setCategoryEditReason] = useState("");
+	const [categoryLoading, setCategoryLoading] = useState(false);
+	// Employee hiring (moved from EmployeeRoster, M-74)
+	const [name, setName] = useState("");
+	const [position, setPosition] = useState("");
+	const [baseSalary, setBaseSalary] = useState("");
+	const [hiredDate, setHiredDate] = useState(
+		new Date().toISOString().split("T")[0],
+	);
+	const [breakDay, setBreakDay] = useState<BreakDay>(null);
+	const [submitLoading, setSubmitLoading] = useState(false);
+
+	useEffect(() => {
+		let mounted = true;
+		const loadCategories = async () => {
+			try {
+				const res = await authFetch(`${API_BASE}/api/expense-categories`);
+				if (res.ok) {
+					const cats = (await safeJson(res)) as ExpenseCategory[];
+					if (
+						mounted &&
+						Array.isArray(cats) &&
+						cats.every(
+							(c) =>
+								c && typeof c.id === "string" && typeof c.name === "string",
+						)
+					) {
+						setAllCategories(cats);
+					}
+				}
+			} catch (err) {
+				console.error(err);
+			}
+		};
+		void loadCategories();
+		return () => {
+			mounted = false;
+		};
+	}, []);
 
 	useEffect(() => {
 		let mounted = true;
@@ -182,6 +235,188 @@ export function Admin() {
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Failed to update rate status");
+		}
+	};
+
+	const handleCreateCategory = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!newCategoryName.trim()) return;
+
+		setCategoryLoading(true);
+		try {
+			const response = await authFetch(`${API_BASE}/api/expense-categories`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ name: newCategoryName.trim() }),
+			});
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to create category");
+			}
+			const created = await safeJson<ExpenseCategory>(response);
+			setAllCategories((prev) => [...prev, created]);
+			setNewCategoryName("");
+			toast.success("Category created!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to create category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleUpdateCategory = async (id: string) => {
+		if (!editingCategoryName.trim() || !categoryEditReason.trim()) {
+			toast.error("Category name and reason are required.");
+			return;
+		}
+
+		setCategoryLoading(true);
+		try {
+			const response = await authFetch(
+				`${API_BASE}/api/expense-categories/${id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						name: editingCategoryName.trim(),
+						editReason: categoryEditReason.trim(),
+					}),
+				},
+			);
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to update category");
+			}
+			const updated = await safeJson<ExpenseCategory>(response);
+			setAllCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
+			setEditingCategoryId(null);
+			setEditingCategoryName("");
+			setCategoryEditReason("");
+			toast.success("Category updated!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to update category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleDeactivateCategory = async (id: string) => {
+		setCategoryLoading(true);
+		try {
+			const response = await authFetch(
+				`${API_BASE}/api/expense-categories/${id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						isActive: false,
+						editReason: "Deactivated by user",
+					}),
+				},
+			);
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to deactivate category");
+			}
+			setAllCategories((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, isActive: false } : c)),
+			);
+			toast.success("Category deactivated!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to deactivate category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleActivateCategory = async (id: string) => {
+		setCategoryLoading(true);
+		try {
+			const response = await authFetch(
+				`${API_BASE}/api/expense-categories/${id}`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						isActive: true,
+						editReason: "Reactivated by user",
+					}),
+				},
+			);
+			if (!response.ok) {
+				const body = await safeJson(response);
+				throw new Error(body.error || "Failed to activate category");
+			}
+			setAllCategories((prev) =>
+				prev.map((c) => (c.id === id ? { ...c, isActive: true } : c)),
+			);
+			toast.success("Category activated!");
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error ? err.message : "Failed to activate category",
+			);
+		} finally {
+			setCategoryLoading(false);
+		}
+	};
+
+	const handleAddEmployee = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!name || !position || !baseSalary || !hiredDate) return;
+
+		setSubmitLoading(true);
+		try {
+			const response = await authFetch(`${API_BASE}/api/employees`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					name: name.trim(),
+					position: position.trim(),
+					base_salary: parseFloat(baseSalary),
+					hired_date: hiredDate,
+					break_day: breakDay,
+				}),
+			});
+
+			if (!response.ok) {
+				throw new Error(
+					(await safeJson(response)).error || "Failed to add employee",
+				);
+			}
+
+			const newEmployee = (await safeJson(response)) as Employee;
+
+			setName("");
+			setPosition("");
+			setBaseSalary("");
+			setHiredDate(new Date().toISOString().split("T")[0]);
+			setBreakDay(null);
+			toast.success(`Employee ${newEmployee.name} added to roster!`);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error((err as Error).message || "Failed to add employee");
+		} finally {
+			setSubmitLoading(false);
 		}
 	};
 
@@ -396,6 +631,236 @@ export function Admin() {
 						)}
 					</div>
 				</CardContent>
+			</Card>
+
+			<Card className="max-w-2xl">
+				<CardHeader>
+					<CardTitle>Manage Categories</CardTitle>
+					<CardDescription>
+						Create, edit, or deactivate expense categories.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="space-y-4">
+					<form onSubmit={handleCreateCategory} className="flex gap-2">
+						<Input
+							type="text"
+							placeholder="New category name"
+							value={newCategoryName}
+							onChange={(e) => setNewCategoryName(e.target.value)}
+							disabled={categoryLoading}
+							className="flex-1"
+						/>
+						<Button
+							type="submit"
+							disabled={categoryLoading || !newCategoryName.trim()}
+						>
+							{categoryLoading ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								"Add"
+							)}
+						</Button>
+					</form>
+
+					<div className="space-y-2">
+						{allCategories.length === 0 ? (
+							<div className="text-center text-zinc-500 py-4">
+								No categories yet.
+							</div>
+						) : (
+							allCategories.map((cat) => (
+								<div
+									key={cat.id}
+									className="flex items-center gap-2 p-2 border rounded-md bg-white"
+								>
+									{editingCategoryId === cat.id ? (
+										<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+											<Input
+												type="text"
+												value={editingCategoryName}
+												onChange={(e) => setEditingCategoryName(e.target.value)}
+												className="flex-1 h-8 text-sm"
+												placeholder="Category name"
+											/>
+											<Input
+												type="text"
+												value={categoryEditReason}
+												onChange={(e) => setCategoryEditReason(e.target.value)}
+												className="flex-1 h-8 text-sm"
+												placeholder="Reason for change"
+											/>
+											<div className="flex gap-1">
+												<Button
+													size="sm"
+													onClick={() => handleUpdateCategory(cat.id)}
+													disabled={
+														categoryLoading ||
+														!editingCategoryName.trim() ||
+														!categoryEditReason.trim()
+													}
+												>
+													Save
+												</Button>
+												<Button
+													size="sm"
+													variant="ghost"
+													onClick={() => {
+														setEditingCategoryId(null);
+														setEditingCategoryName("");
+														setCategoryEditReason("");
+													}}
+												>
+													Cancel
+												</Button>
+											</div>
+										</div>
+									) : (
+										<>
+											<span className="flex-1 text-sm">{cat.name}</span>
+											{cat.created_at && (
+												<span className="text-xs text-zinc-400">
+													{format(new Date(cat.created_at), "MMM d, yyyy")}
+												</span>
+											)}
+											<span
+												className={`text-xs px-1.5 py-0.5 rounded-sm ${
+													cat.isActive
+														? "text-emerald-600 bg-emerald-50"
+														: "text-zinc-500 bg-zinc-100"
+												}`}
+											>
+												{cat.isActive ? "Active" : "Inactive"}
+											</span>
+											{cat.isActive ? (
+												<>
+													<Button
+														size="sm"
+														variant="ghost"
+														onClick={() => {
+															setEditingCategoryId(cat.id);
+															setEditingCategoryName(cat.name);
+															setCategoryEditReason("");
+														}}
+														disabled={categoryLoading}
+													>
+														<Edit2 className="h-4 w-4" />
+													</Button>
+													<Button
+														size="sm"
+														variant="ghost"
+														className="text-red-600 hover:text-red-700 hover:bg-red-50"
+														onClick={() => handleDeactivateCategory(cat.id)}
+														disabled={categoryLoading}
+													>
+														<Trash2 className="h-4 w-4" />
+													</Button>
+												</>
+											) : (
+												<Button
+													size="sm"
+													variant="ghost"
+													className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+													onClick={() => handleActivateCategory(cat.id)}
+													disabled={categoryLoading}
+												>
+													<RotateCcw className="h-4 w-4" />
+												</Button>
+											)}
+										</>
+									)}
+								</div>
+							))
+						)}
+					</div>
+				</CardContent>
+				{/* Add Employee Form */}
+				<Card className="max-w-2xl">
+					<form onSubmit={handleAddEmployee}>
+						<CardHeader>
+							<CardTitle>Add Store Employee</CardTitle>
+							<CardDescription>
+								Register a staff member to enable clean credit logging and
+								salary deduction reporting.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="name">Full Name</Label>
+									<Input
+										id="name"
+										placeholder="e.g. John Doe"
+										value={name}
+										onChange={(e) => setName(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="position">Position / Role</Label>
+									<Input
+										id="position"
+										placeholder="e.g. Cashier, Floor Attendant"
+										value={position}
+										onChange={(e) => setPosition(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="baseSalary">Base Monthly Salary ($)</Label>
+									<Input
+										id="baseSalary"
+										type="number"
+										step="0.01"
+										min="0"
+										placeholder="e.g. 500.00"
+										value={baseSalary}
+										onChange={(e) => setBaseSalary(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="hiredDate">Date of Hiring</Label>
+									<Input
+										id="hiredDate"
+										type="date"
+										value={hiredDate}
+										onChange={(e) => setHiredDate(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2 md:col-span-2">
+									<Label htmlFor="breakDay">Break Day (Rest Day)</Label>
+									<select
+										id="breakDay"
+										value={breakDay || ""}
+										onChange={(e) =>
+											setBreakDay((e.target.value as BreakDay) || null)
+										}
+										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+									>
+										<option value="">None / Flexible</option>
+										<option value="Monday">Monday</option>
+										<option value="Tuesday">Tuesday</option>
+										<option value="Wednesday">Wednesday</option>
+										<option value="Thursday">Thursday</option>
+										<option value="Friday">Friday</option>
+										<option value="Saturday">Saturday</option>
+										<option value="Sunday">Sunday</option>
+									</select>
+								</div>
+							</div>
+							<Button
+								type="submit"
+								disabled={submitLoading || !name || !position}
+							>
+								{submitLoading ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : null}
+								Add Employee
+							</Button>
+						</CardContent>
+					</form>
+				</Card>
 			</Card>
 		</div>
 	);

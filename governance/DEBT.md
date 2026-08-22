@@ -45,6 +45,8 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 | TD-051 | **GameSales has no verification workflow** — `GameSalesLog` carries no `verified` field, no verify endpoint, no badge/UI, while Keno has the full manager-verify flow (`shared/src/index.ts:43-53` vs `:55-64`). Asymmetric trust model: sales entries can never be verified. Contract-level fix (shared type + server + client). (Gap report F1) | MEDIUM — trust-model asymmetry | High | Full-stack | PO decision |
 | TD-052 | **Sale records do not persist rate unit_type** — GS rows hardcode "{qty} units @ ${rate}" though rates carry Hours/Tables; cannot display real units without persisting at creation (+ legacy-row fallback). (Gap report F2) | LOW-MED — presentation accuracy | Medium | Backend+Frontend | PO decision |
 
+| TD-053 | **Expenses Verify button lacks in-flight guard** — `handleVerify` has no pending flag/disable while Keno & GameSales got C1 guards in M-68; double-click can fire duplicate verify PUTs. (`Expenses.tsx` Verify button) | MEDIUM — duplicate-request risk | Medium | Frontend | PO decision |
+
 ## Resolved Debt
 
 | ID | Resolution Details | Date |

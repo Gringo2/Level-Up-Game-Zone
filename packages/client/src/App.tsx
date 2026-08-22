@@ -55,10 +55,14 @@ function AppContent() {
 							</>
 						)}
 
+						{/* Manager & Admin Routes */}
+						{(user.role === ROLES.ADMIN || user.role === ROLES.MANAGER) && (
+							<Route path="/admin" element={<Admin />} />
+						)}
+
 						{/* Admin Only Routes */}
 						{user.role === ROLES.ADMIN && (
 							<>
-								<Route path="/admin" element={<Admin />} />
 								<Route path="/audit-logs" element={<AuditLogs />} />
 								<Route path="/admin/users" element={<UserManagement />} />
 							</>

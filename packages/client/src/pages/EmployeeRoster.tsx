@@ -9,7 +9,6 @@ import { Button } from "../components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
@@ -34,14 +33,6 @@ export function EmployeeRoster() {
 	const [loading, setLoading] = useState(true);
 
 	// Form State
-	const [name, setName] = useState("");
-	const [position, setPosition] = useState("");
-	const [baseSalary, setBaseSalary] = useState("");
-	const [hiredDate, setHiredDate] = useState(
-		new Date().toISOString().split("T")[0],
-	);
-	const [breakDay, setBreakDay] = useState<BreakDay>(null);
-	const [submitLoading, setSubmitLoading] = useState(false);
 
 	// Edit State
 	const [editState, setEditState] = useState<EditState | null>(null);
@@ -77,51 +68,6 @@ export function EmployeeRoster() {
 			mounted = false;
 		};
 	}, []);
-
-	const handleAddEmployee = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!name || !position || !baseSalary || !hiredDate) return;
-
-		setSubmitLoading(true);
-		try {
-			const response = await authFetch(`${API_BASE}/api/employees`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					name: name.trim(),
-					position: position.trim(),
-					base_salary: parseFloat(baseSalary),
-					hired_date: hiredDate,
-					break_day: breakDay,
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error(
-					(await safeJson(response)).error || "Failed to add employee",
-				);
-			}
-
-			const newEmployee = (await safeJson(response)) as Employee;
-			setEmployees((prev) =>
-				[...prev, newEmployee].sort((a, b) => a.name.localeCompare(b.name)),
-			);
-
-			setName("");
-			setPosition("");
-			setBaseSalary("");
-			setHiredDate(new Date().toISOString().split("T")[0]);
-			setBreakDay(null);
-			toast.success(`Employee ${newEmployee.name} added to roster!`);
-		} catch (err: unknown) {
-			console.error(err);
-			toast.error((err as Error).message || "Failed to add employee");
-		} finally {
-			setSubmitLoading(false);
-		}
-	};
 
 	const startEdit = (emp: Employee) => {
 		setEditState({
@@ -234,97 +180,6 @@ export function EmployeeRoster() {
 					Manage store staff records for salary reconciliation and IOU tracking.
 				</p>
 			</div>
-
-			{/* Add Employee Form */}
-			{(user?.role === ROLES.ADMIN || user?.role === ROLES.MANAGER) && (
-				<Card className="max-w-2xl">
-					<form onSubmit={handleAddEmployee}>
-						<CardHeader>
-							<CardTitle>Add Store Employee</CardTitle>
-							<CardDescription>
-								Register a staff member to enable clean credit logging and
-								salary deduction reporting.
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="name">Full Name</Label>
-									<Input
-										id="name"
-										placeholder="e.g. John Doe"
-										value={name}
-										onChange={(e) => setName(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="position">Position / Role</Label>
-									<Input
-										id="position"
-										placeholder="e.g. Cashier, Floor Attendant"
-										value={position}
-										onChange={(e) => setPosition(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="baseSalary">Base Monthly Salary ($)</Label>
-									<Input
-										id="baseSalary"
-										type="number"
-										step="0.01"
-										min="0"
-										placeholder="e.g. 500.00"
-										value={baseSalary}
-										onChange={(e) => setBaseSalary(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="hiredDate">Date of Hiring</Label>
-									<Input
-										id="hiredDate"
-										type="date"
-										value={hiredDate}
-										onChange={(e) => setHiredDate(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2 md:col-span-2">
-									<Label htmlFor="breakDay">Break Day (Rest Day)</Label>
-									<select
-										id="breakDay"
-										value={breakDay || ""}
-										onChange={(e) =>
-											setBreakDay((e.target.value as BreakDay) || null)
-										}
-										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
-									>
-										<option value="">None / Flexible</option>
-										<option value="Monday">Monday</option>
-										<option value="Tuesday">Tuesday</option>
-										<option value="Wednesday">Wednesday</option>
-										<option value="Thursday">Thursday</option>
-										<option value="Friday">Friday</option>
-										<option value="Saturday">Saturday</option>
-										<option value="Sunday">Sunday</option>
-									</select>
-								</div>
-							</div>
-							<Button
-								type="submit"
-								disabled={submitLoading || !name || !position}
-							>
-								{submitLoading ? (
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								) : null}
-								Add Employee
-							</Button>
-						</CardContent>
-					</form>
-				</Card>
-			)}
 
 			{/* Roster Table */}
 			<Card>

@@ -1,7 +1,7 @@
 import type { Expense, ExpenseCategory } from "@level-up/shared";
 import { EXPENSE_CATEGORY_FALLBACKS, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Edit2, Loader2, RotateCcw, Trash2 } from "lucide-react";
+import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +20,11 @@ import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+import {
+	groupLogsByDay,
+	HISTORY_PAGE_SIZE,
+	historyPageBounds,
+} from "../lib/history";
 
 export function Expenses() {
 	const { user } = useAuth();
@@ -35,14 +40,8 @@ export function Expenses() {
 	);
 	const [loading, setLoading] = useState(false);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
+	const [historyPage, setHistoryPage] = useState(0);
 	const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
-	const [newCategoryName, setNewCategoryName] = useState("");
-	const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
-		null,
-	);
-	const [editingCategoryName, setEditingCategoryName] = useState("");
-	const [categoryEditReason, setCategoryEditReason] = useState("");
-	const [categoryLoading, setCategoryLoading] = useState(false);
 	const categories = allCategories.filter((c) => c.isActive);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -109,6 +108,7 @@ export function Expenses() {
 
 				if (mounted) {
 					setExpenses(data);
+					setHistoryPage(0);
 				}
 			} catch (err) {
 				console.error(err);
@@ -301,596 +301,383 @@ export function Expenses() {
 		}
 	};
 
-	const handleCreateCategory = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!newCategoryName.trim()) return;
-
-		setCategoryLoading(true);
-		try {
-			const response = await authFetch(`${API_BASE}/api/expense-categories`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ name: newCategoryName.trim() }),
-			});
-			if (!response.ok) {
-				const body = await safeJson(response);
-				throw new Error(body.error || "Failed to create category");
-			}
-			const created = await safeJson<ExpenseCategory>(response);
-			setAllCategories((prev) => [...prev, created]);
-			setNewCategoryName("");
-			toast.success("Category created!");
-		} catch (err: unknown) {
-			console.error(err);
-			toast.error(
-				err instanceof Error ? err.message : "Failed to create category",
-			);
-		} finally {
-			setCategoryLoading(false);
-		}
-	};
-
-	const handleUpdateCategory = async (id: string) => {
-		if (!editingCategoryName.trim() || !categoryEditReason.trim()) {
-			toast.error("Category name and reason are required.");
-			return;
-		}
-
-		setCategoryLoading(true);
-		try {
-			const response = await authFetch(
-				`${API_BASE}/api/expense-categories/${id}`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						name: editingCategoryName.trim(),
-						editReason: categoryEditReason.trim(),
-					}),
-				},
-			);
-			if (!response.ok) {
-				const body = await safeJson(response);
-				throw new Error(body.error || "Failed to update category");
-			}
-			const updated = await safeJson<ExpenseCategory>(response);
-			setAllCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
-			setEditingCategoryId(null);
-			setEditingCategoryName("");
-			setCategoryEditReason("");
-			toast.success("Category updated!");
-		} catch (err: unknown) {
-			console.error(err);
-			toast.error(
-				err instanceof Error ? err.message : "Failed to update category",
-			);
-		} finally {
-			setCategoryLoading(false);
-		}
-	};
-
-	const handleDeactivateCategory = async (id: string) => {
-		setCategoryLoading(true);
-		try {
-			const response = await authFetch(
-				`${API_BASE}/api/expense-categories/${id}`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						isActive: false,
-						editReason: "Deactivated by user",
-					}),
-				},
-			);
-			if (!response.ok) {
-				const body = await safeJson(response);
-				throw new Error(body.error || "Failed to deactivate category");
-			}
-			setAllCategories((prev) =>
-				prev.map((c) => (c.id === id ? { ...c, isActive: false } : c)),
-			);
-			toast.success("Category deactivated!");
-		} catch (err: unknown) {
-			console.error(err);
-			toast.error(
-				err instanceof Error ? err.message : "Failed to deactivate category",
-			);
-		} finally {
-			setCategoryLoading(false);
-		}
-	};
-
-	const handleActivateCategory = async (id: string) => {
-		setCategoryLoading(true);
-		try {
-			const response = await authFetch(
-				`${API_BASE}/api/expense-categories/${id}`,
-				{
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						isActive: true,
-						editReason: "Reactivated by user",
-					}),
-				},
-			);
-			if (!response.ok) {
-				const body = await safeJson(response);
-				throw new Error(body.error || "Failed to activate category");
-			}
-			setAllCategories((prev) =>
-				prev.map((c) => (c.id === id ? { ...c, isActive: true } : c)),
-			);
-			toast.success("Category activated!");
-		} catch (err: unknown) {
-			console.error(err);
-			toast.error(
-				err instanceof Error ? err.message : "Failed to activate category",
-			);
-		} finally {
-			setCategoryLoading(false);
-		}
-	};
+	const bounds = historyPageBounds(expenses.length);
+	const safeHistoryPage = bounds.clamp(historyPage);
+	const pageItems = expenses.slice(...bounds.slice(safeHistoryPage));
+	const dayByKey = new Map(
+		groupLogsByDay(expenses, (log) => log.amount).map(
+			(g) => [g.key, g] as const,
+		),
+	);
 
 	return (
 		<div className="space-y-6">
 			<h2 className="text-2xl font-bold tracking-tight">Log Expenses</h2>
-			<Card className="max-w-md">
-				<form onSubmit={handleSubmit}>
-					<CardHeader>
-						<CardTitle>{editingId ? "Edit Expense" : "New Expense"}</CardTitle>
-						<CardDescription>
-							Log a daily expense. This will be deducted from the expected cash.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="entryDate">Date</Label>
-							<Input
-								id="entryDate"
-								type="date"
-								value={entryDate}
-								onChange={(e) => setEntryDate(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="itemName">Item Name</Label>
-							<Input
-								id="itemName"
-								type="text"
-								value={itemName}
-								onChange={(e) => setItemName(e.target.value)}
-								placeholder="e.g., Paper Towels, Light Bulbs"
-								required
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="description">
-								Description (e.g., Cleaning supplies)
-							</Label>
-							<Input
-								id="description"
-								type="text"
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="category">Category</Label>
-							<select
-								id="category"
-								value={category}
-								onChange={(e) => setCategory(e.target.value)}
-								className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-								required
-							>
-								{categories.length > 0
-									? categories.map((cat) => (
-											<option key={cat.id} value={cat.name}>
-												{cat.name}
-											</option>
-										))
-									: EXPENSE_CATEGORY_FALLBACKS.map((cat) => (
-											<option key={cat} value={cat}>
-												{cat}
-											</option>
-										))}
-							</select>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="amount">Amount ($)</Label>
-							<Input
-								id="amount"
-								type="number"
-								step="0.01"
-								min="0.01"
-								value={amount}
-								onChange={(e) => setAmount(e.target.value)}
-								placeholder="Enter directly or compute from quantity × unit price"
-							/>
-						</div>
-						<div className="grid grid-cols-3 gap-2">
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<Card className="lg:col-span-1 h-fit">
+					<form onSubmit={handleSubmit}>
+						<CardHeader>
+							<CardTitle>
+								{editingId ? "Edit Expense" : "New Expense"}
+							</CardTitle>
+							<CardDescription>
+								Log a daily expense. This will be deducted from the expected
+								cash.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
 							<div className="space-y-2">
-								<Label htmlFor="quantity">Qty</Label>
+								<Label htmlFor="entryDate">Date</Label>
 								<Input
-									id="quantity"
-									type="number"
-									step="1"
-									min="1"
-									value={quantity}
-									onChange={(e) => {
-										setQuantity(e.target.value);
-										if (e.target.value && unitPrice) {
-											setAmount(
-												(
-													parseFloat(e.target.value) * parseFloat(unitPrice)
-												).toFixed(2),
-											);
-										}
-									}}
-									placeholder="Optional"
+									id="entryDate"
+									type="date"
+									value={entryDate}
+									onChange={(e) => setEntryDate(e.target.value)}
+									required
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="unitPrice">Unit Price ($)</Label>
+								<Label htmlFor="itemName">Item Name</Label>
 								<Input
-									id="unitPrice"
+									id="itemName"
+									type="text"
+									value={itemName}
+									onChange={(e) => setItemName(e.target.value)}
+									placeholder="e.g., Paper Towels, Light Bulbs"
+									required
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="description">
+									Description (e.g., Cleaning supplies)
+								</Label>
+								<Input
+									id="description"
+									type="text"
+									value={description}
+									onChange={(e) => setDescription(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="category">Category</Label>
+								<select
+									id="category"
+									value={category}
+									onChange={(e) => setCategory(e.target.value)}
+									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+									required
+								>
+									{categories.length > 0
+										? categories.map((cat) => (
+												<option key={cat.id} value={cat.name}>
+													{cat.name}
+												</option>
+											))
+										: EXPENSE_CATEGORY_FALLBACKS.map((cat) => (
+												<option key={cat} value={cat}>
+													{cat}
+												</option>
+											))}
+								</select>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="amount">Amount ($)</Label>
+								<Input
+									id="amount"
 									type="number"
 									step="0.01"
 									min="0.01"
-									value={unitPrice}
-									onChange={(e) => {
-										setUnitPrice(e.target.value);
-										if (quantity && e.target.value) {
-											setAmount(
-												(
-													parseFloat(quantity) * parseFloat(e.target.value)
-												).toFixed(2),
-											);
-										}
-									}}
-									placeholder="Optional"
+									value={amount}
+									onChange={(e) => setAmount(e.target.value)}
+									placeholder="Enter directly or compute from quantity × unit price"
 								/>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="unit">Unit</Label>
-								<Input
-									id="unit"
-									type="text"
-									value={unit}
-									onChange={(e) => setUnit(e.target.value)}
-									placeholder="e.g., hrs, gal"
-								/>
-							</div>
-						</div>
-						{editingId && (
-							<div className="space-y-2">
-								<Label htmlFor="editReason" className="text-amber-600">
-									Reason for Edit (Required)
-								</Label>
-								<Input
-									id="editReason"
-									type="text"
-									value={editReason}
-									onChange={(e) => setEditReason(e.target.value)}
-									required
-									placeholder="e.g., Typo in amount"
-								/>
-							</div>
-						)}
-					</CardContent>
-					<CardFooter className="flex gap-2">
-						<Button
-							type="submit"
-							className="flex-1"
-							disabled={
-								loading ||
-								!itemName ||
-								!description ||
-								(!amount && (!quantity || !unitPrice)) ||
-								(!!editingId && !editReason)
-							}
-						>
-							{loading ? (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							) : null}
-							{editingId ? "Update Expense" : "Log Expense"}
-						</Button>
-						{editingId && (
-							<Button type="button" variant="outline" onClick={cancelEdit}>
-								Cancel
-							</Button>
-						)}
-					</CardFooter>
-				</form>
-			</Card>
-
-			<Card className="max-w-2xl">
-				<CardHeader>
-					<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-						<div>
-							<CardTitle>Expenses</CardTitle>
-							<CardDescription>
-								{filterDateFrom === filterDateTo
-									? `Expenses for ${filterDateFrom}`
-									: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
-							</CardDescription>
-						</div>
-						<div className="flex items-center gap-2">
-							<div className="flex items-center gap-1">
-								<Label htmlFor="filterFrom" className="text-xs text-zinc-500">
-									From
-								</Label>
-								<Input
-									id="filterFrom"
-									type="date"
-									value={filterDateFrom}
-									onChange={(e) => setFilterDateFrom(e.target.value)}
-									className="h-8 w-[150px] text-xs"
-								/>
-							</div>
-							<div className="flex items-center gap-1">
-								<Label htmlFor="filterTo" className="text-xs text-zinc-500">
-									To
-								</Label>
-								<Input
-									id="filterTo"
-									type="date"
-									value={filterDateTo}
-									onChange={(e) => setFilterDateTo(e.target.value)}
-									className="h-8 w-[150px] text-xs"
-								/>
-							</div>
-						</div>
-					</div>
-				</CardHeader>
-				<CardContent>
-					<div className="space-y-3">
-						{expenses.length === 0 ? (
-							<div className="text-center text-zinc-500 py-8">
-								No expenses found for the selected date range.
-							</div>
-						) : (
-							expenses.map((expense) => (
-								<div
-									key={expense.id}
-									className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md bg-white gap-3"
-								>
-									<div>
-										<div className="font-medium">
-											{expense.item_name || expense.description}
-										</div>
-										<div className="text-sm text-zinc-500">
-											${expense.amount.toFixed(2)} &bull;{" "}
-											{expense.category || "Misc"}
-											{expense.quantity && expense.unit_price && (
-												<>
-													{" "}
-													&bull; {expense.quantity} × $
-													{expense.unit_price.toFixed(2)}
-													{expense.unit ? `/${expense.unit}` : ""}
-												</>
-											)}
-										</div>
-										{expense.item_name && expense.description && (
-											<div className="text-xs text-zinc-400">
-												{expense.description}
-											</div>
-										)}
-										<div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
-											{format(new Date(expense.date), "h:mm a")}
-											{expense.user_name && (
-												<>
-													&bull; <span>{expense.user_name}</span>
-												</>
-											)}
-											{expense.verified ? (
-												<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
-													Verified
-												</span>
-											) : (
-												<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm">
-													Unverified
-												</span>
-											)}
-										</div>
-									</div>
-
-									<div className="flex items-center gap-2 w-full sm:w-auto">
-										{!expense.verified &&
-											(user?.role === ROLES.MANAGER ||
-												user?.role === ROLES.ADMIN) && (
-												<Button
-													size="sm"
-													variant="outline"
-													className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-													onClick={() => handleVerify(expense.id)}
-												>
-													Verify
-												</Button>
-											)}
-										{(user?.role === ROLES.MANAGER ||
-											user?.role === ROLES.ADMIN) && (
-											<>
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => handleEdit(expense)}
-													disabled={!!editingId}
-												>
-													<Edit2 className="h-4 w-4 mr-1" /> Edit
-												</Button>
-												<Button
-													size="sm"
-													variant="ghost"
-													className="text-red-600 hover:text-red-700 hover:bg-red-50"
-													onClick={() => setDeletingId(expense.id)}
-													disabled={!!editingId}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											</>
-										)}
-									</div>
+							<div className="grid grid-cols-3 gap-2">
+								<div className="space-y-2">
+									<Label htmlFor="quantity">Qty</Label>
+									<Input
+										id="quantity"
+										type="number"
+										step="1"
+										min="1"
+										value={quantity}
+										onChange={(e) => {
+											setQuantity(e.target.value);
+											if (e.target.value && unitPrice) {
+												setAmount(
+													(
+														parseFloat(e.target.value) * parseFloat(unitPrice)
+													).toFixed(2),
+												);
+											}
+										}}
+										placeholder="Optional"
+									/>
 								</div>
-							))
-						)}
-					</div>
-				</CardContent>
-			</Card>
-
-			<Card className="max-w-2xl">
-				<CardHeader>
-					<CardTitle>Manage Categories</CardTitle>
-					<CardDescription>
-						Create, edit, or deactivate expense categories.
-					</CardDescription>
-				</CardHeader>
-				<CardContent className="space-y-4">
-					<form onSubmit={handleCreateCategory} className="flex gap-2">
-						<Input
-							type="text"
-							placeholder="New category name"
-							value={newCategoryName}
-							onChange={(e) => setNewCategoryName(e.target.value)}
-							disabled={categoryLoading}
-							className="flex-1"
-						/>
-						<Button
-							type="submit"
-							disabled={categoryLoading || !newCategoryName.trim()}
-						>
-							{categoryLoading ? (
-								<Loader2 className="h-4 w-4 animate-spin" />
-							) : (
-								"Add"
+								<div className="space-y-2">
+									<Label htmlFor="unitPrice">Unit Price ($)</Label>
+									<Input
+										id="unitPrice"
+										type="number"
+										step="0.01"
+										min="0.01"
+										value={unitPrice}
+										onChange={(e) => {
+											setUnitPrice(e.target.value);
+											if (quantity && e.target.value) {
+												setAmount(
+													(
+														parseFloat(quantity) * parseFloat(e.target.value)
+													).toFixed(2),
+												);
+											}
+										}}
+										placeholder="Optional"
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="unit">Unit</Label>
+									<Input
+										id="unit"
+										type="text"
+										value={unit}
+										onChange={(e) => setUnit(e.target.value)}
+										placeholder="e.g., hrs, gal"
+									/>
+								</div>
+							</div>
+							{editingId && (
+								<div className="space-y-2">
+									<Label htmlFor="editReason" className="text-amber-600">
+										Reason for Edit (Required)
+									</Label>
+									<Input
+										id="editReason"
+										type="text"
+										value={editReason}
+										onChange={(e) => setEditReason(e.target.value)}
+										required
+										placeholder="e.g., Typo in amount"
+									/>
+								</div>
 							)}
-						</Button>
+						</CardContent>
+						<CardFooter className="flex gap-2">
+							<Button
+								type="submit"
+								className="flex-1"
+								disabled={
+									loading ||
+									!itemName ||
+									!description ||
+									(!amount && (!quantity || !unitPrice)) ||
+									(!!editingId && !editReason)
+								}
+							>
+								{loading ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : null}
+								{editingId ? "Update Expense" : "Log Expense"}
+							</Button>
+							{editingId && (
+								<Button type="button" variant="outline" onClick={cancelEdit}>
+									Cancel
+								</Button>
+							)}
+						</CardFooter>
 					</form>
+				</Card>
 
-					<div className="space-y-2">
-						{allCategories.length === 0 ? (
-							<div className="text-center text-zinc-500 py-4">
-								No categories yet.
+				<Card className="lg:col-span-2">
+					<CardHeader>
+						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+							<div>
+								<CardTitle>Expenses</CardTitle>
+								<CardDescription>
+									{filterDateFrom === filterDateTo
+										? `Expenses for ${filterDateFrom}`
+										: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
+								</CardDescription>
 							</div>
-						) : (
-							allCategories.map((cat) => (
-								<div
-									key={cat.id}
-									className="flex items-center gap-2 p-2 border rounded-md bg-white"
-								>
-									{editingCategoryId === cat.id ? (
-										<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
-											<Input
-												type="text"
-												value={editingCategoryName}
-												onChange={(e) => setEditingCategoryName(e.target.value)}
-												className="flex-1 h-8 text-sm"
-												placeholder="Category name"
-											/>
-											<Input
-												type="text"
-												value={categoryEditReason}
-												onChange={(e) => setCategoryEditReason(e.target.value)}
-												className="flex-1 h-8 text-sm"
-												placeholder="Reason for change"
-											/>
-											<div className="flex gap-1">
-												<Button
-													size="sm"
-													onClick={() => handleUpdateCategory(cat.id)}
-													disabled={
-														categoryLoading ||
-														!editingCategoryName.trim() ||
-														!categoryEditReason.trim()
-													}
-												>
-													Save
-												</Button>
-												<Button
-													size="sm"
-													variant="ghost"
-													onClick={() => {
-														setEditingCategoryId(null);
-														setEditingCategoryName("");
-														setCategoryEditReason("");
-													}}
-												>
-													Cancel
-												</Button>
-											</div>
-										</div>
-									) : (
-										<>
-											<span className="flex-1 text-sm">{cat.name}</span>
-											{cat.created_at && (
-												<span className="text-xs text-zinc-400">
-													{format(new Date(cat.created_at), "MMM d, yyyy")}
-												</span>
-											)}
-											<span
-												className={`text-xs px-1.5 py-0.5 rounded-sm ${
-													cat.isActive
-														? "text-emerald-600 bg-emerald-50"
-														: "text-zinc-500 bg-zinc-100"
-												}`}
-											>
-												{cat.isActive ? "Active" : "Inactive"}
-											</span>
-											{cat.isActive ? (
-												<>
-													<Button
-														size="sm"
-														variant="ghost"
-														onClick={() => {
-															setEditingCategoryId(cat.id);
-															setEditingCategoryName(cat.name);
-															setCategoryEditReason("");
-														}}
-														disabled={categoryLoading}
-													>
-														<Edit2 className="h-4 w-4" />
-													</Button>
-													<Button
-														size="sm"
-														variant="ghost"
-														className="text-red-600 hover:text-red-700 hover:bg-red-50"
-														onClick={() => handleDeactivateCategory(cat.id)}
-														disabled={categoryLoading}
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</>
-											) : (
-												<Button
-													size="sm"
-													variant="ghost"
-													className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-													onClick={() => handleActivateCategory(cat.id)}
-													disabled={categoryLoading}
-												>
-													<RotateCcw className="h-4 w-4" />
-												</Button>
-											)}
-										</>
-									)}
+							<div className="flex items-center gap-2">
+								<div className="flex items-center gap-1">
+									<Label htmlFor="filterFrom" className="text-xs text-zinc-500">
+										From
+									</Label>
+									<Input
+										id="filterFrom"
+										type="date"
+										value={filterDateFrom}
+										onChange={(e) => setFilterDateFrom(e.target.value)}
+										className="h-8 w-[150px] text-xs"
+									/>
 								</div>
-							))
+								<div className="flex items-center gap-1">
+									<Label htmlFor="filterTo" className="text-xs text-zinc-500">
+										To
+									</Label>
+									<Input
+										id="filterTo"
+										type="date"
+										value={filterDateTo}
+										onChange={(e) => setFilterDateTo(e.target.value)}
+										className="h-8 w-[150px] text-xs"
+									/>
+								</div>
+							</div>
+						</div>
+					</CardHeader>
+					<CardContent>
+						{expenses.length > 0 && (
+							<div
+								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"
+								data-testid="expenses-range-summary"
+							>
+								<span className="text-sm font-medium text-zinc-600">
+									{expenses.length}{" "}
+									{expenses.length === 1 ? "expense" : "expenses"}
+								</span>
+								<span className="text-base font-semibold text-zinc-900">
+									Total $
+									{expenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
+								</span>
+							</div>
 						)}
-					</div>
-				</CardContent>
-			</Card>
+						<div>
+							{expenses.length === 0 ? (
+								<div className="text-center text-zinc-500 py-8">
+									No expenses found for the selected date range.
+								</div>
+							) : (
+								<div className="rounded-md border bg-white divide-y">
+									{pageItems.map((expense, idx) => {
+										const d = new Date(expense.date);
+										const key = format(d, "yyyy-MM-dd");
+										const prevKey =
+											idx > 0
+												? format(
+														new Date(pageItems[idx - 1].date),
+														"yyyy-MM-dd",
+													)
+												: null;
+										const group = dayByKey.get(key);
+										return (
+											<div key={expense.id}>
+												{key !== prevKey && group && (
+													<div className="flex items-center px-3 py-1 bg-zinc-50 text-xs font-medium text-zinc-600 border-b">
+														<span className="font-medium">{group.label}</span>
+													</div>
+												)}
+												<div className="flex items-center gap-2 px-3 py-1.5 text-sm flex-wrap">
+													<span className="font-medium shrink-0">
+														{expense.item_name || expense.description}
+													</span>
+													<span className="text-zinc-500">
+														${expense.amount.toFixed(2)} &bull;{" "}
+														{expense.category || "Misc"}
+														{expense.quantity && expense.unit_price && (
+															<>
+																{" "}
+																&bull; {expense.quantity} × $
+																{expense.unit_price.toFixed(2)}
+																{expense.unit ? `/${expense.unit}` : ""}
+															</>
+														)}
+													</span>
+													{expense.item_name && expense.description && (
+														<span className="text-xs text-zinc-400 truncate max-w-[12rem] hidden md:inline">
+															{expense.description}
+														</span>
+													)}
+													<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+														{format(d, "h:mm a")}
+													</span>
+													{expense.user_name && (
+														<span className="text-zinc-500 truncate max-w-[10rem]">
+															{expense.user_name}
+														</span>
+													)}
+													{expense.verified ? (
+														<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm text-xs">
+															Verified
+														</span>
+													) : (
+														<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm text-xs">
+															Unverified
+														</span>
+													)}
+													{(user?.role === ROLES.MANAGER ||
+														user?.role === ROLES.ADMIN) && (
+														<div className="ml-auto flex items-center gap-2">
+															{!expense.verified && (
+																<Button
+																	size="sm"
+																	variant="outline"
+																	className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+																	onClick={() => handleVerify(expense.id)}
+																>
+																	Verify
+																</Button>
+															)}
+															<Button
+																size="sm"
+																variant="outline"
+																onClick={() => handleEdit(expense)}
+																disabled={!!editingId}
+															>
+																<Edit2 className="h-4 w-4 mr-1" /> Edit
+															</Button>
+															<Button
+																size="sm"
+																variant="ghost"
+																className="text-red-600 hover:text-red-700 hover:bg-red-50"
+																onClick={() => setDeletingId(expense.id)}
+																disabled={!!editingId}
+															>
+																<Trash2 className="h-4 w-4" />
+															</Button>
+														</div>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)}
+							{expenses.length > HISTORY_PAGE_SIZE && (
+								<div className="flex items-center justify-between mt-3 text-sm">
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+										disabled={safeHistoryPage === 0}
+									>
+										Previous
+									</Button>
+									<span className="text-zinc-500">
+										Page {safeHistoryPage + 1} of {bounds.pageCount}
+									</span>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() =>
+											setHistoryPage((p) =>
+												Math.min(bounds.pageCount - 1, p + 1),
+											)
+										}
+										disabled={safeHistoryPage >= bounds.pageCount - 1}
+									>
+										Next
+									</Button>
+								</div>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
 
 			<ConfirmDialog
 				open={!!deletingId}

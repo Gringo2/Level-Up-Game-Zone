@@ -172,7 +172,7 @@ describe("Layout", () => {
 		expect(screen.getByText("Keno")).toBeDefined();
 		expect(screen.getByText("Credits (IOUs)")).toBeDefined();
 		expect(screen.queryByText("Activity Log")).toBeNull();
-		expect(screen.queryByText("Admin")).toBeNull();
+		expect(screen.getByText("Admin")).toBeDefined();
 	});
 
 	it("calls signOut when Sign Out button is clicked", async () => {

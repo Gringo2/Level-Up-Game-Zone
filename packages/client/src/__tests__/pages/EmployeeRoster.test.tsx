@@ -129,56 +129,6 @@ describe("EmployeeRoster", () => {
 		});
 	});
 
-	it("adds a new employee via POST", async () => {
-		const newEmp = {
-			id: "e3",
-			name: "Charlie",
-			position: "Floor",
-			base_salary: 400,
-			hired_date: "2026-01-01",
-			break_day: null,
-			isActive: true,
-			created_at: "2026-01-01T00:00:00.000Z",
-		};
-
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(employees));
-		vi.stubGlobal("fetch", fetchMock);
-
-		render(<EmployeeRoster />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Alice")).toBeDefined();
-		});
-
-		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
-			target: { value: "Charlie" },
-		});
-		fireEvent.change(
-			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
-			{
-				target: { value: "Floor" },
-			},
-		);
-		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
-			target: { value: "400" },
-		});
-
-		const fetchWithPost = vi.fn().mockResolvedValue(jsonResponse(newEmp));
-		vi.stubGlobal("fetch", fetchWithPost);
-
-		fireEvent.click(screen.getByText("Add Employee"));
-
-		await waitFor(() => {
-			expect(fetchWithPost).toHaveBeenCalledWith(
-				expect.stringContaining("/api/employees"),
-				expect.objectContaining({ method: "POST" }),
-			);
-		});
-		expect(toast.success).toHaveBeenCalledWith(
-			"Employee Charlie added to roster!",
-		);
-	});
-
 	it("edits an employee inline via PUT", async () => {
 		const fetchMock = vi
 			.fn()
@@ -265,28 +215,6 @@ describe("EmployeeRoster", () => {
 		expect(toast.success).toHaveBeenCalledWith("Alice marked as Inactive");
 	});
 
-	it("hides add form for staff role", async () => {
-		vi.mocked(useAuth).mockReturnValue({
-			user: {
-				uid: "u1",
-				displayName: "Staff",
-				role: "staff" as const,
-				email: "s@test.com",
-			},
-			loading: false,
-		});
-
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
-
-		render(<EmployeeRoster />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Alice")).toBeDefined();
-		});
-
-		expect(screen.queryByText("Add Store Employee")).toBeNull();
-	});
-
 	it("hides edit button for staff role", async () => {
 		vi.mocked(useAuth).mockReturnValue({
 			user: {
@@ -339,116 +267,6 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 			);
 		});
 		expect(fetchMock).not.toHaveBeenCalled();
-	});
-
-	it("skips the POST when salary is missing", async () => {
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(employees));
-		vi.stubGlobal("fetch", fetchMock);
-
-		render(<EmployeeRoster />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Alice")).toBeDefined();
-		});
-
-		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
-			target: { value: "Charlie" },
-		});
-		fireEvent.change(
-			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
-			{
-				target: { value: "Floor" },
-			},
-		);
-		fireEvent.click(screen.getByText("Add Employee"));
-
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-	});
-
-	it("toasts add error when the POST fails", async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
-		vi.stubGlobal("fetch", fetchMock);
-
-		render(<EmployeeRoster />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Alice")).toBeDefined();
-		});
-
-		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
-			target: { value: "Charlie" },
-		});
-		fireEvent.change(
-			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
-			{
-				target: { value: "Floor" },
-			},
-		);
-		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
-			target: { value: "400" },
-		});
-		fireEvent.click(screen.getByText("Add Employee"));
-
-		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith("boom");
-		});
-	});
-
-	it("adds an employee with a custom hire date and break day", async () => {
-		const newEmp = {
-			id: "e9",
-			name: "Dana",
-			position: "Cashier",
-			base_salary: 300,
-			hired_date: "2023-05-05",
-			break_day: "Wednesday",
-			isActive: true,
-			created_at: "2023-05-05T00:00:00.000Z",
-		};
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse(newEmp));
-		vi.stubGlobal("fetch", fetchMock);
-
-		render(<EmployeeRoster />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Alice")).toBeDefined();
-		});
-
-		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
-			target: { value: "Dana" },
-		});
-		fireEvent.change(
-			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
-			{
-				target: { value: "Cashier" },
-			},
-		);
-		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
-			target: { value: "300" },
-		});
-		fireEvent.change(screen.getByLabelText("Date of Hiring"), {
-			target: { value: "2023-05-05" },
-		});
-		fireEvent.change(screen.getByLabelText("Break Day (Rest Day)"), {
-			target: { value: "Wednesday" },
-		});
-		fireEvent.click(screen.getByText("Add Employee"));
-
-		await waitFor(() => {
-			expect(fetchMock).toHaveBeenCalledWith(
-				expect.stringContaining("/api/employees"),
-				expect.objectContaining({ method: "POST" }),
-			);
-		});
-		expect(toast.success).toHaveBeenCalledWith(
-			"Employee Dana added to roster!",
-		);
 	});
 
 	it("toasts edit error when the save PUT fails", async () => {
@@ -563,33 +381,10 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 		expect(toast.success).toHaveBeenCalledWith("Employee record updated!");
 	});
 
-	it("toasts add error when no token is available", async () => {
-		mockGetIdToken.mockResolvedValue(null);
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse(employees));
-		vi.stubGlobal("fetch", fetchMock);
-
+	it("no longer hosts the hiring form (moved to Admin)", async () => {
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
 		render(<EmployeeRoster />);
-
-		await waitFor(() => {
-			expect(screen.getByText("Add Store Employee")).toBeDefined();
-		});
-
-		fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
-			target: { value: "Charlie" },
-		});
-		fireEvent.change(
-			screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
-			{
-				target: { value: "Floor" },
-			},
-		);
-		fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
-			target: { value: "400" },
-		});
-		fireEvent.click(screen.getByText("Add Employee"));
-
-		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith("Not authenticated");
-		});
+		await screen.findByText("Alice");
+		expect(screen.queryByText("Add Store Employee")).not.toBeInTheDocument();
 	});
 });

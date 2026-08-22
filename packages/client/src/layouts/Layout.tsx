@@ -87,7 +87,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			icon: UserCog,
 			roles: [ROLES.ADMIN],
 		},
-		{ path: "/admin", label: "Admin", icon: Settings, roles: [ROLES.ADMIN] },
+		{
+			path: "/admin",
+			label: "Admin",
+			icon: Settings,
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
+		},
 	];
 
 	return (

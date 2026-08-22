@@ -30,3 +30,6 @@ vitest **453/453 / 34 files** | tsc=0 | knip=0 | depcruise ✔ (148 modules, 442
 2. Formatting drift on history.ts / GameSales.test.tsx from scripted edits → biome --write, rescan clean.
 
 **Post-fix certification:** vitest **453/453 / 34 files** | tsc=0 | knip=0 | depcruise ✔ (148 modules, 442 deps) | Biome touched=0.
+
+## M-72 Follow-up (2026-08-22) — Expenses Parity
+Same treatment on Expenses via shared lib untouched. Banner total intentionally neutral (outflow). Pre-existing gap registered TD-053 (Verify lacks pending guard). Suite 457/457.
