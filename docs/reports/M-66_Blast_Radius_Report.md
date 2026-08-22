@@ -37,3 +37,15 @@ Date: 2026-08-21 | Verified by direct probe; no assumptions.
    - Probe nuance: issue ordering surfaces base-parse issues first (e.g., short editReason) — rejection unconditional regardless.
 
 Final state: **429/429 tests / 34 files** | tsc=0 | knip=0 | depcruise ✔ (147 modules, 435 deps) | Biome src=0.
+
+## Production Hotfix (2026-08-22): keno edits failed — delete sentinels in audit set()
+
+**Symptom:** editing any keno log → toast "Failed to save keno log"; server logs show 500.
+
+**RCA (evidence-first, Rule 27):** residual-resolution converge-on-edit built `newValues.sales/payouts = FieldValue.delete()` (legal in `transaction.update`) but then spread `newValues` into the audit payload: `set(auditRef, { new_value: { ...oldDoc, ...newValues } })`. Probe against installed SDK (`@google-cloud/firestore`, local validation path): plain `set()` **rejects** delete sentinels — "must only be used in update() or set() with {merge:true}". Result: every edit threw inside the transaction → rollback → 500; `safeErrorMessage` masked it; client showed generic catch message. Affected ALL edits (old and net-only rows alike). M-66 tests missed it: mocked transactions accept any payload (no sentinel-legality validation).
+
+**Fix (minimal, at verified root cause):** audit `new_value` now records the post-edit converged shape — shallow copy of `oldDoc` minus `sales`/`payouts`, plus applied `net_profit` when present. `update()` sentinels unchanged; originals remain preserved in `old_value`.
+
+**Red-Green:** +1 audit-capture test asserting (a) old_value preserves legacy fields, (b) new_value equals `{id, net_profit}` converged shape, (c) deep sentinel scan (`instanceof FieldValue`) finds none. Red pre-fix / Green post-fix.
+
+**Certification:** 429 → 436 / 34 files | tsc=0 | knip=0 | depcruise ✔ (147 modules) | Biome=0. Committed separately from M-67.
