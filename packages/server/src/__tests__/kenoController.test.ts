@@ -375,6 +375,74 @@ describe("Keno Integration Tests", () => {
 			});
 		});
 
+		it("audit trail records the converged shape without delete sentinels (Firestore set() legality)", async () => {
+			let capturedAudit: Record<string, unknown> | undefined;
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({
+						id: path === "audit_logs" ? "audit-1" : "keno-123",
+						get: vi.fn().mockResolvedValue({
+							id: "keno-123",
+							data: () => ({ net_profit: 300 }),
+						}),
+					}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "keno-123",
+						data: () => ({ sales: 200, payouts: 50, net_profit: 150 }),
+					}),
+					set: vi.fn().mockImplementation((_ref: unknown, values: unknown) => {
+						capturedAudit = values as Record<string, unknown>;
+					}),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ net_profit: 300, editReason: "Net restated" });
+
+			expect(response.status).toBe(200);
+			const audit = capturedAudit as {
+				old_value: Record<string, unknown>;
+				new_value: Record<string, unknown>;
+			};
+			const hasSentinel = (value: unknown): boolean => {
+				if (value instanceof FieldValue) return true;
+				if (Array.isArray(value)) return value.some(hasSentinel);
+				if (value && typeof value === "object")
+					return Object.values(value).some(hasSentinel);
+				return false;
+			};
+			expect(audit.old_value).toMatchObject({
+				sales: 200,
+				payouts: 50,
+				net_profit: 150,
+			});
+			expect(audit.new_value).toEqual({ id: "keno-123", net_profit: 300 });
+			expect(hasSentinel(audit)).toBe(false);
+		});
+
 		it("should return 400 when updating keno without editReason (Zod)", async () => {
 			const response = await request(app)
 				.put("/api/keno/keno-123")

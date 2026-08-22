@@ -102,12 +102,21 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 
 			transaction.update(docRef, newValues);
 
+			// Audit new_value must be Firestore-valid: delete sentinels are illegal in set(),
+			// so record the post-edit converged shape instead of raw sentinel-bearing values.
+			const newValueForAudit: Record<string, unknown> = { ...oldDoc };
+			delete newValueForAudit.sales;
+			delete newValueForAudit.payouts;
+			if (net_profit !== undefined) {
+				newValueForAudit.net_profit = parseFloat(net_profit);
+			}
+
 			transaction.set(auditRef, {
 				action: "UPDATE",
 				table_affected: "keno_logs",
 				record_id: id,
 				old_value: oldDoc,
-				new_value: { ...oldDoc, ...newValues },
+				new_value: newValueForAudit,
 				reason_for_change: editReason,
 				user_id: user.uid,
 				timestamp: new Date().toISOString(),
