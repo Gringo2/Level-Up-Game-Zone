@@ -38,6 +38,13 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 | TD-038 | **Employee and User are disconnected entities** — No `employee.user_uid` or `user.employee_id` foreign key. A person who works at the store (Employee: name, salary, position) and a person who logs into the system (User: email, role, auth UID) are two unrelated records. Cannot answer "which system user is which store employee." | HIGH — architectural gap | High | Architecture | Shift decision |
 | TD-040 | **Shifts reference users, not employees** — `shift.manager_id` stores `user.uid` (Firebase Auth UID). No way to connect a shift to an employee's salary information programmatically. Payroll cannot use shift data. (`shiftsController.ts:60`) | MEDIUM — payroll disconnect | Medium | Backend | Shift decision |
 
+| TD-047 | **From > To range silently yields empty list** — no cross-field guard, inline hint, or reset-to-today affordance on either entry page (`Keno.tsx` / `GameSales.tsx` date-range cards). Users get a blank history with no explanation. (Gap report B3) | LOW-MED — usability trap | Medium | Frontend | PO decision |
+| TD-048 | **No list-fetch loading feedback** — history Apply/initial/visibility refetch shows zero indication; `Loader2` exists only on form submit; Apply stays clickable during flight. (Gap report B4) | LOW-MED — perceived hang | Medium | Frontend | PO decision |
+| TD-049 | **Create/edit prepends row without range re-check** — backdated entry appears under a non-matching date filter until next refetch (documented in M-67 review). (Gap report C3) | LOW — transient inconsistency | Low | Frontend | PO decision |
+| TD-050 | **Icon-only Delete buttons lack aria-labels** — Trash2 ghost buttons announce as unnamed to screen readers on both pages; fix should be a repo-wide icon-button audit, not just these pages. (Gap report D1/P5) | MEDIUM — a11y | Medium | Frontend | PO decision |
+| TD-051 | **GameSales has no verification workflow** — `GameSalesLog` carries no `verified` field, no verify endpoint, no badge/UI, while Keno has the full manager-verify flow (`shared/src/index.ts:43-53` vs `:55-64`). Asymmetric trust model: sales entries can never be verified. Contract-level fix (shared type + server + client). (Gap report F1) | MEDIUM — trust-model asymmetry | High | Full-stack | PO decision |
+| TD-052 | **Sale records do not persist rate unit_type** — GS rows hardcode "{qty} units @ ${rate}" though rates carry Hours/Tables; cannot display real units without persisting at creation (+ legacy-row fallback). (Gap report F2) | LOW-MED — presentation accuracy | Medium | Backend+Frontend | PO decision |
+
 ## Resolved Debt
 
 | ID | Resolution Details | Date |

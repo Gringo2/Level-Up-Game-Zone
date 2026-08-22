@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { getShopEndOfDay, getShopStartOfDay } from "../../lib/dateUtils.js";
+import { groupLogsByDay, HISTORY_PAGE_SIZE } from "../../lib/history.js";
 import { Keno, parseNetAmountInput } from "../../pages/Keno.js";
 
 afterEach(cleanup);
@@ -99,7 +100,7 @@ describe("Keno", () => {
 		render(<Keno />);
 		expect(await screen.findByText("Net: $60.00")).toBeInTheDocument();
 		expect(
-			screen.getByText("Sales: $100.00 | Payouts: $40.00"),
+			screen.getByText("Sales $100.00 · Payouts $40.00"),
 		).toBeInTheDocument();
 		expect(screen.getByText("Unverified")).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Verify" })).toBeInTheDocument();
@@ -173,7 +174,7 @@ describe("Keno", () => {
 		expect(parseNetAmountInput("0.01")).toBe(0.01);
 	});
 
-	it("shows dated rows and a period summary for the fetched range", async () => {
+	it("shows day-grouped headers and period summary for the fetched range", async () => {
 		mockFetch.mockResolvedValue(jsonResponse([kenoLog]));
 		render(<Keno />);
 		await screen.findByText("Net: $60.00");
@@ -181,7 +182,8 @@ describe("Keno", () => {
 		const summary = screen.getByTestId("keno-range-summary");
 		expect(summary).toHaveTextContent("1 entry");
 		expect(summary).toHaveTextContent("Net $60.00");
-		expect(screen.getByText(/,\s*\d{1,2}:\d{2}\s*[AP]M/i)).toBeInTheDocument();
+		const banner = screen.getByTestId("keno-range-summary");
+		expect(banner).toHaveTextContent("Net $60.00");
 	});
 
 	it("disables row actions while a verification request is in flight", async () => {
@@ -232,10 +234,10 @@ describe("Keno", () => {
 		render(<Keno />);
 		expect(await screen.findByText("Net: $60.00")).toBeInTheDocument();
 		expect(
-			screen.getByText("Sales: $100.00 | Payouts: $40.00"),
+			screen.getByText("Sales $100.00 · Payouts $40.00"),
 		).toBeInTheDocument();
 		expect(await screen.findByText("Net: $75.00")).toBeInTheDocument();
-		expect(screen.queryByText(/Sales: \$75/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/Sales \$75/)).not.toBeInTheDocument();
 		expect(screen.queryByText(/Payouts: \$75/)).not.toBeInTheDocument();
 		expect(await screen.findByText("Net: $10.00")).toBeInTheDocument();
 	});
@@ -500,5 +502,82 @@ describe("Keno", () => {
 		});
 
 		expect(screen.getByLabelText("Date")).toHaveValue("2025-06-01");
+	});
+
+	describe("day grouping + pagination (M-70)", () => {
+		const day1 = new Date("2026-08-21T18:42:00").toISOString(); // Fri
+		const day2 = new Date("2026-08-20T09:15:00").toISOString(); // Thu
+		const sixLogs = [
+			{ ...kenoLog, id: "k1", date: day1, net_profit: 10 },
+			{ ...kenoLog, id: "k2", date: day1, net_profit: -4, verified: false },
+			{ ...kenoLog, id: "k3", date: day1, net_profit: 6 },
+			{ ...kenoLog, id: "k4", date: day1, net_profit: 1 },
+			{ ...kenoLog, id: "k5", date: day1, net_profit: 2 },
+			{ ...kenoLog, id: "k6", date: day2, net_profit: 50 },
+		];
+
+		it("groups logs by calendar day preserving order with weekday labels and subtotals", () => {
+			const groups = groupLogsByDay(sixLogs, (log) => log.net_profit);
+			expect(groups).toHaveLength(2);
+			expect(groups[0].label).toMatch(/Fri, Aug 21/);
+			expect(groups[0].count).toBe(5);
+			expect(groups[0].net).toBe(15);
+			expect(groups[1].label).toMatch(/Thu, Aug 20/);
+			expect(groups[1].count).toBe(1);
+			expect(groups[1].net).toBe(50);
+		});
+
+		it("returns empty groups for empty input", () => {
+			expect(groupLogsByDay([], (log) => log.net_profit)).toEqual([]);
+		});
+
+		it("shows pager only beyond page size and navigates with bounds", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixLogs)),
+			);
+			render(<Keno />);
+			expect(sixLogs.length).toBeGreaterThan(HISTORY_PAGE_SIZE);
+			expect(await screen.findByText("Net: $10.00")).toBeInTheDocument();
+			expect(screen.queryByText("Net: $50.00")).not.toBeInTheDocument();
+			expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+			const prev = screen.getByRole("button", { name: "Previous" });
+			const next = screen.getByRole("button", { name: "Next" });
+			expect(prev).toBeDisabled();
+
+			fireEvent.click(next);
+			expect(await screen.findByText("Net: $50.00")).toBeInTheDocument();
+			expect(screen.queryByText("Net: $10.00")).not.toBeInTheDocument();
+			expect(next).toBeDisabled();
+			expect(prev).toBeEnabled();
+
+			fireEvent.click(prev);
+			expect(await screen.findByText("Net: $10.00")).toBeInTheDocument();
+		});
+
+		it("renders day headers with weekday labels and no per-day totals", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixLogs)),
+			);
+			render(<Keno />);
+			const header = await screen.findByText(/Fri, Aug 21/);
+			expect(header).toBeInTheDocument();
+			expect(
+				screen.queryByTestId(/keno-day-subtotal-/),
+			).not.toBeInTheDocument();
+		});
+
+		it("resets to page 1 when the range is refetched", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixLogs)),
+			);
+			render(<Keno />);
+			await screen.findByText("Page 1 of 2");
+			fireEvent.click(screen.getByRole("button", { name: "Next" }));
+			expect(await screen.findByText("Net: $50.00")).toBeInTheDocument();
+
+			fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+			expect(await screen.findByText("Page 1 of 2")).toBeInTheDocument();
+			expect(screen.getByText("Net: $10.00")).toBeInTheDocument();
+		});
 	});
 });

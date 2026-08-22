@@ -20,6 +20,11 @@ import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+import {
+	groupLogsByDay,
+	HISTORY_PAGE_SIZE,
+	historyPageBounds,
+} from "../lib/history";
 
 export function GameSales() {
 	const { user } = useAuth();
@@ -35,6 +40,7 @@ export function GameSales() {
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [deletePending, setDeletePending] = useState(false);
+	const [historyPage, setHistoryPage] = useState(0);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [loadingDefaults, setLoadingDefaults] = useState(false);
@@ -96,6 +102,7 @@ export function GameSales() {
 					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 				),
 			);
+			setHistoryPage(0);
 			setLoadingRates(false);
 		} catch (err: unknown) {
 			console.error(err);
@@ -245,6 +252,15 @@ export function GameSales() {
 			setLoading(false);
 		}
 	};
+
+	const bounds = historyPageBounds(logs.length);
+	const safeHistoryPage = bounds.clamp(historyPage);
+	const pageItems = logs.slice(...bounds.slice(safeHistoryPage));
+	const dayByKey = new Map(
+		groupLogsByDay(logs, (log) => log.calculated_total).map(
+			(g) => [g.key, g] as const,
+		),
+	);
 
 	return (
 		<div className="space-y-6">
@@ -468,17 +484,23 @@ export function GameSales() {
 						</div>
 						{logs.length > 0 && (
 							<div
-								className="text-sm text-zinc-500 mb-4"
+								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"
 								data-testid="sales-range-summary"
 							>
-								{logs.length} {logs.length === 1 ? "sale" : "sales"} &middot;
-								Total $
-								{logs
-									.reduce((sum, l) => sum + l.calculated_total, 0)
-									.toFixed(2)}
+								<span className="text-sm font-medium text-zinc-600">
+									{logs.length} {logs.length === 1 ? "sale" : "sales"}
+								</span>
+								<span
+									className={`text-base font-semibold ${logs.reduce((s, l) => s + l.calculated_total, 0) < 0 ? "text-red-500" : "text-emerald-600"}`}
+								>
+									Total $
+									{logs
+										.reduce((sum, l) => sum + l.calculated_total, 0)
+										.toFixed(2)}
+								</span>
 							</div>
 						)}
-						<div className="space-y-3">
+						<div>
 							{logs.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
 									{rangeStart === todayStr && rangeEnd === todayStr
@@ -486,52 +508,100 @@ export function GameSales() {
 										: "No game sales logged in this period."}
 								</div>
 							) : (
-								logs.map((log) => (
-									<div
-										key={log.id}
-										className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md bg-white gap-3"
+								<div className="rounded-md border bg-white divide-y">
+									{pageItems.map((log, idx) => {
+										const d = new Date(log.date);
+										const key = format(d, "yyyy-MM-dd");
+										const prevKey =
+											idx > 0
+												? format(
+														new Date(pageItems[idx - 1].date),
+														"yyyy-MM-dd",
+													)
+												: null;
+										const group = dayByKey.get(key);
+										return (
+											<div key={log.id}>
+												{key !== prevKey && group && (
+													<div className="flex items-center px-3 py-1 bg-zinc-50 text-xs font-medium text-zinc-600 border-b">
+														<span className="font-medium">{group.label}</span>
+													</div>
+												)}
+												<div className="flex items-center gap-2 px-3 py-1.5 text-sm flex-wrap">
+													<span className="font-medium shrink-0">
+														{log.game_name}
+													</span>
+													<span className="text-zinc-500">
+														{log.quantity_sold} units @ $
+														{log.rate_applied.toFixed(2)} ={" "}
+														<span className="font-semibold text-zinc-900">
+															${log.calculated_total.toFixed(2)}
+														</span>
+													</span>
+													<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+														{format(d, "h:mm a")}
+													</span>
+													{log.user_name && (
+														<span className="text-zinc-500 truncate max-w-[10rem]">
+															{log.user_name}
+														</span>
+													)}
+													{(user?.role === ROLES.MANAGER ||
+														user?.role === ROLES.ADMIN) && (
+														<div className="ml-auto flex items-center gap-2">
+															<Button
+																size="sm"
+																variant="outline"
+																onClick={() => handleEdit(log)}
+																disabled={!!editingId || deletePending}
+															>
+																<Edit2 className="h-4 w-4 mr-1" /> Edit
+															</Button>
+															<Button
+																size="sm"
+																variant="ghost"
+																className="text-red-600 hover:text-red-700 hover:bg-red-50"
+																onClick={() => setDeletingId(log.id)}
+																disabled={!!editingId || deletePending}
+															>
+																<Trash2 className="h-4 w-4" />
+															</Button>
+														</div>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)}
+							{logs.length > HISTORY_PAGE_SIZE && (
+								<div className="flex items-center justify-between mt-3 text-sm">
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+										disabled={safeHistoryPage === 0}
 									>
-										<div>
-											<div className="font-medium">{log.game_name}</div>
-											<div className="text-sm text-zinc-500">
-												{log.quantity_sold} units @ $
-												{log.rate_applied.toFixed(2)} ={" "}
-												<span className="font-semibold text-zinc-900">
-													${log.calculated_total.toFixed(2)}
-												</span>
-											</div>
-											<div className="text-xs text-zinc-400 mt-1">
-												{format(new Date(log.date), "MMM d, h:mm a")}
-												{log.user_name && <> &bull; {log.user_name}</>}
-											</div>
-										</div>
-
-										<div className="flex items-center gap-2 w-full sm:w-auto">
-											{(user?.role === ROLES.MANAGER ||
-												user?.role === ROLES.ADMIN) && (
-												<>
-													<Button
-														size="sm"
-														variant="outline"
-														onClick={() => handleEdit(log)}
-														disabled={!!editingId || deletePending}
-													>
-														<Edit2 className="h-4 w-4 mr-1" /> Edit
-													</Button>
-													<Button
-														size="sm"
-														variant="ghost"
-														className="text-red-600 hover:text-red-700 hover:bg-red-50"
-														onClick={() => setDeletingId(log.id)}
-														disabled={!!editingId || deletePending}
-													>
-														<Trash2 className="h-4 w-4" />
-													</Button>
-												</>
-											)}
-										</div>
-									</div>
-								))
+										Previous
+									</Button>
+									<span className="text-zinc-500">
+										Page {safeHistoryPage + 1} of {bounds.pageCount}
+									</span>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() =>
+											setHistoryPage((p) =>
+												Math.min(bounds.pageCount - 1, p + 1),
+											)
+										}
+										disabled={safeHistoryPage >= bounds.pageCount - 1}
+									>
+										Next
+									</Button>
+								</div>
 							)}
 						</div>
 					</CardContent>

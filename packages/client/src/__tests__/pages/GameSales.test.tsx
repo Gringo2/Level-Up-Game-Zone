@@ -425,4 +425,80 @@ describe("GameSales", () => {
 			expect(mockFetch.mock.calls.length).toBeGreaterThan(callsBefore);
 		});
 	});
+
+	describe("day grouping + pagination (M-71)", () => {
+		const day1 = new Date("2026-08-21T18:42:00").toISOString(); // Fri
+		const day2 = new Date("2026-08-20T09:15:00").toISOString(); // Thu
+		const sixSales = [1, 2, 3, 4, 5].map((n) => ({
+			...salesLog,
+			id: `sale-${n}`,
+			date: day1,
+			quantity_sold: n,
+			calculated_total: n * 5,
+		}));
+		sixSales.push({
+			...salesLog,
+			id: "sale-6",
+			date: day2,
+			quantity_sold: 9,
+			calculated_total: 45,
+		});
+
+		it("shows pager only beyond page size and navigates with bounds", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixSales)),
+			);
+			render(<GameSales />);
+			await screen.findByText(/4 units @ \$5\.00/);
+			expect(screen.queryByText(/9 units @ \$5\.00/)).not.toBeInTheDocument();
+			expect(screen.getByText("Page 1 of 2")).toBeInTheDocument();
+			const prev = screen.getByRole("button", { name: "Previous" });
+			const next = screen.getByRole("button", { name: "Next" });
+			expect(prev).toBeDisabled();
+
+			fireEvent.click(next);
+			expect(await screen.findByText(/9 units @ \$5\.00/)).toBeInTheDocument();
+			expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+			expect(next).toBeDisabled();
+			expect(prev).toBeEnabled();
+
+			fireEvent.click(prev);
+			expect(await screen.findByText("Page 1 of 2")).toBeInTheDocument();
+		});
+
+		it("renders weekday day headers and no per-day totals", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixSales)),
+			);
+			render(<GameSales />);
+			const header = await screen.findByText(/Fri, Aug 21/);
+			expect(header).toBeInTheDocument();
+			expect(
+				screen.queryByTestId(/sales-day-subtotal-/),
+			).not.toBeInTheDocument();
+		});
+
+		it("resets to page 1 when the range is refetched", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixSales)),
+			);
+			render(<GameSales />);
+			await screen.findByText("Page 1 of 2");
+			fireEvent.click(screen.getByRole("button", { name: "Next" }));
+			expect(await screen.findByText("Page 2 of 2")).toBeInTheDocument();
+
+			fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+			expect(await screen.findByText("Page 1 of 2")).toBeInTheDocument();
+		});
+
+		it("promotes a single period-total banner for the selected range", async () => {
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse(sixSales)),
+			);
+			render(<GameSales />);
+			const banner = await screen.findByTestId("sales-range-summary");
+			expect(banner).toHaveTextContent("6 sales");
+			expect(banner).toHaveTextContent("Total $120.00");
+		});
+	});
 });

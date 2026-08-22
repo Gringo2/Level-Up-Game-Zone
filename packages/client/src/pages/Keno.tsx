@@ -20,6 +20,11 @@ import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+import {
+	groupLogsByDay,
+	HISTORY_PAGE_SIZE,
+	historyPageBounds,
+} from "../lib/history";
 
 // Pure so the NaN-hole guard is unit-testable (jsdom sanitizes number inputs,
 // making the guard unreachable through change events in tests).
@@ -47,6 +52,7 @@ export function Keno() {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [verifyingId, setVerifyingId] = useState<string | null>(null);
 	const [deletePending, setDeletePending] = useState(false);
+	const [historyPage, setHistoryPage] = useState(0);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 
@@ -73,6 +79,7 @@ export function Keno() {
 					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 				),
 			);
+			setHistoryPage(0);
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error(
@@ -236,220 +243,280 @@ export function Keno() {
 		}
 	};
 
+	const bounds = historyPageBounds(logs.length);
+	const safeHistoryPage = bounds.clamp(historyPage);
+	const pageItems = logs.slice(...bounds.slice(safeHistoryPage));
+	const dayByKey = new Map(
+		groupLogsByDay(logs, (log) => log.net_profit).map(
+			(g) => [g.key, g] as const,
+		),
+	);
+
 	return (
 		<div className="space-y-6">
 			<h2 className="text-2xl font-bold tracking-tight">Log Keno</h2>
-			<Card className="max-w-md">
-				<form onSubmit={handleSubmit}>
-					<CardHeader>
-						<CardTitle>Daily Keno Entry</CardTitle>
-						<CardDescription>
-							Enter the net amount from the Keno software.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="entryDate">Date</Label>
-							<Input
-								id="entryDate"
-								type="date"
-								value={entryDate}
-								onChange={(e) => setEntryDate(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="net">Net Amount ($)</Label>
-							<Input
-								id="net"
-								type="number"
-								step="0.01"
-								value={netAmount}
-								onChange={(e) => setNetAmount(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="p-4 bg-zinc-50 rounded-md border border-zinc-100">
-							<div className="text-sm text-zinc-500 mb-1">Net Profit</div>
-							<div
-								className={`text-3xl font-bold ${parseFloat(netAmount || "0") < 0 ? "text-red-500" : "text-emerald-600"}`}
-							>
-								${parseFloat(netAmount || "0").toFixed(2)}
-							</div>
-						</div>
-						{editingId && (
+			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<Card className="lg:col-span-1 h-fit">
+					<form onSubmit={handleSubmit}>
+						<CardHeader>
+							<CardTitle>Daily Keno Entry</CardTitle>
+							<CardDescription>
+								Enter the net amount from the Keno software.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
 							<div className="space-y-2">
-								<Label htmlFor="editReason" className="text-amber-600">
-									Reason for Edit (Required)
-								</Label>
+								<Label htmlFor="entryDate">Date</Label>
 								<Input
-									id="editReason"
-									type="text"
-									value={editReason}
-									onChange={(e) => setEditReason(e.target.value)}
+									id="entryDate"
+									type="date"
+									value={entryDate}
+									onChange={(e) => setEntryDate(e.target.value)}
 									required
-									placeholder="e.g., Typo in sales amount"
 								/>
 							</div>
-						)}
-					</CardContent>
-					<CardFooter className="flex gap-2">
-						<Button
-							type="submit"
-							className="flex-1"
-							disabled={loading || !netAmount || (!!editingId && !editReason)}
-						>
-							{loading ? (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							) : null}
-							{editingId ? "Update Keno" : "Log Keno"}
-						</Button>
-						{editingId && (
-							<Button type="button" variant="outline" onClick={cancelEdit}>
-								Cancel
-							</Button>
-						)}
-					</CardFooter>
-				</form>
-			</Card>
-
-			<Card className="max-w-2xl">
-				<CardHeader>
-					<CardTitle>Keno Logs</CardTitle>
-					<CardDescription>
-						{rangeStart === todayStr && rangeEnd === todayStr
-							? "Recent Keno entries logged today."
-							: "Keno entries in the selected range."}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className="flex gap-2 items-end mb-3">
-						<div className="space-y-1">
-							<Label htmlFor="kenoRangeStart">From</Label>
-							<Input
-								id="kenoRangeStart"
-								type="date"
-								value={rangeStart}
-								onChange={(e) => setRangeStart(e.target.value)}
-							/>
-						</div>
-						<div className="space-y-1">
-							<Label htmlFor="kenoRangeEnd">To</Label>
-							<Input
-								id="kenoRangeEnd"
-								type="date"
-								value={rangeEnd}
-								onChange={(e) => setRangeEnd(e.target.value)}
-							/>
-						</div>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => void loadKenoLogs()}
-						>
-							Apply
-						</Button>
-					</div>
-					{logs.length > 0 && (
-						<div
-							className="text-sm text-zinc-500 mb-4"
-							data-testid="keno-range-summary"
-						>
-							{logs.length} {logs.length === 1 ? "entry" : "entries"} &middot;
-							Net ${logs.reduce((sum, l) => sum + l.net_profit, 0).toFixed(2)}
-						</div>
-					)}
-					<div className="space-y-3">
-						{logs.length === 0 ? (
-							<div className="text-center text-zinc-500 py-8">
-								{rangeStart === todayStr && rangeEnd === todayStr
-									? "No Keno logged today yet."
-									: "No Keno logged in this period."}
+							<div className="space-y-2">
+								<Label htmlFor="net">Net Amount ($)</Label>
+								<Input
+									id="net"
+									type="number"
+									step="0.01"
+									value={netAmount}
+									onChange={(e) => setNetAmount(e.target.value)}
+									required
+								/>
 							</div>
-						) : (
-							logs.map((log) => (
+							<div className="p-4 bg-zinc-50 rounded-md border border-zinc-100">
+								<div className="text-sm text-zinc-500 mb-1">Net Profit</div>
 								<div
-									key={log.id}
-									className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md bg-white gap-3"
+									className={`text-3xl font-bold ${parseFloat(netAmount || "0") < 0 ? "text-red-500" : "text-emerald-600"}`}
 								>
-									<div>
-										{log.sales != null && log.payouts != null && (
-											<div className="text-sm text-zinc-500">
-												Sales: ${log.sales.toFixed(2)} | Payouts: $
-												{log.payouts.toFixed(2)}
-											</div>
-										)}
-										<div
-											className={`font-semibold ${log.net_profit < 0 ? "text-red-500" : "text-emerald-600"}`}
-										>
-											Net: ${log.net_profit.toFixed(2)}
-										</div>
-										<div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
-											{format(new Date(log.date), "MMM d, h:mm a")}
-											{log.user_name && (
-												<>
-													&bull; <span>{log.user_name}</span>
-												</>
-											)}
-											{log.verified ? (
-												<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm">
-													Verified
-												</span>
-											) : (
-												<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm">
-													Unverified
-												</span>
-											)}
-										</div>
-									</div>
-
-									<div className="flex items-center gap-2 w-full sm:w-auto">
-										{!log.verified &&
-											(user?.role === ROLES.MANAGER ||
-												user?.role === ROLES.ADMIN) && (
-												<Button
-													size="sm"
-													variant="outline"
-													className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-													onClick={() => handleVerify(log.id)}
-													disabled={!!verifyingId || deletePending}
-												>
-													Verify
-												</Button>
-											)}
-										{(user?.role === ROLES.MANAGER ||
-											user?.role === ROLES.ADMIN) && (
-											<>
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() => handleEdit(log)}
-													disabled={
-														!!editingId || !!verifyingId || deletePending
-													}
-												>
-													<Edit2 className="h-4 w-4 mr-1" /> Edit
-												</Button>
-												<Button
-													size="sm"
-													variant="ghost"
-													className="text-red-600 hover:text-red-700 hover:bg-red-50"
-													onClick={() => setDeletingId(log.id)}
-													disabled={
-														!!editingId || !!verifyingId || deletePending
-													}
-												>
-													<Trash2 className="h-4 w-4" />
-												</Button>
-											</>
-										)}
-									</div>
+									${parseFloat(netAmount || "0").toFixed(2)}
 								</div>
-							))
+							</div>
+							{editingId && (
+								<div className="space-y-2">
+									<Label htmlFor="editReason" className="text-amber-600">
+										Reason for Edit (Required)
+									</Label>
+									<Input
+										id="editReason"
+										type="text"
+										value={editReason}
+										onChange={(e) => setEditReason(e.target.value)}
+										required
+										placeholder="e.g., Typo in sales amount"
+									/>
+								</div>
+							)}
+						</CardContent>
+						<CardFooter className="flex gap-2">
+							<Button
+								type="submit"
+								className="flex-1"
+								disabled={loading || !netAmount || (!!editingId && !editReason)}
+							>
+								{loading ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : null}
+								{editingId ? "Update Keno" : "Log Keno"}
+							</Button>
+							{editingId && (
+								<Button type="button" variant="outline" onClick={cancelEdit}>
+									Cancel
+								</Button>
+							)}
+						</CardFooter>
+					</form>
+				</Card>
+
+				<Card className="lg:col-span-2">
+					<CardHeader>
+						<CardTitle>Keno Logs</CardTitle>
+						<CardDescription>
+							{rangeStart === todayStr && rangeEnd === todayStr
+								? "Recent Keno entries logged today."
+								: "Keno entries in the selected range."}
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div className="flex gap-2 items-end mb-3">
+							<div className="space-y-1">
+								<Label htmlFor="kenoRangeStart">From</Label>
+								<Input
+									id="kenoRangeStart"
+									type="date"
+									value={rangeStart}
+									onChange={(e) => setRangeStart(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label htmlFor="kenoRangeEnd">To</Label>
+								<Input
+									id="kenoRangeEnd"
+									type="date"
+									value={rangeEnd}
+									onChange={(e) => setRangeEnd(e.target.value)}
+								/>
+							</div>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => void loadKenoLogs()}
+							>
+								Apply
+							</Button>
+						</div>
+						{logs.length > 0 && (
+							<div
+								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"
+								data-testid="keno-range-summary"
+							>
+								<span className="text-sm font-medium text-zinc-600">
+									{logs.length} {logs.length === 1 ? "entry" : "entries"}
+								</span>
+								<span
+									className={`text-base font-semibold ${logs.reduce((s, l) => s + l.net_profit, 0) < 0 ? "text-red-500" : "text-emerald-600"}`}
+								>
+									Net $
+									{logs.reduce((sum, l) => sum + l.net_profit, 0).toFixed(2)}
+								</span>
+							</div>
 						)}
-					</div>
-				</CardContent>
-			</Card>
+						<div>
+							{logs.length === 0 ? (
+								<div className="text-center text-zinc-500 py-8">
+									{rangeStart === todayStr && rangeEnd === todayStr
+										? "No Keno logged today yet."
+										: "No Keno logged in this period."}
+								</div>
+							) : (
+								<div className="rounded-md border bg-white divide-y">
+									{pageItems.map((log, idx) => {
+										const d = new Date(log.date);
+										const key = format(d, "yyyy-MM-dd");
+										const prevKey =
+											idx > 0
+												? format(
+														new Date(pageItems[idx - 1].date),
+														"yyyy-MM-dd",
+													)
+												: null;
+										const group = dayByKey.get(key);
+										return (
+											<div key={log.id}>
+												{key !== prevKey && group && (
+													<div className="flex items-center justify-between px-3 py-1 bg-zinc-50 text-xs font-medium text-zinc-600 border-b">
+														<span className="font-medium">{group.label}</span>
+													</div>
+												)}
+												<div className="flex items-center gap-2 px-3 py-1.5 text-sm flex-wrap">
+													<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+														{format(d, "h:mm a")}
+													</span>
+													{log.user_name && (
+														<span className="text-zinc-500 truncate max-w-[10rem]">
+															{log.user_name}
+														</span>
+													)}
+													{log.sales != null && log.payouts != null && (
+														<span className="text-xs text-zinc-400 hidden md:inline">
+															Sales ${log.sales.toFixed(2)} &middot; Payouts $
+															{log.payouts.toFixed(2)}
+														</span>
+													)}
+													<span
+														className={`ml-auto font-semibold ${log.net_profit < 0 ? "text-red-500" : "text-emerald-600"}`}
+													>
+														Net: ${log.net_profit.toFixed(2)}
+													</span>
+													{log.verified ? (
+														<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm text-xs">
+															Verified
+														</span>
+													) : (
+														<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm text-xs">
+															Unverified
+														</span>
+													)}
+													{!log.verified &&
+														(user?.role === ROLES.MANAGER ||
+															user?.role === ROLES.ADMIN) && (
+															<Button
+																size="sm"
+																variant="outline"
+																className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+																onClick={() => handleVerify(log.id)}
+																disabled={!!verifyingId || deletePending}
+															>
+																Verify
+															</Button>
+														)}
+													{(user?.role === ROLES.MANAGER ||
+														user?.role === ROLES.ADMIN) && (
+														<>
+															<Button
+																size="sm"
+																variant="outline"
+																onClick={() => handleEdit(log)}
+																disabled={
+																	!!editingId || !!verifyingId || deletePending
+																}
+															>
+																<Edit2 className="h-4 w-4 mr-1" /> Edit
+															</Button>
+															<Button
+																size="sm"
+																variant="ghost"
+																className="text-red-600 hover:text-red-700 hover:bg-red-50"
+																onClick={() => setDeletingId(log.id)}
+																disabled={
+																	!!editingId || !!verifyingId || deletePending
+																}
+															>
+																<Trash2 className="h-4 w-4" />
+															</Button>
+														</>
+													)}
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)}
+							{logs.length > HISTORY_PAGE_SIZE && (
+								<div className="flex items-center justify-between mt-3 text-sm">
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+										disabled={safeHistoryPage === 0}
+									>
+										Previous
+									</Button>
+									<span className="text-zinc-500">
+										Page {safeHistoryPage + 1} of {bounds.pageCount}
+									</span>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										onClick={() =>
+											setHistoryPage((p) =>
+												Math.min(bounds.pageCount - 1, p + 1),
+											)
+										}
+										disabled={safeHistoryPage >= bounds.pageCount - 1}
+									>
+										Next
+									</Button>
+								</div>
+							)}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
 			<ConfirmDialog
 				open={!!deletingId}
 				title="Delete Keno Ticket"
