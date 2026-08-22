@@ -41,6 +41,7 @@ export function Expenses() {
 	const [loading, setLoading] = useState(false);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [historyPage, setHistoryPage] = useState(0);
+	const [listLoading, setListLoading] = useState(false);
 	const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
 	const categories = allCategories.filter((c) => c.isActive);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -84,6 +85,8 @@ export function Expenses() {
 		let mounted = true;
 
 		const loadExpenses = async () => {
+			if (filterDateFrom > filterDateTo) return;
+			setListLoading(true);
 			try {
 				const dayStart = getShopStartOfDay(
 					new Date(filterDateFrom),
@@ -115,6 +118,8 @@ export function Expenses() {
 				if (mounted) {
 					toast.error("Failed to load expenses");
 				}
+			} finally {
+				setListLoading(false);
 			}
 		};
 
@@ -525,8 +530,19 @@ export function Expenses() {
 										className="h-8 w-[150px] text-xs"
 									/>
 								</div>
+								{listLoading && (
+									<Loader2
+										data-testid="history-loading"
+										className="h-4 w-4 animate-spin text-zinc-400"
+									/>
+								)}
 							</div>
 						</div>
+						{filterDateFrom > filterDateTo && (
+							<p className="text-xs text-red-500 mt-1">
+								From date must be on or before To
+							</p>
+						)}
 					</CardHeader>
 					<CardContent>
 						{expenses.length > 0 && (

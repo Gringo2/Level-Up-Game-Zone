@@ -501,4 +501,59 @@ describe("GameSales", () => {
 			expect(banner).toHaveTextContent("Total $120.00");
 		});
 	});
+
+	it("TD-047: blocks Apply with hint when From is after To, Today resets", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return Promise.resolve(jsonResponse([salesLog]));
+		});
+		render(<GameSales />);
+		await screen.findByTestId("sales-range-summary");
+
+		fireEvent.change(screen.getByLabelText("From"), {
+			target: { value: "2026-08-23" },
+		});
+		fireEvent.change(screen.getByLabelText("To"), {
+			target: { value: "2026-08-20" },
+		});
+
+		const apply = screen.getByRole("button", { name: "Apply" });
+		expect(apply).toBeDisabled();
+		expect(
+			screen.getByText("From date must be on or before To"),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Today" }));
+		await waitFor(() => {
+			expect(
+				screen.queryByText("From date must be on or before To"),
+			).not.toBeInTheDocument();
+		});
+		expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+	});
+
+	it("TD-048: shows in-flight state on Apply until the fetch resolves", async () => {
+		let resolveFetch: (v: Response) => void = () => {};
+		const deferred = new Promise<Response>((r) => {
+			resolveFetch = r;
+		});
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return deferred;
+		});
+
+		render(<GameSales />);
+		const apply = screen.getByRole("button", { name: "Apply" });
+		expect(apply).toBeDisabled();
+		expect(screen.getByTestId("history-loading")).toBeInTheDocument();
+
+		resolveFetch(jsonResponse([salesLog]));
+		await screen.findByTestId("sales-range-summary");
+		expect(apply).toBeEnabled();
+		expect(screen.queryByTestId("history-loading")).not.toBeInTheDocument();
+	});
 });

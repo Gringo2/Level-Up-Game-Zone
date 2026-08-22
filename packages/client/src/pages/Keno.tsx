@@ -53,10 +53,13 @@ export function Keno() {
 	const [verifyingId, setVerifyingId] = useState<string | null>(null);
 	const [deletePending, setDeletePending] = useState(false);
 	const [historyPage, setHistoryPage] = useState(0);
+	const [listLoading, setListLoading] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 
 	const loadKenoLogs = useCallback(async () => {
+		if (rangeStart > rangeEnd) return;
+		setListLoading(true);
 		try {
 			const startISO = getShopStartOfDay(
 				new Date(`${rangeStart}T00:00:00`),
@@ -87,6 +90,8 @@ export function Keno() {
 					? err.message
 					: "Failed to load keno logs",
 			);
+		} finally {
+			setListLoading(false);
 		}
 	}, [rangeStart, rangeEnd]);
 
@@ -363,10 +368,33 @@ export function Keno() {
 								type="button"
 								variant="outline"
 								onClick={() => void loadKenoLogs()}
+								disabled={rangeStart > rangeEnd || listLoading}
 							>
+								{listLoading && (
+									<Loader2
+										data-testid="history-loading"
+										className="mr-1 h-4 w-4 animate-spin"
+									/>
+								)}
 								Apply
 							</Button>
+							<Button
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									setRangeStart(todayStr);
+									setRangeEnd(todayStr);
+								}}
+								disabled={listLoading}
+							>
+								Today
+							</Button>
 						</div>
+						{rangeStart > rangeEnd && (
+							<p className="text-xs text-red-500 mb-2">
+								From date must be on or before To
+							</p>
+						)}
 						{logs.length > 0 && (
 							<div
 								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"

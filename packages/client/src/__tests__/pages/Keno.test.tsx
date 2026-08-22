@@ -580,4 +580,48 @@ describe("Keno", () => {
 			expect(screen.getByText("Net: $10.00")).toBeInTheDocument();
 		});
 	});
+
+	it("TD-047: blocks Apply with hint when From is after To, Today resets", async () => {
+		render(<Keno />);
+		await screen.findByText("Net: $60.00");
+
+		fireEvent.change(screen.getByLabelText("From"), {
+			target: { value: "2026-08-23" },
+		});
+		fireEvent.change(screen.getByLabelText("To"), {
+			target: { value: "2026-08-20" },
+		});
+
+		const apply = screen.getByRole("button", { name: "Apply" });
+		expect(apply).toBeDisabled();
+		expect(
+			screen.getByText("From date must be on or before To"),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Today" }));
+		await waitFor(() => {
+			expect(
+				screen.queryByText("From date must be on or before To"),
+			).not.toBeInTheDocument();
+		});
+		expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+	});
+
+	it("TD-048: shows in-flight state on Apply until the fetch resolves", async () => {
+		let resolveFetch: (v: Response) => void = () => {};
+		const deferred = new Promise<Response>((r) => {
+			resolveFetch = r;
+		});
+		mockFetch.mockImplementation(() => deferred);
+
+		render(<Keno />);
+		const apply = screen.getByRole("button", { name: "Apply" });
+		expect(apply).toBeDisabled();
+		expect(screen.getByTestId("history-loading")).toBeInTheDocument();
+
+		resolveFetch(jsonResponse([kenoLog]));
+		await screen.findByText("Net: $60.00");
+		expect(apply).toBeEnabled();
+		expect(screen.queryByTestId("history-loading")).not.toBeInTheDocument();
+	});
 });

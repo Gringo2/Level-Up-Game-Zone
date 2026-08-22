@@ -41,6 +41,7 @@ export function GameSales() {
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [deletePending, setDeletePending] = useState(false);
 	const [historyPage, setHistoryPage] = useState(0);
+	const [listLoading, setListLoading] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [loadingDefaults, setLoadingDefaults] = useState(false);
@@ -83,6 +84,8 @@ export function GameSales() {
 	}, []);
 
 	const loadSalesLogs = useCallback(async () => {
+		if (rangeStart > rangeEnd) return;
+		setListLoading(true);
 		try {
 			const startISO = getShopStartOfDay(
 				new Date(`${rangeStart}T00:00:00`),
@@ -112,6 +115,8 @@ export function GameSales() {
 					: "Failed to load sales data",
 			);
 			setLoadingRates(false);
+		} finally {
+			setListLoading(false);
 		}
 	}, [rangeStart, rangeEnd]);
 
@@ -478,10 +483,33 @@ export function GameSales() {
 								type="button"
 								variant="outline"
 								onClick={() => void loadSalesLogs()}
+								disabled={rangeStart > rangeEnd || listLoading}
 							>
+								{listLoading && (
+									<Loader2
+										data-testid="history-loading"
+										className="mr-1 h-4 w-4 animate-spin"
+									/>
+								)}
 								Apply
 							</Button>
+							<Button
+								type="button"
+								variant="ghost"
+								onClick={() => {
+									setRangeStart(todayStr);
+									setRangeEnd(todayStr);
+								}}
+								disabled={listLoading}
+							>
+								Today
+							</Button>
 						</div>
+						{rangeStart > rangeEnd && (
+							<p className="text-xs text-red-500 mb-2">
+								From date must be on or before To
+							</p>
+						)}
 						{logs.length > 0 && (
 							<div
 								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"

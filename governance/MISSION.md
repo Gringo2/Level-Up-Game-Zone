@@ -1,29 +1,25 @@
 # CURRENT MISSION
 
-**Type:** Security Hardening
-**Mission:** M-76 Close TD-026 — Server-Authoritative Sale Totals
+**Type:** UX Polish
+**Mission:** M-78 Range Guards + History Loading Feedback (TD-047/TD-048)
 **Status:** Locked (2026-08-22)
 
+## 1. Objective
+On Keno, GameSales, AND Expenses history/filter cards:
+1. **TD-047** — When From > To: block refetch, show inline hint "From date must be on or before To", provide a "Today" reset control (Keno/GS Apply pages).
+2. **TD-048** — Visible in-flight feedback on history fetches: `listLoading` state driving a spinner in/near the trigger + disabled Apply during flight (auto-effect pages show inline spinner).
+
 ## 3. Scope & Boundaries
-- **In Scope:** server schema + createSale controller + sales/users/validation test files only.
+- **In Scope:** Keno.tsx, GameSales.tsx, Expenses.tsx history/filter cards + their test files only.
 
-### RCA / Scope Decision
-TD-026 cited sales + keno. Keno half is **covered by design**: M-66 made keno net-only (operator-entered machine figure = the source input; no independent server truth exists) and M-68 added finiteNumber guards. Sales half is the real trust hole and is fixed here:
-- `CreateSaleSchema.game_id` becomes REQUIRED (`min 1`); `calculated_total` removed from schema (zod strips unknowns → existing clients unaffected).
-- Controller fetches the rate doc BEFORE the transaction: missing → 400 `Invalid game`; persists authoritative `rate_applied` (= rate.price_per_unit), `calculated_total` (= price × qty), `game_name` (= rate.game_name). Client-sent totals are ignored.
-- Bonus: implements TD-035's FK existence check at creation.
-
-- **In Scope:** server schema + createSale controller + sales/users/validation test files only.
-
-## Out of Scope
-Expenses/credits amounts (client-supplied by nature — no independent truth); historic documents; client payload slimming.
+## Design Notes
+- ISO string compare (`from > to`) suffices — both inputs are yyyy-mm-dd.
+- Guards live BOTH in UI (disabled/hint) and at loader entry (early-return) — belt & braces.
+- Expenses has no Apply button (effect-driven): guard = early-return + hint; loading = inline Loader2 by the date row.
 
 ## Testing Strategy (Rule 28)
-Reds first on salesController.test: tampered total/rate ignored in favor of rate-doc math; invalid game_id → 400; missing game_id → 400 validation. Golden create test upgraded to assert tamper-proofing. All other suites stay green (schema strips unknown keys).
-
-## Amendment A1 (2026-08-22, review finding)
-Review probe found the PUT path (`updateSale`) still trusting client `rate_applied`/`calculated_total` and unvalidated `game_id` — a full bypass of the create-side fix. Hardened symmetrically inside transaction: effective rate doc resolved (new or inherited game_id; missing → "Invalid game" mapped to 400 via catch), totals recomputed price×qty (new-or-inherited quantity), client money fields ignored. Tests: golden PUT upgraded with tx-payload capture + post-update read; new negative test for ghost-rate edit. Battery 463→464/464.
+6 Reds first (2/page): invalid-range blocks fetch & shows hint & Today resets (Keno/GS) or no-fetch (Expenses); deferred-fetch shows loading indicator until resolve.
 
 ## Evidence Payload
-- [x] Functional Verification: salesController 21/21 (3 Reds captured first); validation payload synced; full battery 463/463 / 34 files
-- [x] AVP-001: tsc=0 | Biome touched-files clean (pre-existing noExplicitAny debt in salesController.test documented via HEAD stdin-probe) | knip=0 | depcruise ✔
+- [x] Functional Verification: 464→470/470 / 34 files (+6 Reds captured first, all green post-impl)
+- [x] AVP-001: tsc=0 | Biome=0 | knip=0 | depcruise ✔

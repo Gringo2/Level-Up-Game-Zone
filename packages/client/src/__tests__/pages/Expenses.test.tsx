@@ -708,4 +708,38 @@ describe("Expenses", () => {
 		await screen.findByText("Paper Towels");
 		expect(screen.queryByText("Manage Categories")).not.toBeInTheDocument();
 	});
+
+	it("TD-047: invalid range shows hint and skips refetch", async () => {
+		render(<Expenses />);
+		await screen.findByText("Paper Towels");
+		const callsBefore = mockFetch.mock.calls.length;
+
+		fireEvent.change(screen.getByLabelText("From"), {
+			target: { value: "2026-08-23" },
+		});
+
+		expect(
+			screen.getByText("From date must be on or before To"),
+		).toBeInTheDocument();
+		expect(mockFetch.mock.calls.length).toBe(callsBefore);
+	});
+
+	it("TD-048: shows inline loading indicator while fetching", async () => {
+		let resolveFetch: (v: Response) => void = () => {};
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ name: "Supplies", isActive: true }]);
+			}
+			return new Promise<Response>((r) => {
+				resolveFetch = r;
+			});
+		});
+
+		render(<Expenses />);
+		expect(await screen.findByTestId("history-loading")).toBeInTheDocument();
+
+		resolveFetch(jsonResponse([expense]));
+		await screen.findByText("Paper Towels");
+		expect(screen.queryByTestId("history-loading")).not.toBeInTheDocument();
+	});
 });
