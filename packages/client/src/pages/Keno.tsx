@@ -3,7 +3,7 @@ import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import {
@@ -24,6 +24,9 @@ import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 export function Keno() {
 	const { user } = useAuth();
 	const [netAmount, setNetAmount] = useState("");
+	const todayStr = new Date().toISOString().slice(0, 10);
+	const [rangeStart, setRangeStart] = useState(todayStr);
+	const [rangeEnd, setRangeEnd] = useState(todayStr);
 	const [entryDate, setEntryDate] = useState(() =>
 		new Date().toISOString().slice(0, 10),
 	);
@@ -34,38 +37,36 @@ export function Keno() {
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 
-	useEffect(() => {
-		let mounted = true;
-
-		const loadKenoLogs = async () => {
-			try {
-				const response = await authFetch(`${API_BASE}/api/keno`);
-				if (!response.ok) {
-					throw new Error(
-						(await safeJson(response)).error || "Failed to fetch keno logs",
-					);
-				}
-
-				const dayStart = getShopStartOfDay().toISOString();
-				const dayEnd = getShopEndOfDay().toISOString();
-				const data = (await safeJson(response)) as KenoLog[];
-				const fetchedLogs = data
-					.filter((log) => log.date >= dayStart && log.date <= dayEnd)
-					.sort(
-						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-					);
-
-				if (mounted) {
-					setLogs(fetchedLogs);
-				}
-			} catch (err) {
-				console.error(err);
-				if (mounted) {
-					toast.error("Failed to load keno logs");
-				}
+	const loadKenoLogs = useCallback(async () => {
+		try {
+			const startISO = getShopStartOfDay(
+				new Date(`${rangeStart}T00:00:00`),
+			).toISOString();
+			const endISO = getShopEndOfDay(
+				new Date(`${rangeEnd}T00:00:00`),
+			).toISOString();
+			const response = await authFetch(
+				`${API_BASE}/api/keno?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}`,
+			);
+			if (!response.ok) {
+				throw new Error(
+					(await safeJson(response)).error || "Failed to fetch keno logs",
+				);
 			}
-		};
 
+			const data = (await safeJson(response)) as KenoLog[];
+			setLogs(
+				data.sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			);
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to load keno logs");
+		}
+	}, [rangeStart, rangeEnd]);
+
+	useEffect(() => {
 		void loadKenoLogs();
 
 		const handleVisibility = () => {
@@ -76,10 +77,9 @@ export function Keno() {
 		document.addEventListener("visibilitychange", handleVisibility);
 
 		return () => {
-			mounted = false;
 			document.removeEventListener("visibilitychange", handleVisibility);
 		};
-	}, []);
+	}, [loadKenoLogs]);
 
 	const handleEdit = (log: KenoLog) => {
 		setEditingId(log.id);
@@ -274,14 +274,47 @@ export function Keno() {
 
 			<Card className="max-w-2xl">
 				<CardHeader>
-					<CardTitle>Today's Keno Logs</CardTitle>
-					<CardDescription>Recent Keno entries logged today.</CardDescription>
+					<CardTitle>Keno Logs</CardTitle>
+					<CardDescription>
+						{rangeStart === todayStr && rangeEnd === todayStr
+							? "Recent Keno entries logged today."
+							: "Keno entries in the selected range."}
+					</CardDescription>
 				</CardHeader>
 				<CardContent>
+					<div className="flex gap-2 items-end mb-4">
+						<div className="space-y-1">
+							<Label htmlFor="kenoRangeStart">From</Label>
+							<Input
+								id="kenoRangeStart"
+								type="date"
+								value={rangeStart}
+								onChange={(e) => setRangeStart(e.target.value)}
+							/>
+						</div>
+						<div className="space-y-1">
+							<Label htmlFor="kenoRangeEnd">To</Label>
+							<Input
+								id="kenoRangeEnd"
+								type="date"
+								value={rangeEnd}
+								onChange={(e) => setRangeEnd(e.target.value)}
+							/>
+						</div>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => void loadKenoLogs()}
+						>
+							Apply
+						</Button>
+					</div>
 					<div className="space-y-3">
 						{logs.length === 0 ? (
 							<div className="text-center text-zinc-500 py-8">
-								No Keno logged today yet.
+								{rangeStart === todayStr && rangeEnd === todayStr
+									? "No Keno logged today yet."
+									: "No Keno logged in this period."}
 							</div>
 						) : (
 							logs.map((log) => (

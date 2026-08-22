@@ -6,6 +6,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
+import { getShopEndOfDay, getShopStartOfDay } from "../../lib/dateUtils.js";
 import { GameSales } from "../../pages/GameSales.js";
 
 vi.mock("../../firebase", () => ({
@@ -104,6 +105,53 @@ describe("GameSales", () => {
 		expect(screen.getByRole("option", { name: /PS4/ })).toBeInTheDocument();
 		expect(screen.getByRole("option", { name: /Pool/ })).toBeInTheDocument();
 		expect(screen.queryByText("No games configured!")).not.toBeInTheDocument();
+	});
+
+	it("fetches today's sales range server-side on load", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return Promise.resolve(jsonResponse([salesLog]));
+		});
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+
+		const salesCall = mockFetch.mock.calls.find(
+			([url]) => !String(url).endsWith("/api/rates"),
+		) as [string];
+		expect(salesCall[0]).toMatch(/\/api\/sales\?startDate=/);
+		expect(salesCall[0]).toContain("endDate=");
+	});
+
+	it("applies a custom range and refetches game sales within it", async () => {
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+		const callsAfterLoad = mockFetch.mock.calls.length;
+
+		fireEvent.change(screen.getByLabelText("From"), {
+			target: { value: "2026-08-01" },
+		});
+		fireEvent.change(screen.getByLabelText("To"), {
+			target: { value: "2026-08-07" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+		await waitFor(() =>
+			expect(mockFetch.mock.calls.length).toBeGreaterThan(callsAfterLoad),
+		);
+		const latest = mockFetch.mock.calls.at(-1) as [string];
+		const expectedStart = encodeURIComponent(
+			getShopStartOfDay(new Date("2026-08-01T00:00:00")).toISOString(),
+		);
+		const expectedEnd = encodeURIComponent(
+			getShopEndOfDay(new Date("2026-08-07T00:00:00")).toISOString(),
+		);
+		expect(latest[0]).toContain(`startDate=${expectedStart}`);
+		expect(latest[0]).toContain(`endDate=${expectedEnd}`);
+		expect(
+			screen.getByText("Game sales in the selected range."),
+		).toBeInTheDocument();
 	});
 
 	it("shows the no-games banner and configures default games", async () => {

@@ -1,3 +1,4 @@
+import { COLLECTIONS } from "@level-up/shared";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
@@ -45,6 +46,66 @@ describe("Sales Integration Tests", () => {
 			expect(response.status).toBe(200);
 			expect(response.body).toHaveLength(1);
 			expect(response.body[0].game_name).toBe("Pool");
+		});
+
+		it("filters sales server-side when a date range is provided", async () => {
+			const range: { start?: string; end?: string } = {};
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path !== COLLECTIONS.GAME_SALES_LOGS) {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				const chainable: any = {
+					get: vi.fn().mockImplementation(() => {
+						const docs = [
+							{
+								id: "in-range",
+								data: () => ({
+									game_name: "Pool",
+									date: "2026-08-03T18:00:00.000Z",
+								}),
+							},
+							{
+								id: "out-of-range",
+								data: () => ({
+									game_name: "PS4",
+									date: "2026-09-10T18:00:00.000Z",
+								}),
+							},
+						].filter((doc) => {
+							const date = doc.data().date as string;
+							return (
+								(!range.start || date >= range.start) &&
+								(!range.end || date <= range.end)
+							);
+						});
+						return Promise.resolve({ docs });
+					}),
+					where: vi.fn((field: string, op: string, value: string) => {
+						if (op === ">=") range.start = value;
+						if (op === "<=") range.end = value;
+						return chainable;
+					}),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return chainable;
+			});
+
+			const startISO = "2026-08-01T00:00:00.000Z";
+			const endISO = "2026-08-07T23:59:59.999Z";
+			const response = await request(app)
+				.get("/api/sales")
+				.query({ startDate: startISO, endDate: endISO })
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body.map((row: { id: string }) => row.id)).toEqual([
+				"in-range",
+			]);
 		});
 
 		it("should successfully create a sale", async () => {

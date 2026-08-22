@@ -42,6 +42,7 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 | ID | Resolution Details | Date |
 | :--- | :--- | :--- |
+| TD-046 | Reports-style dual date-picker range browsing (From/To + Apply, default shop-day today) added to GameSales and Keno list cards; Keno switched from fetch-all-then-client-filter to server-side ranged GET — payload waste eliminated (M-67). Server source untouched (endpoints already ranged). +4 client param/refetch tests, +2 behavioral server range-exclusion tests; 435/435 suite green; tsc, knip, depcruise, Biome clean. | 2026-08-22 |
 | TD-014 | Central `safeErrorMessage` allowlist sanitizer (`packages/server/src/utils/safeError.ts`); 30 controller catch-fallbacks converted from raw `(error as Error).message` echo to sentinel-allowlist-or-generic; 0 echo paths remain (verified by grep); intentional sentinel mappings (DUPLICATE_NAME, not-found, forbidden) preserved; +1 Red-Green-proven leak test (M-65). 425/425 suite green; tsc, Biome, knip, depcruise clean. | 2026-08-21 |
 | TD-042 | Invite form relabeled "Invite User" — PO decision: employees are workflow records, users are system accounts (M-64). Red-Green regression test; 424/424 suite green. | 2026-08-21 |
 | TD-028 | Shared `Credit` type += optional `reason`; Credits page captures (create/edit) and displays it; SalaryReport deduction rows show per-credit reason; server zero-change — payloads already round-trip the field (M-63). 3 Red-Green tests; 423/423 suite green. | 2026-08-21 |

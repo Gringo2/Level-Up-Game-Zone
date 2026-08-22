@@ -3,7 +3,7 @@ import { DEFAULT_GAME_RATES, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import {
@@ -37,38 +37,24 @@ export function GameSales() {
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [loadingDefaults, setLoadingDefaults] = useState(false);
+	const todayStr = new Date().toISOString().slice(0, 10);
+	const [rangeStart, setRangeStart] = useState(todayStr);
+	const [rangeEnd, setRangeEnd] = useState(todayStr);
 
 	useEffect(() => {
 		let mounted = true;
 
-		const loadSalesData = async () => {
+		const loadRates = async () => {
 			try {
-				const [ratesResponse, salesResponse] = await Promise.all([
-					authFetch(`${API_BASE}/api/rates`),
-					authFetch(
-						`${API_BASE}/api/sales?startDate=${encodeURIComponent(getShopStartOfDay().toISOString())}&endDate=${encodeURIComponent(getShopEndOfDay().toISOString())}`,
-					),
-				]);
-
+				const ratesResponse = await authFetch(`${API_BASE}/api/rates`);
 				if (!ratesResponse.ok) {
 					throw new Error("Failed to fetch rates");
 				}
-				if (!salesResponse.ok) {
-					throw new Error("Failed to fetch sales logs");
-				}
-
 				const fetchedRates = await safeJson<GameRate[]>(ratesResponse);
-				const fetchedSales = await safeJson<GameSalesLog[]>(salesResponse);
-
-				if (!mounted) return;
-
-				setRates(fetchedRates.filter((rate) => rate.isActive));
-				setLogs(
-					fetchedSales.sort(
-						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-					),
-				);
-				setLoadingRates(false);
+				if (mounted) {
+					setRates(fetchedRates.filter((rate) => rate.isActive));
+					setLoadingRates(false);
+				}
 			} catch (err) {
 				console.error(err);
 				if (mounted) {
@@ -78,20 +64,55 @@ export function GameSales() {
 			}
 		};
 
-		void loadSalesData();
+		void loadRates();
+
+		return () => {
+			mounted = false;
+		};
+	}, []);
+
+	const loadSalesLogs = useCallback(async () => {
+		try {
+			const startISO = getShopStartOfDay(
+				new Date(`${rangeStart}T00:00:00`),
+			).toISOString();
+			const endISO = getShopEndOfDay(
+				new Date(`${rangeEnd}T00:00:00`),
+			).toISOString();
+			const salesResponse = await authFetch(
+				`${API_BASE}/api/sales?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}`,
+			);
+			if (!salesResponse.ok) {
+				throw new Error("Failed to fetch sales logs");
+			}
+			const fetchedSales = await safeJson<GameSalesLog[]>(salesResponse);
+			setLogs(
+				fetchedSales.sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			);
+			setLoadingRates(false);
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to load sales data");
+			setLoadingRates(false);
+		}
+	}, [rangeStart, rangeEnd]);
+
+	useEffect(() => {
+		void loadSalesLogs();
 
 		const handleVisibility = () => {
 			if (document.visibilityState === "visible") {
-				void loadSalesData();
+				void loadSalesLogs();
 			}
 		};
 		document.addEventListener("visibilitychange", handleVisibility);
 
 		return () => {
-			mounted = false;
 			document.removeEventListener("visibilitychange", handleVisibility);
 		};
-	}, []);
+	}, [loadSalesLogs]);
 
 	const selectedRate = rates.find((r) => r.id === selectedRateId);
 	const calculatedTotal =
@@ -385,14 +406,47 @@ export function GameSales() {
 
 				<Card className="lg:col-span-2">
 					<CardHeader>
-						<CardTitle>Today's Logs</CardTitle>
-						<CardDescription>Recent game sales logged today.</CardDescription>
+						<CardTitle>Game Sales Logs</CardTitle>
+						<CardDescription>
+							{rangeStart === todayStr && rangeEnd === todayStr
+								? "Recent game sales logged today."
+								: "Game sales in the selected range."}
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
+						<div className="flex gap-2 items-end mb-4">
+							<div className="space-y-1">
+								<Label htmlFor="salesRangeStart">From</Label>
+								<Input
+									id="salesRangeStart"
+									type="date"
+									value={rangeStart}
+									onChange={(e) => setRangeStart(e.target.value)}
+								/>
+							</div>
+							<div className="space-y-1">
+								<Label htmlFor="salesRangeEnd">To</Label>
+								<Input
+									id="salesRangeEnd"
+									type="date"
+									value={rangeEnd}
+									onChange={(e) => setRangeEnd(e.target.value)}
+								/>
+							</div>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => void loadSalesLogs()}
+							>
+								Apply
+							</Button>
+						</div>
 						<div className="space-y-3">
 							{logs.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
-									No game sales logged today yet.
+									{rangeStart === todayStr && rangeEnd === todayStr
+										? "No game sales logged today yet."
+										: "No game sales logged in this period."}
 								</div>
 							) : (
 								logs.map((log) => (

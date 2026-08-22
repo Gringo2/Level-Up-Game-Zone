@@ -1,36 +1,35 @@
 # CURRENT MISSION
 
-**Type:** Feature
-**Mission:** M-66 Keno Direct Net Entry — Drop Sales/Payouts Inputs
-**Status:** Locked
+**Type:** Debt Resolution (TD-046)
+**Mission:** M-67 Game-Log History Browsing on Entry Pages
+**Status:** Locked (2026-08-22)
 
 ## 1. Objective
-Simplify keno logging: operators enter a single Net amount directly instead of Total Sales + Total Payouts (client-side subtraction removed). Product Owner decisions recorded 2026-08-21: historical entries remain visible conditionally; API contract becomes net-only strict (payloads containing `sales`/`payouts` are rejected).
+Give operators direct access to game-log history on the GameSales and Keno pages via Reports-style date-range browsing, and eliminate Keno's fetch-all-then-discard payload waste. PO-approved design 2026-08-21: Plan A (range pickers on entry pages), default range = today.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `Keno.tsx`: single Net input replaces Sales/Payouts pair; edit prefill from `net_profit`; conditional history-row rendering
-  - `Reports.tsx`: keno table cells render stored values when present, em-dash otherwise (columns retained for mixed-era data)
-  - Server `CreateKenoSchema`/`UpdateKenoSchema`: net-only + `.strict()` rejection of `sales`/`payouts` keys
-  - `createKeno` controller: persist `net_profit` only
-  - Shared `KenoLog`: `sales`/`payouts` become optional
-  - Test updates: server keno suite payloads + negative strict test; client Keno form rewrite; Reports fixture variant without sales/payouts
-  - Residual resolution (PO-approved 2026-08-21): converge-on-edit (updateKeno deletes stored sales/payouts via FieldValue; originals persist in audit old_value) + scoped schema refinement (retired-field messaging via passthrough+superRefine)
-- **Out of Scope:** DB migration of historical rows; Dashboard (aggregates `net_profit` only); verify flow; GameSales page.
+  - `Keno.tsx`: server-side range params replace client-side fetch-all+filter; dual date inputs + Apply defaulting to shop-day "today"; period-aware empty state/description
+  - `GameSales.tsx`: same range controls over its existing ranged query
+  - Reuse `getShopStartOfDay/getShopEndOfDay(date)` for picked-date boundary construction (Rule 25)
+  - Server: no behavior change; add missing direct range-query tests for keno + sales endpoints (currently zero coverage — grep-verified)
+  - Client tests: default-param assertions, range-change refetch flows, empty-state wording (Red-Green against current code)
+- **Out of Scope:** Credits/Expenses pages (same pattern, not in TD-046 scope); Dashboard aggregates; Reports.tsx; any backend endpoint/schema changes.
 
 ## 4. Referenced Architecture
-ADR-001 (Express Backend composition root): validation stays server-side; Thin Client sends user-entered net verbatim. No new dependencies.
+ADR-001 (Thin Client; Express owns queries) — pages only gain query-parameter expression of user intent. ADR-008 adjacency: backdated entry unaffected; history browsing complements it. No new dependencies.
 
 ## Design Decisions (PO-approved)
-1. **Conditional display** over hide-everywhere: preserves auditability of pre-migration rows.
-2. **Net-only strict** over optional fields: `.strict()` Zod objects yield 400 on legacy-shaped payloads, making the contract explicit rather than silently stripped.
-3. Edit path keeps absent-field preservation (`if (!== undefined)`): editing an old row updates `net_profit` while its stored sales/payouts remain untouched in DB.
+1. Default range = shop-day today (zero workflow change on load); custom ranges are explicit Apply actions.
+2. Entry forms untouched — browsing window is independent of entry-date picker.
+3. Keno aligns to GameSales' server-side filtering pattern (consistency + payload fix in one move).
 
 ## Evidence Payload
-- [x] Functional Verification: 429/429 unit tests across 34 files green (425 → 429: Keno conditional-render, Reports net-only row, POST+PUT strict-rejection with "Retired field" message assertion, converge-on-edit payload assertion); empirically probed: legacy payloads → "Retired field(s): sales, payouts…" / unknown typos → generic unrecognized-key / clean create parses; server keno suite 23/23; client Keno 16/16; Reports 8/8.
-- [x] Architectural Verification (AVP-001): tsc -b both packages exit 0; knip exit 0; depcruise config-mode "no dependency violations (147 modules, 433 dependencies)"; Biome all touched files exit 0. Blast radius git-verified: uncommitted tree == exactly the 10 mission paths. Full report: docs/reports/M-66_Blast_Radius_Report.md.
-- [x] ADR Compliance: ADR-001 upheld — server-boundary validation change, client form simplification.
+- [x] Functional Verification: 435/435 tests / 34 files green (incl. +8 new: 2 server range-exclusion, 2 client param/refetch per page pair); Keno default = shop-day today via server params; Apply refetches custom ranges; GameSales rates loader isolated to mount
+- [x] Architectural Verification (AVP-001): tsc=0 | knip=0 | depcruise "no violations (147 modules, 439 deps)" | Biome all touched=0 — blast radius git-verified to exactly the 8 mission paths (docs/reports/M-67_Blast_Radius_Report.md)
+- [x] ADR Compliance: ADR-001/ADR-008 upheld — zero server source changes; client expresses range intent via existing query contract
 - [ ] Playwright E2E: not executed unless requested
 
 ## Test-Negative Protocol (Rule 28)
-Red-Green evidence: natural Red state captured after implementation landed but before test migration (7 server + client form failures against legacy payloads) proves the updated suite discriminates old vs new contract. Strict-rejection negative test asserts 400 on `{sales, payouts, net_profit}` POST.
+New param/refetch tests fail naturally against current code (no params sent / fetch-all path). Server range tests assert filtered results AND a bounded-range exclusion case (entry outside range absent).
+**Executed:** server exclusion tests are behavioral — mock Firestore honors only captured `where` bounds; an implementation ignoring range returns both docs and fails the `[in-range]` assertion. Call-shape-only assertions were rejected in favor of this form.

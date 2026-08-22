@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
+import { getShopEndOfDay, getShopStartOfDay } from "../../lib/dateUtils.js";
 import { Keno } from "../../pages/Keno.js";
 
 afterEach(cleanup);
@@ -118,6 +119,50 @@ describe("Keno", () => {
 		await waitFor(() =>
 			expect(toast.error).toHaveBeenCalledWith("Failed to load keno logs"),
 		);
+	});
+
+	it("fetches today's range server-side on load instead of fetching all", async () => {
+		mockFetch.mockResolvedValue(jsonResponse([kenoLog]));
+		render(<Keno />);
+		await screen.findByText("Net: $60.00");
+
+		const [url] = mockFetch.mock.calls[0] as [string];
+		expect(url).toMatch(/\/api\/keno\?startDate=/);
+		expect(url).toContain("endDate=");
+	});
+
+	it("applies a custom range and refetches with the selected bounds", async () => {
+		mockFetch.mockResolvedValue(jsonResponse([kenoLog]));
+		render(<Keno />);
+		await screen.findByText("Net: $60.00");
+		const callsAfterLoad = mockFetch.mock.calls.length;
+
+		fireEvent.change(screen.getByLabelText("From"), {
+			target: { value: "2026-08-01" },
+		});
+		fireEvent.change(screen.getByLabelText("To"), {
+			target: { value: "2026-08-07" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+		await waitFor(() =>
+			expect(mockFetch.mock.calls.length).toBeGreaterThan(callsAfterLoad),
+		);
+		const latest = mockFetch.mock.calls.at(-1) as [string];
+		const expectedStart = encodeURIComponent(
+			getShopStartOfDay(new Date("2026-08-01T00:00:00")).toISOString(),
+		);
+		const expectedEnd = encodeURIComponent(
+			getShopEndOfDay(new Date("2026-08-07T00:00:00")).toISOString(),
+		);
+		expect(latest[0]).toContain(`startDate=${expectedStart}`);
+		expect(latest[0]).toContain(`endDate=${expectedEnd}`);
+		expect(
+			screen.getByText("Keno entries in the selected range."),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByText("No Keno logged today yet."),
+		).not.toBeInTheDocument();
 	});
 
 	it("renders legacy entries with sales/payouts and net-only entries without them", async () => {

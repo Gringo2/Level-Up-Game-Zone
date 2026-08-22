@@ -60,6 +60,66 @@ describe("Keno Integration Tests", () => {
 			expect(response.body[0].sales).toBe(100);
 		});
 
+		it("filters keno logs server-side when a date range is provided", async () => {
+			const range: { start?: string; end?: string } = {};
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path !== "keno_logs") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				const chainable: any = {
+					get: vi.fn().mockImplementation(() => {
+						const docs = [
+							{
+								id: "in-range",
+								data: () => ({
+									net_profit: 50,
+									date: "2026-08-01T12:00:00.000Z",
+								}),
+							},
+							{
+								id: "out-of-range",
+								data: () => ({
+									net_profit: 99,
+									date: "2026-09-15T12:00:00.000Z",
+								}),
+							},
+						].filter((doc) => {
+							const date = doc.data().date as string;
+							return (
+								(!range.start || date >= range.start) &&
+								(!range.end || date <= range.end)
+							);
+						});
+						return Promise.resolve({ docs });
+					}),
+					where: vi.fn((field: string, op: string, value: string) => {
+						if (op === ">=") range.start = value;
+						if (op === "<=") range.end = value;
+						return chainable;
+					}),
+					orderBy: vi.fn().mockReturnThis(),
+				};
+				return chainable;
+			});
+
+			const startISO = "2026-08-01T00:00:00.000Z";
+			const endISO = "2026-08-07T23:59:59.999Z";
+			const response = await request(app)
+				.get("/api/keno")
+				.query({ startDate: startISO, endDate: endISO })
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body.map((entry: { id: string }) => entry.id)).toEqual([
+				"in-range",
+			]);
+		});
+
 		it("should successfully create a keno log", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
