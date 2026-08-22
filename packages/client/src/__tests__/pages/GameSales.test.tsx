@@ -124,6 +124,21 @@ describe("GameSales", () => {
 		expect(salesCall[0]).toContain("endDate=");
 	});
 
+	it("shows a period summary for the fetched range", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return Promise.resolve(jsonResponse([salesLog]));
+		});
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+
+		const summary = screen.getByTestId("sales-range-summary");
+		expect(summary).toHaveTextContent("1 sale");
+		expect(summary).toHaveTextContent("Total $10.00");
+	});
+
 	it("applies a custom range and refetches game sales within it", async () => {
 		render(<GameSales />);
 		await screen.findByText(/2 units @ \$5\.00/);
@@ -302,7 +317,7 @@ describe("GameSales", () => {
 		mockFetch.mockResolvedValue(jsonResponse({ error: "boom" }, false, 500));
 		render(<GameSales />);
 		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to load sales data"),
+			expect(toast.error).toHaveBeenCalledWith("Failed to fetch rates"),
 		);
 	});
 
@@ -322,9 +337,7 @@ describe("GameSales", () => {
 		const form = screen.getByText("New Entry").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
 
-		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to save sale"),
-		);
+		await waitFor(() => expect(toast.error).toHaveBeenCalledWith("fail"));
 	});
 
 	it("shows error toast when PUT sale fails in edit mode", async () => {
@@ -341,9 +354,7 @@ describe("GameSales", () => {
 		const form = screen.getByText("Update Sale").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
 
-		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to save sale"),
-		);
+		await waitFor(() => expect(toast.error).toHaveBeenCalledWith("fail"));
 	});
 
 	it("shows error toast when Add Default Games fails", async () => {
@@ -368,9 +379,7 @@ describe("GameSales", () => {
 			screen.getByRole("button", { name: "+ Add Default Games" }),
 		);
 
-		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to configure games"),
-		);
+		await waitFor(() => expect(toast.error).toHaveBeenCalledWith("fail"));
 	});
 
 	it("dismisses delete confirmation when Cancel is clicked", async () => {
@@ -402,9 +411,7 @@ describe("GameSales", () => {
 
 		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
-		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to delete sale"),
-		);
+		await waitFor(() => expect(toast.error).toHaveBeenCalledWith("fail"));
 	});
 
 	it("refetches sales data when the tab becomes visible again", async () => {

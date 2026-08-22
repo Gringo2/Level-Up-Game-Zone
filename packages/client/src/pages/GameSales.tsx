@@ -34,6 +34,7 @@ export function GameSales() {
 	const [loadingRates, setLoadingRates] = useState(true);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [deletePending, setDeletePending] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [loadingDefaults, setLoadingDefaults] = useState(false);
@@ -55,10 +56,14 @@ export function GameSales() {
 					setRates(fetchedRates.filter((rate) => rate.isActive));
 					setLoadingRates(false);
 				}
-			} catch (err) {
+			} catch (err: unknown) {
 				console.error(err);
 				if (mounted) {
-					toast.error("Failed to load sales data");
+					toast.error(
+						err instanceof Error && err.message
+							? err.message
+							: "Failed to load sales data",
+					);
 					setLoadingRates(false);
 				}
 			}
@@ -92,9 +97,13 @@ export function GameSales() {
 				),
 			);
 			setLoadingRates(false);
-		} catch (err) {
+		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to load sales data");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to load sales data",
+			);
 			setLoadingRates(false);
 		}
 	}, [rangeStart, rangeEnd]);
@@ -139,6 +148,7 @@ export function GameSales() {
 			toast.error("Please provide a reason for deletion.");
 			return;
 		}
+		setDeletePending(true);
 		try {
 			const response = await authFetch(`${API_BASE}/api/sales/${id}`, {
 				method: "DELETE",
@@ -156,7 +166,13 @@ export function GameSales() {
 			setDeleteReason("");
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to delete sale");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to delete sale",
+			);
+		} finally {
+			setDeletePending(false);
 		}
 	};
 
@@ -220,7 +236,11 @@ export function GameSales() {
 			}
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to save sale");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to save sale",
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -285,8 +305,13 @@ export function GameSales() {
 
 								setRates((prev) => [...prev, rate1, rate2]);
 								toast.success("Default games configured!");
-							} catch (_err) {
-								toast.error("Failed to configure games");
+							} catch (err: unknown) {
+								console.error(err);
+								toast.error(
+									err instanceof Error && err.message
+										? err.message
+										: "Failed to configure games",
+								);
 							} finally {
 								setLoadingDefaults(false);
 							}
@@ -441,6 +466,18 @@ export function GameSales() {
 								Apply
 							</Button>
 						</div>
+						{logs.length > 0 && (
+							<div
+								className="text-sm text-zinc-500 mb-4"
+								data-testid="sales-range-summary"
+							>
+								{logs.length} {logs.length === 1 ? "sale" : "sales"} &middot;
+								Total $
+								{logs
+									.reduce((sum, l) => sum + l.calculated_total, 0)
+									.toFixed(2)}
+							</div>
+						)}
 						<div className="space-y-3">
 							{logs.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
@@ -477,7 +514,7 @@ export function GameSales() {
 														size="sm"
 														variant="outline"
 														onClick={() => handleEdit(log)}
-														disabled={!!editingId}
+														disabled={!!editingId || deletePending}
 													>
 														<Edit2 className="h-4 w-4 mr-1" /> Edit
 													</Button>
@@ -486,7 +523,7 @@ export function GameSales() {
 														variant="ghost"
 														className="text-red-600 hover:text-red-700 hover:bg-red-50"
 														onClick={() => setDeletingId(log.id)}
-														disabled={!!editingId}
+														disabled={!!editingId || deletePending}
 													>
 														<Trash2 className="h-4 w-4" />
 													</Button>
@@ -507,6 +544,7 @@ export function GameSales() {
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
 				requireReason
+				loading={deletePending}
 				confirmLabel="Confirm Delete"
 				onConfirm={() => {
 					if (deletingId) handleDelete(deletingId);

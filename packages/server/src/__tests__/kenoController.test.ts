@@ -148,6 +148,88 @@ describe("Keno Integration Tests", () => {
 			expect(response.body.net_profit).toBe(150);
 		});
 
+		it("rejects null net_profit instead of coercing it to 0 (JSON-NaN hole)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "manager" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "new-keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/keno")
+				.set("Authorization", authHeader)
+				.send({ net_profit: null });
+
+			expect(response.status).toBe(400);
+		});
+
+		it("rejects empty-string net_profit instead of coercing it to 0", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "manager" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "new-keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/keno")
+				.set("Authorization", authHeader)
+				.send({ net_profit: "" });
+
+			expect(response.status).toBe(400);
+		});
+
+		it("accepts negative net_profit (legitimate losing day)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "manager" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "new-keno-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/keno")
+				.set("Authorization", authHeader)
+				.send({ net_profit: -25.5 });
+
+			expect(response.status).toBe(201);
+			expect(response.body.net_profit).toBe(-25.5);
+		});
+
 		it("should successfully update a keno log", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
@@ -447,10 +529,18 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.put("/api/keno/keno-123")
 				.set("Authorization", authHeader)
-				.send({ net_profit: 500 });
+				.send({ net_profit: 300 });
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toContain("Required");
+		});
+
+		it("rejects null net_profit on update instead of coercing it to 0", async () => {
+			const response = await request(app)
+				.put("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ net_profit: null, editReason: "Garbage input guard" });
+
+			expect(response.status).toBe(400);
 		});
 
 		it("should return 400 when deleting keno without deleteReason (Zod)", async () => {

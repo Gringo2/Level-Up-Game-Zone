@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { getShopEndOfDay, getShopStartOfDay } from "../../lib/dateUtils.js";
-import { Keno } from "../../pages/Keno.js";
+import { Keno, parseNetAmountInput } from "../../pages/Keno.js";
 
 afterEach(cleanup);
 
@@ -116,9 +116,7 @@ describe("Keno", () => {
 	it("shows an error toast when loading fails", async () => {
 		mockFetch.mockResolvedValue(jsonResponse({ error: "boom" }, false, 500));
 		render(<Keno />);
-		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to load keno logs"),
-		);
+		await waitFor(() => expect(toast.error).toHaveBeenCalledWith("boom"));
 	});
 
 	it("fetches today's range server-side on load instead of fetching all", async () => {
@@ -163,6 +161,59 @@ describe("Keno", () => {
 		expect(
 			screen.queryByText("No Keno logged today yet."),
 		).not.toBeInTheDocument();
+	});
+
+	it("parseNetAmountInput rejects NaN-holes and keeps negatives/decimals legal", () => {
+		expect(parseNetAmountInput("--1")).toBeNull();
+		expect(parseNetAmountInput("")).toBeNull();
+		expect(parseNetAmountInput("abc")).toBeNull();
+		expect(parseNetAmountInput("1e-")).toBeNull();
+		expect(parseNetAmountInput("75")).toBe(75);
+		expect(parseNetAmountInput("-25.5")).toBe(-25.5);
+		expect(parseNetAmountInput("0.01")).toBe(0.01);
+	});
+
+	it("shows dated rows and a period summary for the fetched range", async () => {
+		mockFetch.mockResolvedValue(jsonResponse([kenoLog]));
+		render(<Keno />);
+		await screen.findByText("Net: $60.00");
+
+		const summary = screen.getByTestId("keno-range-summary");
+		expect(summary).toHaveTextContent("1 entry");
+		expect(summary).toHaveTextContent("Net $60.00");
+		expect(screen.getByText(/,\s*\d{1,2}:\d{2}\s*[AP]M/i)).toBeInTheDocument();
+	});
+
+	it("disables row actions while a verification request is in flight", async () => {
+		mockFetch.mockResolvedValue(jsonResponse([kenoLog]));
+		render(<Keno />);
+		await screen.findByText("Net: $60.00");
+
+		let resolveVerify: (value: Response) => void = () => {};
+		const deferred = new Promise<Response>((resolve) => {
+			resolveVerify = resolve;
+		});
+		const inflightFetch = vi
+			.fn()
+			.mockImplementation((url: string, init?: RequestInit) => {
+				if (init?.method === "PUT" && url.endsWith("/verify")) {
+					return deferred;
+				}
+				return jsonResponse([kenoLog]);
+			});
+		global.fetch = inflightFetch as unknown as typeof fetch;
+
+		fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+		expect(screen.getByRole("button", { name: "Verify" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: /Edit/ })).toBeDisabled();
+
+		resolveVerify(jsonResponse({ ...kenoLog, verified: true }));
+		await screen.findByText("Verified");
+
+		await waitFor(() =>
+			expect(screen.getByRole("button", { name: /Edit/ })).toBeEnabled(),
+		);
 	});
 
 	it("renders legacy entries with sales/payouts and net-only entries without them", async () => {
@@ -331,7 +382,7 @@ describe("Keno", () => {
 		fireEvent.submit(form as HTMLFormElement);
 
 		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to save keno log"),
+			expect(toast.error).toHaveBeenCalledWith("Server error"),
 		);
 	});
 
@@ -358,7 +409,7 @@ describe("Keno", () => {
 		fireEvent.submit(form as HTMLFormElement);
 
 		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to save keno log"),
+			expect(toast.error).toHaveBeenCalledWith("Server error"),
 		);
 	});
 
@@ -403,7 +454,7 @@ describe("Keno", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Confirm Delete" }));
 
 		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to delete keno log"),
+			expect(toast.error).toHaveBeenCalledWith("Server error"),
 		);
 	});
 
@@ -424,7 +475,7 @@ describe("Keno", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
 		await waitFor(() =>
-			expect(toast.error).toHaveBeenCalledWith("Failed to verify keno log"),
+			expect(toast.error).toHaveBeenCalledWith("Server error"),
 		);
 	});
 

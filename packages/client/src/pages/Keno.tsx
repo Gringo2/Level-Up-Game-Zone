@@ -21,6 +21,17 @@ import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
+// Pure so the NaN-hole guard is unit-testable (jsdom sanitizes number inputs,
+// making the guard unreachable through change events in tests).
+// Uses full-string Number() semantics — mirroring the server's z.coerce +
+// NaN-refine — so partial/garbage input ("1e-", "--1") is rejected outright.
+export const parseNetAmountInput = (raw: string): number | null => {
+	const trimmed = raw.trim();
+	if (trimmed === "") return null;
+	const parsed = Number(trimmed);
+	return Number.isFinite(parsed) ? parsed : null;
+};
+
 export function Keno() {
 	const { user } = useAuth();
 	const [netAmount, setNetAmount] = useState("");
@@ -34,6 +45,8 @@ export function Keno() {
 	const [logs, setLogs] = useState<KenoLog[]>([]);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [verifyingId, setVerifyingId] = useState<string | null>(null);
+	const [deletePending, setDeletePending] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 
@@ -60,9 +73,13 @@ export function Keno() {
 					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 				),
 			);
-		} catch (err) {
+		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to load keno logs");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to load keno logs",
+			);
 		}
 	}, [rangeStart, rangeEnd]);
 
@@ -98,6 +115,7 @@ export function Keno() {
 			toast.error("Please provide a reason for deletion.");
 			return;
 		}
+		setDeletePending(true);
 		try {
 			const response = await authFetch(`${API_BASE}/api/keno/${id}`, {
 				method: "DELETE",
@@ -115,11 +133,18 @@ export function Keno() {
 			setDeleteReason("");
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to delete keno log");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to delete keno log",
+			);
+		} finally {
+			setDeletePending(false);
 		}
 	};
 
 	const handleVerify = async (id: string) => {
+		setVerifyingId(id);
 		try {
 			const response = await authFetch(`${API_BASE}/api/keno/${id}/verify`, {
 				method: "PUT",
@@ -133,13 +158,25 @@ export function Keno() {
 			);
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to verify keno log");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to verify keno log",
+			);
+		} finally {
+			setVerifyingId(null);
 		}
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!netAmount || !user) return;
+
+		const parsedNet = parseNetAmountInput(netAmount);
+		if (parsedNet === null) {
+			toast.error("Please enter a valid net amount.");
+			return;
+		}
 
 		setLoading(true);
 		try {
@@ -155,7 +192,7 @@ export function Keno() {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						net_profit: parseFloat(netAmount),
+						net_profit: parsedNet,
 						editReason,
 					}),
 				});
@@ -174,7 +211,7 @@ export function Keno() {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						net_profit: parseFloat(netAmount),
+						net_profit: parsedNet,
 						date: new Date(entryDate).toISOString(),
 					}),
 				});
@@ -189,7 +226,11 @@ export function Keno() {
 			}
 		} catch (err: unknown) {
 			console.error(err);
-			toast.error("Failed to save keno log");
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to save keno log",
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -282,7 +323,7 @@ export function Keno() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<div className="flex gap-2 items-end mb-4">
+					<div className="flex gap-2 items-end mb-3">
 						<div className="space-y-1">
 							<Label htmlFor="kenoRangeStart">From</Label>
 							<Input
@@ -309,6 +350,15 @@ export function Keno() {
 							Apply
 						</Button>
 					</div>
+					{logs.length > 0 && (
+						<div
+							className="text-sm text-zinc-500 mb-4"
+							data-testid="keno-range-summary"
+						>
+							{logs.length} {logs.length === 1 ? "entry" : "entries"} &middot;
+							Net ${logs.reduce((sum, l) => sum + l.net_profit, 0).toFixed(2)}
+						</div>
+					)}
 					<div className="space-y-3">
 						{logs.length === 0 ? (
 							<div className="text-center text-zinc-500 py-8">
@@ -335,7 +385,7 @@ export function Keno() {
 											Net: ${log.net_profit.toFixed(2)}
 										</div>
 										<div className="text-xs text-zinc-400 mt-1 flex items-center gap-2">
-											{format(new Date(log.date), "h:mm a")}
+											{format(new Date(log.date), "MMM d, h:mm a")}
 											{log.user_name && (
 												<>
 													&bull; <span>{log.user_name}</span>
@@ -362,6 +412,7 @@ export function Keno() {
 													variant="outline"
 													className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
 													onClick={() => handleVerify(log.id)}
+													disabled={!!verifyingId || deletePending}
 												>
 													Verify
 												</Button>
@@ -373,7 +424,9 @@ export function Keno() {
 													size="sm"
 													variant="outline"
 													onClick={() => handleEdit(log)}
-													disabled={!!editingId}
+													disabled={
+														!!editingId || !!verifyingId || deletePending
+													}
 												>
 													<Edit2 className="h-4 w-4 mr-1" /> Edit
 												</Button>
@@ -382,7 +435,9 @@ export function Keno() {
 													variant="ghost"
 													className="text-red-600 hover:text-red-700 hover:bg-red-50"
 													onClick={() => setDeletingId(log.id)}
-													disabled={!!editingId}
+													disabled={
+														!!editingId || !!verifyingId || deletePending
+													}
 												>
 													<Trash2 className="h-4 w-4" />
 												</Button>
@@ -402,6 +457,7 @@ export function Keno() {
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
 				requireReason
+				loading={deletePending}
 				confirmLabel="Confirm Delete"
 				onConfirm={() => {
 					if (deletingId) handleDelete(deletingId);

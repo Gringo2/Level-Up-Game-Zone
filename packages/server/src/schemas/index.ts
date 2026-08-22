@@ -27,6 +27,18 @@ const positiveNumber = (fieldName: string) =>
 			message: `${fieldName} must be greater than 0`,
 		});
 
+// Numeric field that may be negative, but rejects null/"" (JSON.stringify(NaN) hole)
+// and non-numeric strings. Negatives stay legal for fields like keno net_profit.
+const finiteNumber = (fieldName: string) =>
+	z.preprocess(
+		(value) => (value === null || value === "" ? Number.NaN : value),
+		z.coerce
+			.number({ invalid_type_error: `${fieldName} must be a valid number` })
+			.refine((val) => Number.isFinite(val), {
+				message: `${fieldName} must be a valid number`,
+			}),
+	);
+
 export const DeleteReasonSchema = z.object({
 	deleteReason: z
 		.string()
@@ -92,12 +104,12 @@ const rejectRetiredAndUnknownKeys = <T extends z.ZodRawShape>(shape: T) =>
 		});
 
 export const CreateKenoSchema = rejectRetiredAndUnknownKeys({
-	net_profit: z.coerce.number(),
+	net_profit: finiteNumber("Net profit"),
 	date: z.string().optional(),
 });
 
 export const UpdateKenoSchema = rejectRetiredAndUnknownKeys({
-	net_profit: z.coerce.number().optional(),
+	net_profit: finiteNumber("Net profit").optional(),
 	editReason: z
 		.string()
 		.trim()
