@@ -676,10 +676,14 @@ export function Reports() {
 																)}
 															</td>
 															<td className="px-4 py-3 text-right">
-																${log.sales.toFixed(2)}
+																{log.sales != null
+																	? `$${log.sales.toFixed(2)}`
+																	: "—"}
 															</td>
 															<td className="px-4 py-3 text-right text-red-600">
-																-${log.payouts.toFixed(2)}
+																{log.payouts != null
+																	? `-$${log.payouts.toFixed(2)}`
+																	: "—"}
 															</td>
 															<td
 																className={`px-4 py-3 text-right font-medium ${log.net_profit < 0 ? "text-red-600" : "text-emerald-600"}`}

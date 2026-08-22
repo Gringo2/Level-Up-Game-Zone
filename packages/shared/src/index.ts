@@ -54,8 +54,8 @@ export interface GameSalesLog {
 
 export interface KenoLog {
 	id: string;
-	sales: number;
-	payouts: number;
+	sales?: number;
+	payouts?: number;
 	net_profit: number;
 	user_id: string;
 	user_name?: string;

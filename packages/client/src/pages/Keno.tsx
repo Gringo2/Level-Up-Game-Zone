@@ -23,8 +23,7 @@ import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 
 export function Keno() {
 	const { user } = useAuth();
-	const [sales, setSales] = useState("");
-	const [payouts, setPayouts] = useState("");
+	const [netAmount, setNetAmount] = useState("");
 	const [entryDate, setEntryDate] = useState(() =>
 		new Date().toISOString().slice(0, 10),
 	);
@@ -82,19 +81,15 @@ export function Keno() {
 		};
 	}, []);
 
-	const netProfit = parseFloat(sales || "0") - parseFloat(payouts || "0");
-
 	const handleEdit = (log: KenoLog) => {
 		setEditingId(log.id);
-		setSales(log.sales.toString());
-		setPayouts(log.payouts.toString());
+		setNetAmount(log.net_profit.toString());
 		window.scrollTo({ top: 0, behavior: "smooth" });
 	};
 
 	const cancelEdit = () => {
 		setEditingId(null);
-		setSales("");
-		setPayouts("");
+		setNetAmount("");
 		setEditReason("");
 	};
 
@@ -144,7 +139,7 @@ export function Keno() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!sales || !payouts || !user) return;
+		if (!netAmount || !user) return;
 
 		setLoading(true);
 		try {
@@ -160,9 +155,7 @@ export function Keno() {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						sales: sales,
-						payouts: payouts,
-						net_profit: netProfit,
+						net_profit: parseFloat(netAmount),
 						editReason,
 					}),
 				});
@@ -181,9 +174,7 @@ export function Keno() {
 						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
-						sales: sales,
-						payouts: payouts,
-						net_profit: netProfit,
+						net_profit: parseFloat(netAmount),
 						date: new Date(entryDate).toISOString(),
 					}),
 				});
@@ -193,8 +184,7 @@ export function Keno() {
 					);
 				const newLog = await safeJson<KenoLog>(response);
 				setLogs((prev) => [newLog, ...prev]);
-				setSales("");
-				setPayouts("");
+				setNetAmount("");
 				toast.success("Keno logged successfully!");
 			}
 		} catch (err: unknown) {
@@ -213,7 +203,7 @@ export function Keno() {
 					<CardHeader>
 						<CardTitle>Daily Keno Entry</CardTitle>
 						<CardDescription>
-							Enter the total sales and payouts from the Keno software.
+							Enter the net amount from the Keno software.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-4">
@@ -228,35 +218,22 @@ export function Keno() {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="sales">Total Sales ($)</Label>
+							<Label htmlFor="net">Net Amount ($)</Label>
 							<Input
-								id="sales"
+								id="net"
 								type="number"
 								step="0.01"
-								min="0"
-								value={sales}
-								onChange={(e) => setSales(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="payouts">Total Payouts ($)</Label>
-							<Input
-								id="payouts"
-								type="number"
-								step="0.01"
-								min="0"
-								value={payouts}
-								onChange={(e) => setPayouts(e.target.value)}
+								value={netAmount}
+								onChange={(e) => setNetAmount(e.target.value)}
 								required
 							/>
 						</div>
 						<div className="p-4 bg-zinc-50 rounded-md border border-zinc-100">
 							<div className="text-sm text-zinc-500 mb-1">Net Profit</div>
 							<div
-								className={`text-3xl font-bold ${netProfit < 0 ? "text-red-500" : "text-emerald-600"}`}
+								className={`text-3xl font-bold ${parseFloat(netAmount || "0") < 0 ? "text-red-500" : "text-emerald-600"}`}
 							>
-								${netProfit.toFixed(2)}
+								${parseFloat(netAmount || "0").toFixed(2)}
 							</div>
 						</div>
 						{editingId && (
@@ -279,9 +256,7 @@ export function Keno() {
 						<Button
 							type="submit"
 							className="flex-1"
-							disabled={
-								loading || !sales || !payouts || (!!editingId && !editReason)
-							}
+							disabled={loading || !netAmount || (!!editingId && !editReason)}
 						>
 							{loading ? (
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -315,10 +290,12 @@ export function Keno() {
 									className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border rounded-md bg-white gap-3"
 								>
 									<div>
-										<div className="text-sm text-zinc-500">
-											Sales: ${log.sales.toFixed(2)} | Payouts: $
-											{log.payouts.toFixed(2)}
-										</div>
+										{log.sales != null && log.payouts != null && (
+											<div className="text-sm text-zinc-500">
+												Sales: ${log.sales.toFixed(2)} | Payouts: $
+												{log.payouts.toFixed(2)}
+											</div>
+										)}
 										<div
 											className={`font-semibold ${log.net_profit < 0 ? "text-red-500" : "text-emerald-600"}`}
 										>

@@ -302,4 +302,42 @@ describe("Reports", () => {
 		expect(printSpy).toHaveBeenCalled();
 		printSpy.mockRestore();
 	});
+
+	it("renders net-only keno rows with em-dash sales/payouts cells", async () => {
+		const netOnlyKenoLog = {
+			id: "k2",
+			net_profit: 75,
+			user_id: "u1",
+			date: "2026-08-02T14:00:00.000+03:00",
+		};
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([kenoLog, netOnlyKenoLog]))
+				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([])),
+		);
+
+		render(<Reports />);
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-31" } });
+		fireEvent.click(screen.getByText("Apply"));
+
+		await waitFor(() => {
+			expect(screen.getByText("$100.00")).toBeDefined();
+			expect(screen.getByText("-$40.00")).toBeDefined();
+		});
+		expect(screen.getByText("$75.00")).toBeDefined();
+		expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
+	});
 });

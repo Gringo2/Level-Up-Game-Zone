@@ -1,5 +1,6 @@
 import { COLLECTIONS, ROLES } from "@level-up/shared";
 import type { Response } from "express";
+import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { safeErrorMessage } from "../utils/safeError.js";
@@ -32,7 +33,7 @@ export const listKenoLogs = async (req: AuthRequest, res: Response) => {
 export const createKeno = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { sales, payouts, net_profit, date } = req.body;
+	const { net_profit, date } = req.body;
 
 	try {
 		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
@@ -45,8 +46,6 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		const data = {
-			sales: parseFloat(sales),
-			payouts: parseFloat(payouts),
 			net_profit: parseFloat(net_profit),
 			user_id: user.uid,
 			...(displayName && { user_name: displayName }),
@@ -79,7 +78,7 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
 	const { id } = req.params;
-	const { sales, payouts, net_profit, editReason } = req.body;
+	const { net_profit, editReason } = req.body;
 
 	try {
 		const docRef = db.collection(COLLECTIONS.KENO_LOGS).doc(id);
@@ -95,10 +94,11 @@ export const updateKeno = async (req: AuthRequest, res: Response) => {
 
 			// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
 			const newValues: Record<string, any> = {};
-			if (sales !== undefined) newValues.sales = parseFloat(sales);
-			if (payouts !== undefined) newValues.payouts = parseFloat(payouts);
 			if (net_profit !== undefined)
 				newValues.net_profit = parseFloat(net_profit);
+			// Legacy rows converge to the net-only shape on any edit; originals persist in audit old_value.
+			newValues.sales = FieldValue.delete();
+			newValues.payouts = FieldValue.delete();
 
 			transaction.update(docRef, newValues);
 

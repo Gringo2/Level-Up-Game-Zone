@@ -54,6 +54,14 @@ const kenoLog = {
 	verified: false,
 };
 
+const netOnlyKenoLog = {
+	id: "keno-2",
+	net_profit: 75,
+	user_id: "u1",
+	date: new Date().toISOString(),
+	verified: true,
+};
+
 const mockFetch = vi.fn();
 
 describe("Keno", () => {
@@ -75,8 +83,6 @@ describe("Keno", () => {
 						...kenoLog,
 						...body,
 						id: kenoLog.id,
-						sales: Number(body.sales ?? kenoLog.sales),
-						payouts: Number(body.payouts ?? kenoLog.payouts),
 					}),
 				);
 			}
@@ -114,18 +120,39 @@ describe("Keno", () => {
 		);
 	});
 
-	it("logs a new keno entry via POST with computed net profit", async () => {
+	it("renders legacy entries with sales/payouts and net-only entries without them", async () => {
+		const nullFieldsKenoLog = {
+			id: "keno-3",
+			sales: null,
+			payouts: null,
+			net_profit: 10,
+			user_id: "u1",
+			date: new Date().toISOString(),
+			verified: true,
+		};
+		mockFetch.mockResolvedValue(
+			jsonResponse([kenoLog, netOnlyKenoLog, nullFieldsKenoLog]),
+		);
+		render(<Keno />);
+		expect(await screen.findByText("Net: $60.00")).toBeInTheDocument();
+		expect(
+			screen.getByText("Sales: $100.00 | Payouts: $40.00"),
+		).toBeInTheDocument();
+		expect(await screen.findByText("Net: $75.00")).toBeInTheDocument();
+		expect(screen.queryByText(/Sales: \$75/)).not.toBeInTheDocument();
+		expect(screen.queryByText(/Payouts: \$75/)).not.toBeInTheDocument();
+		expect(await screen.findByText("Net: $10.00")).toBeInTheDocument();
+	});
+
+	it("logs a new keno entry via POST with the entered net amount", async () => {
 		mockFetch.mockResolvedValueOnce(jsonResponse([kenoLog]));
 		render(<Keno />);
 		await screen.findByText("Net: $60.00");
 
-		fireEvent.change(screen.getByLabelText("Total Sales ($)"), {
-			target: { value: "100" },
+		fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+			target: { value: "75" },
 		});
-		fireEvent.change(screen.getByLabelText("Total Payouts ($)"), {
-			target: { value: "40" },
-		});
-		expect(screen.getByText("$60.00")).toBeInTheDocument();
+		expect(screen.getByText("$75.00")).toBeInTheDocument();
 
 		const form = screen.getByText("Daily Keno Entry").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
@@ -141,9 +168,7 @@ describe("Keno", () => {
 		);
 		const [, init] = mockFetch.mock.calls[1] as [string, RequestInit];
 		expect(JSON.parse(String(init.body))).toEqual({
-			sales: "100",
-			payouts: "40",
-			net_profit: 60,
+			net_profit: 75,
 			date: expect.any(String),
 		});
 	});
@@ -199,8 +224,8 @@ describe("Keno", () => {
 		fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
 			target: { value: "Typo in payouts" },
 		});
-		fireEvent.change(screen.getByLabelText("Total Payouts ($)"), {
-			target: { value: "45" },
+		fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+			target: { value: "55" },
 		});
 		const form = screen.getByText("Update Keno").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
@@ -254,11 +279,8 @@ describe("Keno", () => {
 			});
 		global.fetch = failFetch as unknown as typeof fetch;
 
-		fireEvent.change(screen.getByLabelText("Total Sales ($)"), {
-			target: { value: "100" },
-		});
-		fireEvent.change(screen.getByLabelText("Total Payouts ($)"), {
-			target: { value: "40" },
+		fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+			target: { value: "75" },
 		});
 		const form = screen.getByText("Daily Keno Entry").closest("form");
 		fireEvent.submit(form as HTMLFormElement);

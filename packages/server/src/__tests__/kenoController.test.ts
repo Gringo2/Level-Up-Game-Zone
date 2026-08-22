@@ -1,3 +1,5 @@
+import { COLLECTIONS } from "@level-up/shared";
+import { FieldValue } from "firebase-admin/firestore";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
@@ -80,7 +82,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/keno")
 				.set("Authorization", authHeader)
-				.send({ sales: 200, payouts: 50, net_profit: 150 });
+				.send({ net_profit: 150 });
 
 			expect(response.status).toBe(201);
 			expect(response.body.net_profit).toBe(150);
@@ -133,7 +135,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.put("/api/keno/keno-123")
 				.set("Authorization", authHeader)
-				.send({ sales: 300, editReason: "Found more tickets" });
+				.send({ net_profit: 300, editReason: "Found more tickets" });
 
 			expect(response.status).toBe(200);
 		});
@@ -160,7 +162,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/keno")
 				.set("Authorization", authHeader)
-				.send({ sales: 100, payouts: 60, net_profit: 40 });
+				.send({ net_profit: 40 });
 
 			expect(response.status).toBe(201);
 			expect(response.body.verified).toBe(false);
@@ -238,21 +240,86 @@ describe("Keno Integration Tests", () => {
 	});
 
 	describe("Negative Path (Rejection Scenarios)", () => {
-		it("should return 400 when creating keno with negative sales (Zod)", async () => {
+		it("should return 400 when creating keno with a legacy sales/payouts payload (strict schema)", async () => {
 			const response = await request(app)
 				.post("/api/keno")
 				.set("Authorization", authHeader)
-				.send({ sales: -100, payouts: 50, net_profit: -150 });
+				.send({ sales: 100, payouts: 50, net_profit: 50 });
 
 			expect(response.status).toBe(400);
-			expect(response.body.error).toContain("Sales cannot be negative");
+			expect(response.body.error).toContain("Retired field");
+		});
+
+		it("should return 400 when updating keno with a legacy sales/payouts payload (strict schema)", async () => {
+			const response = await request(app)
+				.put("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ sales: 300, editReason: "Legacy shape" });
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Retired field");
+		});
+
+		it("converges a legacy keno row to the net-only shape on edit", async () => {
+			let capturedUpdate: Record<string, unknown> | undefined;
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === COLLECTIONS.USERS) {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({
+						id: "keno-123",
+						get: vi.fn().mockResolvedValue({
+							id: "keno-123",
+							data: () => ({ net_profit: 300 }),
+						}),
+					}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "keno-123",
+						data: () => ({ sales: 200, payouts: 50, net_profit: 150 }),
+					}),
+					set: vi.fn(),
+					update: vi.fn().mockImplementation((_ref, values) => {
+						capturedUpdate = values;
+					}),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/keno/keno-123")
+				.set("Authorization", authHeader)
+				.send({ net_profit: 300, editReason: "Net restated" });
+
+			expect(response.status).toBe(200);
+			expect(capturedUpdate).toMatchObject({
+				net_profit: 300,
+				sales: FieldValue.delete(),
+				payouts: FieldValue.delete(),
+			});
 		});
 
 		it("should return 400 when updating keno without editReason (Zod)", async () => {
 			const response = await request(app)
 				.put("/api/keno/keno-123")
 				.set("Authorization", authHeader)
-				.send({ sales: 500 });
+				.send({ net_profit: 500 });
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain("Required");
@@ -320,7 +387,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.put("/api/keno/missing-keno")
 				.set("Authorization", authHeader)
-				.send({ sales: 300, editReason: "Corrected figures" });
+				.send({ net_profit: 300, editReason: "Corrected figures" });
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toContain("Keno log not found");
@@ -436,7 +503,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/keno")
 				.set("Authorization", authHeader)
-				.send({ sales: 200, payouts: 50, net_profit: 150 });
+				.send({ net_profit: 150 });
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toBe("Internal server error");
@@ -452,7 +519,7 @@ describe("Keno Integration Tests", () => {
 			const response = await request(app)
 				.put("/api/keno/keno-123")
 				.set("Authorization", authHeader)
-				.send({ sales: 300, editReason: "Corrected figures" });
+				.send({ net_profit: 300, editReason: "Corrected figures" });
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toBe("Internal server error");
@@ -501,7 +568,7 @@ describe("Keno Integration Tests", () => {
 		it("returns 401 without a bearer token on POST", async () => {
 			const response = await request(app)
 				.post("/api/keno")
-				.send({ sales: 100, payouts: 50, net_profit: 50 });
+				.send({ net_profit: 50 });
 
 			expect(response.status).toBe(401);
 		});

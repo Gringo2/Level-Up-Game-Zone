@@ -70,16 +70,33 @@ export const UpdateSaleSchema = z
 	.strip();
 
 // Keno Schemas
-export const CreateKenoSchema = z.object({
-	sales: nonNegativeNumber("Sales"),
-	payouts: nonNegativeNumber("Payouts"),
+const KENO_RETIRED_KEYS: readonly string[] = ["sales", "payouts"];
+
+const rejectRetiredAndUnknownKeys = <T extends z.ZodRawShape>(shape: T) =>
+	z
+		.object(shape)
+		.passthrough()
+		.superRefine((value, ctx) => {
+			const allowed = Object.keys(shape);
+			const unknown = Object.keys(value).filter(
+				(key) => !allowed.includes(key),
+			);
+			if (unknown.length === 0) return;
+			const retired = unknown.filter((key) => KENO_RETIRED_KEYS.includes(key));
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: retired.length
+					? `Retired field(s): ${retired.join(", ")}. Keno entries accept a direct net amount only — resend using net_profit without ${retired.join(", ")}.`
+					: `Unrecognized key(s) in object: ${unknown.join(", ")}`,
+			});
+		});
+
+export const CreateKenoSchema = rejectRetiredAndUnknownKeys({
 	net_profit: z.coerce.number(),
 	date: z.string().optional(),
 });
 
-export const UpdateKenoSchema = z.object({
-	sales: nonNegativeNumber("Sales").optional(),
-	payouts: nonNegativeNumber("Payouts").optional(),
+export const UpdateKenoSchema = rejectRetiredAndUnknownKeys({
 	net_profit: z.coerce.number().optional(),
 	editReason: z
 		.string()
