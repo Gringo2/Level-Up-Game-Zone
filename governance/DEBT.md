@@ -46,6 +46,7 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 ## Resolved Debt
 
+| TD-054 | Expenses TD-047 range-guard test made deterministic — `To` now set explicitly alongside `From` (mirrors Keno/GameSales); wall-clock default no longer participates. Red 469/470 captured pre-fix; suite restored to 470/470. Standard codified in ACP-007 / AGENTS.md Rule 28. Resolved in M-79. | 2026-08-23 |
 | TD-035 | CreateSaleSchema.game_id now REQUIRED (min 1) and createSale validates the referenced game_rates doc exists at creation time (400 Invalid game). Historic docs untouched. Resolved alongside TD-026 in M-76. | 2026-08-22 |
 
 | TD-026 | Sales half fixed server-authoritative: CreateSaleSchema drops calculated_total & requires game_id; createSale fetches rate doc pre-transaction (missing → 400 Invalid game), persists rate.price_per_unit / price×qty / rate.game_name ignoring client values — tamper-proofed by test. Keno half covered-by-design (M-66 net-only contract = operator-entered source figure; M-68 finite guards). Review A1: updateSale PUT path closed identically (tx-time recompute + Invalid-game 400 mapping) — bypass vector eliminated. M-76. | 2026-08-22 |

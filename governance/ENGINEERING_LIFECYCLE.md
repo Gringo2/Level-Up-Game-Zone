@@ -42,7 +42,7 @@ All future missions must pass five explicit gates before transitioning to `LOCKE
 1. **Proposal Gate:** Approved ACP/RFC defining architectural bounds.
 2. **Boundary Gate:** Verified zero forbidden package dependencies (AVP-001).
 3. **Verification Gate:** Passing build, lint (`npm run lint`), unit (`vitest`), and E2E (`playwright`) tests.
-4. **Evidence Payload Gate:** Documented test and compliance evidence in `MISSION.md`.
+4. **Evidence Payload Gate:** Documented test and compliance evidence in `MISSION.md`, including confirmation that no new/modified test depends on wall-clock time (ACP-007 Time Determinism, AGENTS.md Rule 28).
 5. **Approval Gate:** Explicit Product Owner approval before closing.
 
 **Mission Record Mandate (M-42):** every mission record in `governance/MISSION.md` MUST declare a `**Type:**` field. Tooling missions that edit `.agents/*` or repository infrastructure MUST use `**Type:** Governance` or `**Type:** Infrastructure`; otherwise `mission_gate.sh` will deny the edits (ADR-007 guardrail, line 41-47). The lock script warns at lock time if the field is absent.

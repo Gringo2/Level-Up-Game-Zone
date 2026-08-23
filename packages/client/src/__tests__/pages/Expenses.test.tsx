@@ -717,6 +717,9 @@ describe("Expenses", () => {
 		fireEvent.change(screen.getByLabelText("From"), {
 			target: { value: "2026-08-23" },
 		});
+		fireEvent.change(screen.getByLabelText("To"), {
+			target: { value: "2026-08-20" },
+		});
 
 		expect(
 			screen.getByText("From date must be on or before To"),

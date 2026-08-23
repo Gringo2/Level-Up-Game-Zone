@@ -266,13 +266,15 @@ The AI Implementor must never rely on tautological or "vacuous" tests. A test th
 - **Mandatory Red-Green Gating:** Before finalizing a test suite, the AI must prove that the tests can fail. It must run the tests against an incomplete or intentionally flawed implementation to generate a verified "Red" (Fail) state before achieving a "Green" (Pass) state.
 - **Negative Path Coverage:** Testing the "Happy Path" is insufficient. The AI must explicitly write negative tests that validate failure modes, error boundaries, and rejection of invalid state.
 - **No Over-Mocking:** The AI is forbidden from mocking internal module boundaries just to force a passing test. Mocks are reserved strictly for external side-effects (e.g., Network, Database, Time).
+- **Time Determinism (ACP-007):** Tests must not depend on wall-clock time. A test driving date logic must set *every* relevant date input explicitly, never relying on a component's `new Date()` default to produce the tested inequality; where "today" is genuinely required, pin it with scoped Vitest fake timers (`vi.setSystemTime`) inside that test only — never globally in setup files.
 
 ## 17. Version History
 **AGENTS.md**
 
-Version 1.9.0
+Version 1.9.1
 
 *   **Change History:**
+    *   **v1.9.1:** Added Time Determinism clause to Rule 28 per ACP-007 (M-79), prohibiting wall-clock-dependent tests.
     *   **v1.9.0:** Synchronized Engineering Constitution with monorepo architecture, updated active Firestore collection vocabulary, replaced MANIFEST.yaml reference with GOVERNANCE_MAP.md, and reordered Version History section to the bottom.
     *   **v1.8.4:** Added Rule 24 (Anti-Assumption Directory & ID Protocol) to explicitly forbid assuming artifact IDs and file paths without probing.
     *   **v1.8.3:** Added Rule 23 (No Persistent Scratchpads) to explicitly forbid committing unowned, temporary execution scripts to the workspace.
