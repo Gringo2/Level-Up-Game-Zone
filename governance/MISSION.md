@@ -2,7 +2,7 @@
 
 **Type:** QA / Test Integrity
 **Mission:** M-79 TD-054 Hotfix — Deterministic Expenses Range-Guard Test (+ ACP-007 Standard)
-**Status:** Active
+**Status:** Locked
 
 ## 1. Objective
 1. **TD-054** — Restore suite to Green at HEAD: `Expenses.test.tsx` "TD-047" case is a time bomb (hardcoded `From=2026-08-23` vs wall-clock default `To`); detonated on 2026-08-23 (From === To → guard never fires). Fix by setting both inputs explicitly (mirror Keno/GameSales pattern).
@@ -21,5 +21,7 @@
 Red captured first (2026-08-23, pre-fix). Post-fix: targeted test Green, then full suite must return 470/470. Negative path preserved (asserts hint shown AND fetch count unchanged).
 
 ## Evidence Payload
-- [x] Functional Verification: full suite 470/470 (Red 469/470 captured first)
-- [x] AVP-001: tsc=0 | Biome(changed files)=0 (1 pre-existing warning at HEAD, line 11 noUnusedImports — backlog, not introduced) | knip=0 | depcruise ✔
+- [x] Functional Verification: full suite 470/470 via official Gate 3 (Red 469/470 captured first); E2E Gate 4 6/6 passed
+- [x] Architectural Verification (AVP-001): Gate 1 biome check ✔ | Gate 2 tsc -b ✔ | depcruise 0 violations (148 modules)
+- [x] Dependency Graph Clean: knip advisory matrix all green (0 files/exports/deps unused); no new dependencies introduced
+- [x] ADR Compliance: ADR-006 Red-Green followed; AGENTS.md Rule 28 amendment per approved ACP-007; TD-054 closed in DEBT.md
