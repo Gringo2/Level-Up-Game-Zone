@@ -1,27 +1,27 @@
 # CURRENT MISSION
 
-**Type:** QA / Test Integrity
-**Mission:** M-79 TD-054 Hotfix — Deterministic Expenses Range-Guard Test (+ ACP-007 Standard)
+**Type:** Infrastructure
+**Mission:** M-81 E2E Hermeticity — Playwright webServer Isolation (TD-055)
 **Status:** Locked
 
 ## 1. Objective
-1. **TD-054** — Restore suite to Green at HEAD: `Expenses.test.tsx` "TD-047" case is a time bomb (hardcoded `From=2026-08-23` vs wall-clock default `To`); detonated on 2026-08-23 (From === To → guard never fires). Fix by setting both inputs explicitly (mirror Keno/GameSales pattern).
-2. **ACP-007 (Approved 2026-08-23, PO directive "resolve one at a time")** — Codify Test Time Determinism standard: explicit-inputs rule, scoped `vi.setSystemTime` option, Evidence Payload wording, AGENTS.md Rule 28 amendment.
+Set `webServer.reuseExistingServer: false` in `playwright.config.ts` so Gate 4 always runs against a freshly spawned server and **fails loudly** when :3000 is occupied by any foreign/stale process, instead of silently testing it (failure mode reproduced twice on 2026-08-23).
 
 ## 3. Scope & Boundaries
-- **In Scope:** `packages/client/src/__tests__/pages/Expenses.test.tsx` (TD-047 case only); governance docs (`DEBT.md`, `ACP-007`, `AGENTS.md`, `ENGINEERING_LIFECYCLE.md`, this file).
-- **Out of Scope:** Production source changes; Biome warning backlog (41 warnings); other TD items.
+- **In Scope:** `playwright.config.ts` (one key), `governance/DEBT.md`, this file.
+- **Out of Scope:** :4000 preflight guard (residual risk documented — backend EADDRINUSE under hook still yields confusing E2E failures; revisit if observed again), spec files, lock scripts.
 
 ## Design Notes
-- Red state already evidenced pre-mission: 469/470 at HEAD `3d8a35d` (Expenses TD-047 fails via `getByText` timeout at line 721).
-- Fix sets `To="2026-08-20"` explicitly → invalid range independent of clock. Expenses has no Apply/Today control (effect-driven), so no reset assertion needed.
-- SYSTEM_CONTEXT.md is lock-script-owned (SSOT sync) — not hand-edited.
+Minimal-mutation fix per Rule 27: the flag is read solely by Playwright's webServer manager; zero source/spec impact. Known trade-off: local devs must stop their own `npm run dev` before committing (acceptable — silent wrong-app green was worse).
 
 ## Testing Strategy (Rule 28)
-Red captured first (2026-08-23, pre-fix). Post-fix: targeted test Green, then full suite must return 470/470. Negative path preserved (asserts hint shown AND fetch count unchanged).
+Red-Green on the guard itself:
+- **Red:** squat :3000 with a dummy listener → `npx playwright test` must FAIL with an explicit port-in-use error (not reuse).
+- **Green:** ports free → `npx playwright test` → 6/6.
+Plus biome/knip/depcruise probes; full AVP-001 suite runs at commit hook.
 
 ## Evidence Payload
-- [x] Functional Verification: full suite 470/470 via official Gate 3 (Red 469/470 captured first); E2E Gate 4 6/6 passed
-- [x] Architectural Verification (AVP-001): Gate 1 biome check ✔ | Gate 2 tsc -b ✔ | depcruise 0 violations (148 modules)
-- [x] Dependency Graph Clean: knip advisory matrix all green (0 files/exports/deps unused); no new dependencies introduced
-- [x] ADR Compliance: ADR-006 Red-Green followed; AGENTS.md Rule 28 amendment per approved ACP-007; TD-054 closed in DEBT.md
+- [x] Functional Verification: Red captured (squatter → explicit "Port 3000 is already in use" abort); Green = 6/6 E2E
+- [x] Architectural Verification (AVP-001): biome changed files=0 | knip exit 0 | depcruise exit 0 | tsc n/a (config outside tsconfig graph)
+- [x] Dependency Graph Clean: no dependency changes
+- [x] ADR Compliance: TD-055 resolved truthfully; Rule 16 probes recorded in mission log

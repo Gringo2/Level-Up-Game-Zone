@@ -6,9 +6,6 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 | ID | Reason | Impact | Priority | Owner | Resolution Mission |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| TD-010 | **CORS wide open** — `app.use(cors())` allows any origin. Attacker can host malicious page making cross-origin requests using victim's Firebase session. (`app.ts:13`) | CRITICAL — security breach vector | Critical | Backend | TBD |
-| TD-011 | **No rate limiting** — all API endpoints (POST/PUT/DELETE) vulnerable to brute-force, credential stuffing, DoS. No `express-rate-limit` installed. | CRITICAL — abuse vector | Critical | Backend | TBD |
-| TD-012 | **No security headers** — no `helmet` installed. Missing CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy. | CRITICAL — XSS/clickjacking | Critical | Backend | TBD |
 | TD-013 | **21 npm vulnerabilities** — 1 critical (`websocket-driver`), 7 high (`react-router-dom` RCE/XSS, `vite` path-traversal/file-read, `@grpc/grpc-js` crash). All fixable via `npm audit fix`. | HIGH — exploitable in production | High | Infra | TBD |
 | TD-015 | **API fallback uses plaintext HTTP** — `http://${hostname}:4000` default in `api.ts:8`. Firebase ID tokens sent in cleartext without `VITE_API_URL`. | HIGH — credential interception | High | Client | TBD |
 | TD-016 | **Firebase client config committed to git** — `firebase-applet-config.json` contains projectId, apiKey, appId. Not in `.gitignore`. | HIGH — attack surface increase | High | Infra | TBD |
@@ -35,8 +32,6 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 | TD-038 | **Employee and User are disconnected entities** — No `employee.user_uid` or `user.employee_id` foreign key. A person who works at the store (Employee: name, salary, position) and a person who logs into the system (User: email, role, auth UID) are two unrelated records. Cannot answer "which system user is which store employee." | HIGH — architectural gap | High | Architecture | Shift decision |
 | TD-040 | **Shifts reference users, not employees** — `shift.manager_id` stores `user.uid` (Firebase Auth UID). No way to connect a shift to an employee's salary information programmatically. Payroll cannot use shift data. (`shiftsController.ts:60`) | MEDIUM — payroll disconnect | Medium | Backend | Shift decision |
 
-| TD-047 | **From > To range silently yields empty list** — no cross-field guard, inline hint, or reset-to-today affordance on either entry page (`Keno.tsx` / `GameSales.tsx` date-range cards). Users get a blank history with no explanation. (Gap report B3) | LOW-MED — usability trap | Medium | Frontend | PO decision |
-| TD-048 | **No list-fetch loading feedback** — history Apply/initial/visibility refetch shows zero indication; `Loader2` exists only on form submit; Apply stays clickable during flight. (Gap report B4) | LOW-MED — perceived hang | Medium | Frontend | PO decision |
 | TD-049 | **Create/edit prepends row without range re-check** — backdated entry appears under a non-matching date filter until next refetch (documented in M-67 review). (Gap report C3) | LOW — transient inconsistency | Low | Frontend | PO decision |
 | TD-050 | **Icon-only Delete buttons lack aria-labels** — Trash2 ghost buttons announce as unnamed to screen readers on both pages; fix should be a repo-wide icon-button audit, not just these pages. (Gap report D1/P5) | MEDIUM — a11y | Medium | Frontend | PO decision |
 | TD-051 | **GameSales has no verification workflow** — `GameSalesLog` carries no `verified` field, no verify endpoint, no badge/UI, while Keno has the full manager-verify flow (`shared/src/index.ts:43-53` vs `:55-64`). Asymmetric trust model: sales entries can never be verified. Contract-level fix (shared type + server + client). (Gap report F1) | MEDIUM — trust-model asymmetry | High | Full-stack | PO decision |
@@ -44,8 +39,17 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 | TD-053 | **Expenses Verify button lacks in-flight guard** — `handleVerify` has no pending flag/disable while Keno & GameSales got C1 guards in M-68; double-click can fire duplicate verify PUTs. (`Expenses.tsx` Verify button) | MEDIUM — duplicate-request risk | Medium | Frontend | PO decision |
 
+| TD-010 | **CORS wide open** — `app.use(cors())` allows any origin. (`app.ts:13`) | CRITICAL — security breach vector | Critical | Backend | Deferred by PO directive 2026-08-23 |
+| TD-011 | **No rate limiting** — all API endpoints (POST/PUT/DELETE) vulnerable to brute-force, credential stuffing, DoS. No `express-rate-limit` installed. | CRITICAL — abuse vector | Critical | Backend | Deferred by PO directive 2026-08-23 |
+| TD-012 | **No security headers** — no `helmet` installed. Missing CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy. | CRITICAL — XSS/clickjacking | Critical | Backend | Deferred by PO directive 2026-08-23 |
+
 ## Resolved Debt
 
+| TD-055 | E2E hermeticity enforced — `webServer.reuseExistingServer: false` (M-81). Red-Green proven: squatter on :3000 now aborts the gate with explicit "already used" error instead of silently testing a foreign/stale app; clean run 6/6. Residual: :4000 preflight not added (documented in M-81 Out-of-Scope). | 2026-08-23 |
+| TD-056 | Browser-boot crash: `shared/src/constants.ts` read `process.env.ROOT_ADMIN_EMAILS` unguarded at module top level — `ReferenceError: process is not defined` killed React mount in vite dev (`/@fs/` raw serve). Fixed with `typeof process` guard; server env-override semantics unchanged. Masked for weeks by E2E non-hermeticity (TD-055). Red captured via live browser probe; green = zero pageerror + Login renders. Fixed in M-80. | 2026-08-23 |
+| TD-017 | GEMINI_API_KEY injection removed entirely per PO directive ("not needed") — Vite `define` block deleted (`vite.config.ts`), root `.env.example` purged. Probes confirmed zero source consumers (client reads only `VITE_API_URL`); key was baked into every bundle unread. Supersedes ROADMAP M-55 proxy approach. M-80. | 2026-08-23 |
+| TD-047 | From>To range guards on Keno/GameSales/Expenses history cards — inline hint, blocked refetch, Today reset (Keno/GS); loader-entry early-return belt-and-braces. M-78. | 2026-08-22 |
+| TD-048 | History-fetch loading feedback — `listLoading` inline spinner + disabled Apply during flight across all three pages. M-78. | 2026-08-22 |
 | TD-054 | Expenses TD-047 range-guard test made deterministic — `To` now set explicitly alongside `From` (mirrors Keno/GameSales); wall-clock default no longer participates. Red 469/470 captured pre-fix; suite restored to 470/470. Standard codified in ACP-007 / AGENTS.md Rule 28. Resolved in M-79. | 2026-08-23 |
 | TD-035 | CreateSaleSchema.game_id now REQUIRED (min 1) and createSale validates the referenced game_rates doc exists at creation time (400 Invalid game). Historic docs untouched. Resolved alongside TD-026 in M-76. | 2026-08-22 |
 

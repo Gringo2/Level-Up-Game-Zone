@@ -65,7 +65,7 @@
 *   [ ] **Mission 52:** Data Integrity — server-side total verification (GameSales, Keno), credit `reason` type fix, editReason schema fix (TD-026/028/029/035)
 *   [ ] **Mission 53:** Employee-User Model Unification — foreign key link, ID-based credit matching, shift-to-employee linkage, employee delete route (TD-038/039/040/041/042)
 *   [ ] **Mission 54:** Security Hardening — CORS lockdown, helmet, rate limiting, error message sanitization (TD-010/011/012/014)
-*   [ ] **Mission 55:** Dependency & Transport Security — npm audit fix, Vite/react-router-dom updates, HTTPS default, GEMINI_API_KEY proxy (TD-013/015/017)
+*   [ ] **Mission 55:** Dependency & Transport Security — npm audit fix, Vite/react-router-dom updates, HTTPS default (TD-013/015; TD-017 resolved by removal in M-80)
 *   [ ] **Mission 56:** Deployment Infrastructure — Dockerfile, root build/start scripts, static file serving, Firebase config externalization (TD-016/018/019/021/022/023)
 *   [ ] **Mission 57:** Business Logic Fixes — Reports net profit, SalaryReport date filter, shift close audit log (TD-027/030/031)
 *   [ ] **Mission 58:** Scalability — server-side date filtering, pagination, Firestore index definitions (TD-032/033/034)

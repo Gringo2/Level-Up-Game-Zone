@@ -58,9 +58,12 @@ export const COLLECTIONS = {
 	MISSED_DAY_RESOLUTIONS: "missed_day_resolutions",
 } as const;
 
-// ── Root Admin Emails (override via env: ROOT_ADMIN_EMAILS) ──────────────────
+// ── Root Admin Emails (override via env: ROOT_ADMIN_EMAILS — server-side only;
+// guard required because this module is also bundled for the browser, where
+// `process` is undefined) ────────────────────────────────────────────────────
 export const ROOT_ADMIN_EMAILS: string[] = (() => {
-	const env = process.env.ROOT_ADMIN_EMAILS;
+	const env =
+		typeof process !== "undefined" ? process.env.ROOT_ADMIN_EMAILS : undefined;
 	if (env) {
 		return env.split(",").map((e) => e.trim().toLowerCase());
 	}
