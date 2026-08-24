@@ -42,4 +42,4 @@ Measured 2026-08-23, all commands executed locally:
 
 ## 6. Status
 
-**Open** — awaiting Product Owner decision. No code changes made to guard scripts by the AI Implementor (Rule 19: stop-and-report over workaround).
+**Resolved (2026-08-23, M-84)** — Product Owner approved option (b)+(c): keyword matching replaced by structural check (≥1 checked box AND zero unchecked in Evidence Payload section); incomplete/no-checkbox Active missions now emit loud visible warnings instead of silent `exit 0`. All four branches proven in isolated fixture repo (complete→enforces, partial→loud-skip, no-boxes→warn, locked→silent). Template alignment unnecessary under structural matching.

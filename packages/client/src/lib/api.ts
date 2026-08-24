@@ -3,12 +3,28 @@ import { auth } from "../firebase";
 
 /**
  * API_BASE resolves from the VITE_API_URL environment variable if set
- * (useful for staging/production deployments behind HTTPS proxies),
- * otherwise falls back to the runtime hostname on port 4000.
+ * (useful for staging/production deployments behind HTTPS proxies).
+ * TD-015: the plaintext http fallback is permitted ONLY for loopback dev
+ * hosts — any other host without an explicit VITE_API_URL fails fast at
+ * boot rather than silently sending Firebase ID tokens over cleartext.
  */
-export const API_BASE: string =
-	(import.meta.env.VITE_API_URL as string | undefined) ??
-	`http://${window.location.hostname}:4000`;
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
+
+export function resolveApiBase(
+	envUrl: string | undefined,
+	hostname: string,
+): string {
+	if (envUrl) return envUrl;
+	if (LOOPBACK_HOSTNAMES.has(hostname)) return `http://${hostname}:4001`;
+	throw new Error(
+		"VITE_API_URL is required when serving from a non-loopback host: refusing to send auth tokens over plaintext HTTP.",
+	);
+}
+
+export const API_BASE: string = resolveApiBase(
+	import.meta.env.VITE_API_URL as string | undefined,
+	window.location.hostname,
+);
 
 /**
  * Safely parses a fetch Response as JSON.

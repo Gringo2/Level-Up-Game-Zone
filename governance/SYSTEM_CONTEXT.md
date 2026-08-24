@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 5 — Maturation
-**Current Mission:** M-81 E2E Hermeticity — Playwright webServer Isolation (TD-055)
+**Current Mission:** M-85 API Port Migration 4000→4001 + AFR-003 Guard Remediation (M-84) + TD-057 Time-Bomb Fix
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0

@@ -74,7 +74,6 @@ describe("Layout", () => {
 			hash: "",
 			state: null,
 			key: "default",
-			unstable_mask: undefined,
 		});
 	});
 
@@ -239,7 +238,6 @@ describe("Layout", () => {
 			hash: "",
 			state: null,
 			key: "default",
-			unstable_mask: undefined,
 		});
 		mockUseAuth.mockReturnValue({
 			user: adminUser,

@@ -6,7 +6,7 @@ export default defineConfig({
 	reporter: "html",
 	use: {
 		trace: "on-first-retry",
-		baseURL: "http://localhost:3000",
+		baseURL: "http://localhost:3002",
 	},
 	projects: [
 		{
@@ -16,7 +16,7 @@ export default defineConfig({
 	],
 	webServer: {
 		command: "npm run dev",
-		port: 3000,
+		port: 3002,
 		reuseExistingServer: false,
 		timeout: 120 * 1000,
 	},

@@ -1,27 +1,27 @@
 # CURRENT MISSION
 
 **Type:** Infrastructure
-**Mission:** M-81 E2E Hermeticity — Playwright webServer Isolation (TD-055)
+**Mission:** M-85 API Port Migration 4000→4001 + AFR-003 Guard Remediation (M-84) + TD-057 Time-Bomb Fix
 **Status:** Locked
 
 ## 1. Objective
-Set `webServer.reuseExistingServer: false` in `playwright.config.ts` so Gate 4 always runs against a freshly spawned server and **fails loudly** when :3000 is occupied by any foreign/stale process, instead of silently testing it (failure mode reproduced twice on 2026-08-23).
+1. **M-85 / approved decision #2** — Express API default :4000 → **:4001** (PO's other project runs next-server on :4000); client loopback fallback, resolver tests, docs follow.
+2. **M-84 / AFR-003 (approved decision #1)** — `lock_guard.sh`: keyword matching replaced by structural check (≥1 checked, zero unchecked); loud warnings for incomplete/no-checkbox Active payloads. All four branches proven in isolated fixture repo.
+3. **TD-057** — Keno/GameSales "Today resets" date-rollover time-bomb defused via scoped fake-Date timers (ACP-007 remedy), root-caused by instrumented probe.
 
 ## 3. Scope & Boundaries
-- **In Scope:** `playwright.config.ts` (one key), `governance/DEBT.md`, this file.
-- **Out of Scope:** :4000 preflight guard (residual risk documented — backend EADDRINUSE under hook still yields confusing E2E failures; revisit if observed again), spec files, lock scripts.
+- **In Scope:** `.agents/scripts/lock_guard.sh`, `docs/adr/AFR-003*`, `packages/server/src/index.ts`, `packages/client/src/lib/api.ts`, `api.test.ts`, GameSales/Keno test files (TD-047 cases only), README, env examples.
+- **Out of Scope:** TD-044 small-subset flakiness (pre-existing; verified NOT a regression — stashed combo run fails 16/50 vs 15/50 post-change).
 
 ## Design Notes
-Minimal-mutation fix per Rule 27: the flag is read solely by Playwright's webServer manager; zero source/spec impact. Known trade-off: local devs must stop their own `npm run dev` before committing (acceptable — silent wrong-app green was worse).
+- Guard enforcement path unchanged for complete payloads (live-proven at M-81/M-83 locks).
+- Fake timers scope: `{toFake:["Date"]}` only — real timers preserved so RTL waitFor works.
 
 ## Testing Strategy (Rule 28)
-Red-Green on the guard itself:
-- **Red:** squat :3000 with a dummy listener → `npx playwright test` must FAIL with an explicit port-in-use error (not reuse).
-- **Green:** ports free → `npx playwright test` → 6/6.
-Plus biome/knip/depcruise probes; full AVP-001 suite runs at commit hook.
+Guard: fixture-repo branch matrix. Port: resolver assertions moved with behavior. TD-057: red existed live (rollover detonation captured pre-fix); green = target tests pass solo + full suite.
 
 ## Evidence Payload
-- [x] Functional Verification: Red captured (squatter → explicit "Port 3000 is already in use" abort); Green = 6/6 E2E
-- [x] Architectural Verification (AVP-001): biome changed files=0 | knip exit 0 | depcruise exit 0 | tsc n/a (config outside tsconfig graph)
-- [x] Dependency Graph Clean: no dependency changes
-- [x] ADR Compliance: TD-055 resolved truthfully; Rule 16 probes recorded in mission log
+- [x] Functional Verification: full suite **473/473** ✔ | guard branch matrix PASS ×4 | E2E unaffected (no :4000 deps in specs)
+- [x] Architectural Verification (AVP-001): tsc client+server ✔ | biome changed=0 | knip 0 | depcruise 0
+- [x] Dependency Graph Clean: zero dependency changes across all three work items
+- [x] ADR Compliance: AFR-003 status → Resolved w/ evidence; TD-057 resolved row truthful; TD-010 allowlist note (:3002/:4001) registered for future mission

@@ -22,7 +22,7 @@ Save the Firebase Admin service-account JSON file as:
 packages/server/serviceAccountKey.json
 ```
 
-This file is gitignored and must not be committed. The client Firebase configuration is stored in `packages/client/firebase-applet-config.json`.
+This file is gitignored and must not be committed. The client Firebase configuration lives in `packages/client/.env.local` as `VITE_FIREBASE_*` variables (see `.env.example`; untracked since M-82/TD-016). The server optionally takes `FIRESTORE_DATABASE_ID` in `packages/server/.env`.
 
 ## Serve The Full Project
 
@@ -32,7 +32,7 @@ Start both the Express API and the Vite client from the repository root:
 npm run dev
 ```
 
-Open the client at [http://localhost:3000](http://localhost:3000). The API runs at [http://localhost:4000](http://localhost:4000), and its health check is available at [http://localhost:4000/api/health](http://localhost:4000/api/health).
+Open the client at [http://localhost:3002](http://localhost:3002). The API runs at [http://localhost:4001](http://localhost:4001), and its health check is available at [http://localhost:4001/api/health](http://localhost:4001/api/health).
 
 The combined command is equivalent to running these in separate terminals:
 

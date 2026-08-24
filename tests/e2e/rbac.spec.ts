@@ -23,7 +23,7 @@ test.describe("Role-Based Access Control (RBAC) Isolation", () => {
 		});
 
 		await page.goto("/admin");
-		await expect(page).toHaveURL("http://localhost:3000/");
+		await expect(page).toHaveURL("http://localhost:3002/");
 	});
 
 	test("Admin role can access Admin Management page", async ({ page }) => {

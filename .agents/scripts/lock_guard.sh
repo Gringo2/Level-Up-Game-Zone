@@ -33,18 +33,26 @@ if [ -z "$EVIDENCE_SECTION" ]; then
   exit 0
 fi
 
-# Only consider lines whose checkbox is actually [x] — a bare keyword match
-# (e.g. "Compliance") would otherwise count an unchecked box as checked.
-CHECKED_LINES=$(echo "$EVIDENCE_SECTION" | grep -Ei '^[[:space:]]*- \[x\]' 2>/dev/null)
-if [ -z "$CHECKED_LINES" ]; then
+# ── 2.1b Structural completion check (AFR-003 remediation, M-84) ──
+# Decoupled from payload wording: a mission is "complete" when its Evidence
+# Payload section contains at least one checked box and ZERO unchecked boxes.
+CHECKED_COUNT=$(echo "$EVIDENCE_SECTION" | grep -Eic '^[[:space:]]*- \[x\]' || true)
+UNCHECKED_LINES=$(echo "$EVIDENCE_SECTION" | grep -Eni '^[[:space:]]*- \[ \]' || true)
+
+if [ "$CHECKED_COUNT" -gt 0 ] && [ -z "$UNCHECKED_LINES" ]; then
+  : # complete → fall through to enforced lock run
+else
+  # Fail-loud (never silent): make the skip reason visible in commit output.
+  if [ -n "$UNCHECKED_LINES" ]; then
+    echo ""
+    echo "ℹ️  [lock_guard] Mission $MISSION_ID is Active with unchecked Evidence Payload boxes — auto-lock skipped (mission still in progress)."
+    echo "$(echo "$UNCHECKED_LINES" | sed 's/^/    /')"
+  else
+    echo ""
+    echo "⚠️  [lock_guard] Mission $MISSION_ID is Active but its Evidence Payload has no checkboxes at all — auto-lock skipped. Verify the payload format."
+  fi
   exit 0
 fi
-
-for KEYWORD in "Functional" "Architectural\|AVP" "Dependency" "ADR\|Compliance"; do
-  if ! echo "$CHECKED_LINES" | grep -qi "$KEYWORD"; then
-    exit 0
-  fi
-done
 
 # ── 2.2 Enforced lock run ──
 echo ""

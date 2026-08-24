@@ -15,7 +15,6 @@ const __dirname = path.dirname(__filename);
 // 4. Set GOOGLE_APPLICATION_CREDENTIALS environment variable in your .env
 // OR pass the credential directly as shown below if it's easier during dev.
 
-import fs from "node:fs";
 import { getFirestore } from "firebase-admin/firestore";
 
 if (!admin.apps.length) {
@@ -26,15 +25,11 @@ if (!admin.apps.length) {
 	});
 }
 
-const configPath = path.join(
-	__dirname,
-	"../../client/firebase-applet-config.json",
-);
-const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-const databaseId = configData.firestoreDatabaseId;
-
-export const db = databaseId
-	? getFirestore(admin.app(), databaseId)
+// TD-016: the server no longer reads the client's firebase-applet-config.json.
+// A named Firestore database is opted into via FIRESTORE_DATABASE_ID; when
+// unset, the project's (default) database is used.
+export const db = process.env.FIRESTORE_DATABASE_ID
+	? getFirestore(admin.app(), process.env.FIRESTORE_DATABASE_ID)
 	: admin.firestore();
 
 export const auth = admin.auth();

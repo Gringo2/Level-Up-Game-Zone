@@ -503,35 +503,43 @@ describe("GameSales", () => {
 	});
 
 	it("TD-047: blocks Apply with hint when From is after To, Today resets", async () => {
-		mockFetch.mockImplementation((url: string) => {
-			if (String(url).endsWith("/api/rates")) {
-				return Promise.resolve(jsonResponse(rates));
-			}
-			return Promise.resolve(jsonResponse([salesLog]));
-		});
-		render(<GameSales />);
-		await screen.findByTestId("sales-range-summary");
+		// TD-057: pin Date so component wall-clock "today" equals the hardcoded
+		// range below, independent of the real calendar (ACP-007).
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		try {
+			mockFetch.mockImplementation((url: string) => {
+				if (String(url).endsWith("/api/rates")) {
+					return Promise.resolve(jsonResponse(rates));
+				}
+				return Promise.resolve(jsonResponse([salesLog]));
+			});
+			render(<GameSales />);
+			await screen.findByTestId("sales-range-summary");
 
-		fireEvent.change(screen.getByLabelText("From"), {
-			target: { value: "2026-08-23" },
-		});
-		fireEvent.change(screen.getByLabelText("To"), {
-			target: { value: "2026-08-20" },
-		});
+			fireEvent.change(screen.getByLabelText("From"), {
+				target: { value: "2026-08-23" },
+			});
+			fireEvent.change(screen.getByLabelText("To"), {
+				target: { value: "2026-08-20" },
+			});
 
-		const apply = screen.getByRole("button", { name: "Apply" });
-		expect(apply).toBeDisabled();
-		expect(
-			screen.getByText("From date must be on or before To"),
-		).toBeInTheDocument();
-
-		fireEvent.click(screen.getByRole("button", { name: "Today" }));
-		await waitFor(() => {
+			const apply = screen.getByRole("button", { name: "Apply" });
+			expect(apply).toBeDisabled();
 			expect(
-				screen.queryByText("From date must be on or before To"),
-			).not.toBeInTheDocument();
-		});
-		expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+				screen.getByText("From date must be on or before To"),
+			).toBeInTheDocument();
+
+			fireEvent.click(screen.getByRole("button", { name: "Today" }));
+			await waitFor(() => {
+				expect(
+					screen.queryByText("From date must be on or before To"),
+				).not.toBeInTheDocument();
+			});
+			expect(screen.getByRole("button", { name: "Apply" })).toBeEnabled();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("TD-048: shows in-flight state on Apply until the fetch resolves", async () => {

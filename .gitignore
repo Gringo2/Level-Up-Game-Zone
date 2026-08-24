@@ -18,6 +18,7 @@ serviceAccountKey.json
 *serviceAccount*.json
 *credentials*.json
 *secret*.json
+firebase-applet-config.json
 *.pem
 *.key
 *.crt

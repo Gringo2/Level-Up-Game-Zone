@@ -4,7 +4,12 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { API_BASE, authFetch, safeJson } from "../../lib/api.js";
+import {
+	API_BASE,
+	authFetch,
+	resolveApiBase,
+	safeJson,
+} from "../../lib/api.js";
 
 vi.mock("../../firebase.js", () => {
 	const mockUser = {
@@ -56,6 +61,29 @@ describe("safeJson", () => {
 	});
 });
 
+describe("resolveApiBase (TD-015)", () => {
+	it("uses VITE_API_URL when set, regardless of host", () => {
+		expect(resolveApiBase("https://api.example.com", "store.example.com")).toBe(
+			"https://api.example.com",
+		);
+	});
+
+	it("falls back to plaintext http only for loopback dev hosts", () => {
+		expect(resolveApiBase(undefined, "localhost")).toBe(
+			"http://localhost:4001",
+		);
+		expect(resolveApiBase(undefined, "127.0.0.1")).toBe(
+			"http://127.0.0.1:4001",
+		);
+	});
+
+	it("refuses the plaintext fallback for non-loopback hosts", () => {
+		expect(() => resolveApiBase(undefined, "store.example.com")).toThrow(
+			/VITE_API_URL is required/,
+		);
+	});
+});
+
 describe("authFetch", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -66,10 +94,10 @@ describe("authFetch", () => {
 			.spyOn(global, "fetch")
 			.mockResolvedValue(jsonResponse({ ok: true }));
 
-		const res = await authFetch("http://localhost:4000/api/test");
+		const res = await authFetch("http://localhost:4001/api/test");
 		expect(res.status).toBe(200);
 		expect(fetchSpy).toHaveBeenCalledWith(
-			"http://localhost:4000/api/test",
+			"http://localhost:4001/api/test",
 			expect.objectContaining({
 				headers: expect.any(Headers),
 			}),
@@ -86,7 +114,7 @@ describe("authFetch", () => {
 		const { signOut } = await import("firebase/auth");
 		const { auth } = await import("../../firebase.js");
 
-		await expect(authFetch("http://localhost:4000/api/test")).rejects.toThrow(
+		await expect(authFetch("http://localhost:4001/api/test")).rejects.toThrow(
 			"Session expired",
 		);
 		expect(signOut).toHaveBeenCalledWith(auth);
@@ -97,7 +125,7 @@ describe("authFetch", () => {
 		const { signOut } = await import("firebase/auth");
 		Object.defineProperty(auth, "currentUser", { value: null, writable: true });
 
-		await expect(authFetch("http://localhost:4000/api/test")).rejects.toThrow(
+		await expect(authFetch("http://localhost:4001/api/test")).rejects.toThrow(
 			"Not authenticated",
 		);
 		expect(signOut).toHaveBeenCalledWith(auth);
