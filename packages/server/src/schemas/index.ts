@@ -120,6 +120,9 @@ export const UpdateKenoSchema = rejectRetiredAndUnknownKeys({
 export const DateRangeQuerySchema = z.object({
 	startDate: z.string().optional(),
 	endDate: z.string().optional(),
+	// TD-032: opt-in cursor pagination. Absent -> legacy bare-array response.
+	limit: z.coerce.number().int().min(1).max(200).optional(),
+	cursor: z.string().optional(),
 });
 
 export const CreditsQuerySchema = DateRangeQuerySchema.extend({

@@ -291,7 +291,7 @@ describe("Keno", () => {
 	it("deletes a keno log via DELETE after a reason is provided", async () => {
 		render(<Keno />);
 		await screen.findByText("Net: $60.00");
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		fireEvent.click(screen.getByRole("button", { name: "Delete keno log" }));
 
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Wrong entry" },
@@ -418,7 +418,7 @@ describe("Keno", () => {
 	it("dismisses delete confirmation when Cancel is clicked", async () => {
 		render(<Keno />);
 		await screen.findByText("Net: $60.00");
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		fireEvent.click(screen.getByRole("button", { name: "Delete keno log" }));
 
 		expect(
 			screen.getByPlaceholderText("Reason for deletion..."),
@@ -438,7 +438,7 @@ describe("Keno", () => {
 	it("shows error toast when delete keno log fails", async () => {
 		render(<Keno />);
 		await screen.findByText("Net: $60.00");
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		fireEvent.click(screen.getByRole("button", { name: "Delete keno log" }));
 
 		const failFetch = vi
 			.fn()
@@ -631,5 +631,46 @@ describe("Keno", () => {
 		await screen.findByText("Net: $60.00");
 		expect(apply).toBeEnabled();
 		expect(screen.queryByTestId("history-loading")).not.toBeInTheDocument();
+	});
+
+	it("TD-050: delete button exposes an accessible name", async () => {
+		render(<Keno />);
+		const row = await screen.findByText(/Net:/);
+		expect(row).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Delete keno log" }),
+		).toBeInTheDocument();
+	});
+	it("TD-032: consumes pagination envelope and appends older pages", async () => {
+		const first = {
+			id: "k1",
+			net_profit: 10,
+			date: new Date().toISOString(),
+			user_id: "u1",
+			user_name: "M",
+		};
+		const older = {
+			id: "k0",
+			net_profit: 99,
+			date: new Date().toISOString(),
+			user_id: "u1",
+			user_name: "M",
+		};
+		mockFetch.mockImplementation((url: string) => {
+			const u = String(url);
+			if (u.includes("cursor=")) {
+				return Promise.resolve(
+					jsonResponse({ data: [older], nextCursor: null }),
+				);
+			}
+			return Promise.resolve(jsonResponse({ data: [first], nextCursor: "c2" }));
+		});
+
+		render(<Keno />);
+		expect(await screen.findByTestId("load-older")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Load older" }));
+
+		expect(await screen.findByText(/\$99\.00/)).toBeInTheDocument();
 	});
 });

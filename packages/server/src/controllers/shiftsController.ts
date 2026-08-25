@@ -9,6 +9,7 @@ import type { Response } from "express";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { logger } from "../utils/logger.js";
 import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listShifts = async (req: AuthRequest, res: Response) => {
@@ -29,10 +30,15 @@ export const listShifts = async (req: AuthRequest, res: Response) => {
 		}
 
 		const snapshot = await query.orderBy("start_time", "desc").get();
-		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+		const rows = snapshot.docs.map(
+			(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => ({
+				id: doc.id,
+				...(doc.data() as Record<string, unknown>),
+			}),
+		);
 		return res.status(200).json(rows);
 	} catch (error: unknown) {
-		console.error("Error listing shifts:", error);
+		logger.error({ err: error }, "Error listing shifts");
 		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
@@ -57,7 +63,7 @@ const autoLabelStaleShifts = async () => {
 			}
 		}
 	} catch (err) {
-		console.error("Error auto-labeling stale shifts:", err);
+		logger.error({ err: err }, "Error auto-labeling stale shifts");
 	}
 };
 
@@ -87,23 +93,25 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 			status: SHIFT_STATUSES.OPEN,
 		};
 
-		await db.runTransaction(async (transaction) => {
-			transaction.set(newDocRef, data);
-			transaction.set(auditRef, {
-				action: "CREATE",
-				table_affected: "shifts",
-				record_id: newDocRef.id,
-				old_value: null,
-				new_value: data,
-				reason_for_change: "Started shift",
-				user_id: user.uid,
-				timestamp: new Date().toISOString(),
-			});
-		});
+		await db.runTransaction(
+			async (transaction: FirebaseFirestore.Transaction) => {
+				transaction.set(newDocRef, data);
+				transaction.set(auditRef, {
+					action: "CREATE",
+					table_affected: "shifts",
+					record_id: newDocRef.id,
+					old_value: null,
+					new_value: data,
+					reason_for_change: "Started shift",
+					user_id: user.uid,
+					timestamp: new Date().toISOString(),
+				});
+			},
+		);
 
 		return res.status(201).json({ id: newDocRef.id, ...data });
 	} catch (error: unknown) {
-		console.error("Error starting shift:", error);
+		logger.error({ err: error }, "Error starting shift");
 		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };
@@ -174,57 +182,60 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 			0,
 		);
 
+		// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload built conditionally
 		let updateData: any;
 
 		// Use a transaction to prevent concurrent closure issues
-		await db.runTransaction(async (transaction) => {
-			const shiftDoc = await transaction.get(shiftRef);
+		await db.runTransaction(
+			async (transaction: FirebaseFirestore.Transaction) => {
+				const shiftDoc = await transaction.get(shiftRef);
 
-			if (!shiftDoc.exists) {
-				throw new Error("Shift not found");
-			}
+				if (!shiftDoc.exists) {
+					throw new Error("Shift not found");
+				}
 
-			const shiftData = shiftDoc.data();
-			if (!shiftData) throw new Error("Shift data empty");
+				const shiftData = shiftDoc.data();
+				if (!shiftData) throw new Error("Shift data empty");
 
-			if (shiftData.status === SHIFT_STATUSES.CLOSED) {
-				throw new Error("Shift is already closed");
-			}
+				if (shiftData.status === SHIFT_STATUSES.CLOSED) {
+					throw new Error("Shift is already closed");
+				}
 
-			const expectedCash =
-				(shiftData.opening_float || 0) +
-				totalKenoNet +
-				totalGameSales -
-				totalExpenses -
-				pendingCredits;
-			const variance = Number(actualCashCounted) - expectedCash;
+				const expectedCash =
+					(shiftData.opening_float || 0) +
+					totalKenoNet +
+					totalGameSales -
+					totalExpenses -
+					pendingCredits;
+				const variance = Number(actualCashCounted) - expectedCash;
 
-			if (
-				Math.abs(variance) > VARIANCE_THRESHOLD_FOR_EXPLANATION &&
-				!shortageReason
-			) {
-				throw new Error(
-					"Variance is greater than $2.00. Please provide a reason for the shortage.",
-				);
-			}
+				if (
+					Math.abs(variance) > VARIANCE_THRESHOLD_FOR_EXPLANATION &&
+					!shortageReason
+				) {
+					throw new Error(
+						"Variance is greater than $2.00. Please provide a reason for the shortage.",
+					);
+				}
 
-			updateData = {
-				end_time: new Date().toISOString(),
-				actual_cash_counted: Number(actualCashCounted),
-				expected_cash_calculated: expectedCash,
-				variance: variance,
-				reason_for_shortage: shortageReason || "",
-				status: SHIFT_STATUSES.CLOSED,
-			};
+				updateData = {
+					end_time: new Date().toISOString(),
+					actual_cash_counted: Number(actualCashCounted),
+					expected_cash_calculated: expectedCash,
+					variance: variance,
+					reason_for_shortage: shortageReason || "",
+					status: SHIFT_STATUSES.CLOSED,
+				};
 
-			transaction.update(shiftRef, updateData);
-		});
+				transaction.update(shiftRef, updateData);
+			},
+		);
 
 		return res
 			.status(200)
 			.json({ message: "Shift closed successfully", data: updateData });
 	} catch (error: unknown) {
-		console.error("Error closing shift:", error);
+		logger.error({ err: error }, "Error closing shift");
 		const err = error as Error;
 
 		if (
@@ -254,37 +265,39 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 		const shiftRef = db.collection(COLLECTIONS.SHIFTS).doc(id);
 		const newFloat = parseFloat(floatAmount);
 
-		await db.runTransaction(async (transaction) => {
-			const shiftDoc = await transaction.get(shiftRef);
+		await db.runTransaction(
+			async (transaction: FirebaseFirestore.Transaction) => {
+				const shiftDoc = await transaction.get(shiftRef);
 
-			if (!shiftDoc.exists) {
-				throw new Error("Shift not found");
-			}
+				if (!shiftDoc.exists) {
+					throw new Error("Shift not found");
+				}
 
-			if (shiftDoc.data()?.status !== SHIFT_STATUSES.OPEN) {
-				throw new Error("Only open shifts can have their float updated");
-			}
+				if (shiftDoc.data()?.status !== SHIFT_STATUSES.OPEN) {
+					throw new Error("Only open shifts can have their float updated");
+				}
 
-			transaction.update(shiftRef, { opening_float: newFloat });
+				transaction.update(shiftRef, { opening_float: newFloat });
 
-			const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
-			transaction.set(auditRef, {
-				action: "UPDATE",
-				table_affected: "shifts",
-				record_id: id,
-				old_value: { opening_float: shiftDoc.data()?.opening_float },
-				new_value: { opening_float: newFloat },
-				reason_for_change: "Updated opening float",
-				user_id: user.uid,
-				timestamp: new Date().toISOString(),
-			});
-		});
+				const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
+				transaction.set(auditRef, {
+					action: "UPDATE",
+					table_affected: "shifts",
+					record_id: id,
+					old_value: { opening_float: shiftDoc.data()?.opening_float },
+					new_value: { opening_float: newFloat },
+					reason_for_change: "Updated opening float",
+					user_id: user.uid,
+					timestamp: new Date().toISOString(),
+				});
+			},
+		);
 
 		return res
 			.status(200)
 			.json({ message: "Float updated successfully", opening_float: newFloat });
 	} catch (error) {
-		console.error("Error updating float:", error);
+		logger.error({ err: error }, "Error updating float");
 		if (error instanceof Error) {
 			if (error.message === "Shift not found") {
 				return res.status(404).json({ error: error.message });
@@ -305,10 +318,12 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 			.collection(COLLECTIONS.SHIFTS)
 			.where("status", "==", SHIFT_STATUSES.MISSED)
 			.get();
-		const missedShifts = missedShiftsSnap.docs.map((doc) => ({
-			id: doc.id,
-			...doc.data(),
-		}));
+		const missedShifts = missedShiftsSnap.docs.map(
+			(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => ({
+				id: doc.id,
+				...(doc.data() as Record<string, unknown>),
+			}),
+		);
 
 		const lastShiftSnap = await db
 			.collection(COLLECTIONS.SHIFTS)
@@ -341,7 +356,10 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 				.collection(COLLECTIONS.MISSED_DAY_RESOLUTIONS)
 				.where("date", ">=", earliestGap)
 				.get();
-			resolvedDates = resolutionsSnap.docs.map((doc) => doc.data().date);
+			resolvedDates = resolutionsSnap.docs.map(
+				(doc: FirebaseFirestore.DocumentSnapshot<unknown>) =>
+					(doc.data() as { date: string }).date,
+			);
 		}
 
 		const unresolvedGaps = gapDates.filter(
@@ -352,40 +370,42 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 
 		// AUTO-OPEN LOGIC
 		if (unresolvedGaps.length === 0 && missedShifts.length === 0) {
-			await db.runTransaction(async (transaction) => {
-				const openShiftsQuery = db
-					.collection(COLLECTIONS.SHIFTS)
-					.where("status", "==", SHIFT_STATUSES.OPEN);
-				const openShiftsSnap = await transaction.get(openShiftsQuery);
+			await db.runTransaction(
+				async (transaction: FirebaseFirestore.Transaction) => {
+					const openShiftsQuery = db
+						.collection(COLLECTIONS.SHIFTS)
+						.where("status", "==", SHIFT_STATUSES.OPEN);
+					const openShiftsSnap = await transaction.get(openShiftsQuery);
 
-				if (openShiftsSnap.empty) {
-					const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
-					const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
+					if (openShiftsSnap.empty) {
+						const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
+						const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
-					const user = req.user;
-					const data = {
-						manager_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
-						manager_name: user?.email || SYSTEM_IDENTITY.DISPLAY_NAME,
-						start_time: new Date().toISOString(),
-						opening_float: 0,
-						status: SHIFT_STATUSES.OPEN,
-					};
+						const user = req.user;
+						const data = {
+							manager_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
+							manager_name: user?.email || SYSTEM_IDENTITY.DISPLAY_NAME,
+							start_time: new Date().toISOString(),
+							opening_float: 0,
+							status: SHIFT_STATUSES.OPEN,
+						};
 
-					transaction.set(newDocRef, data);
-					transaction.set(auditRef, {
-						action: "CREATE",
-						table_affected: "shifts",
-						record_id: newDocRef.id,
-						old_value: null,
-						new_value: data,
-						reason_for_change: "Auto-opened shift for new day",
-						user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
-						timestamp: new Date().toISOString(),
-					});
+						transaction.set(newDocRef, data);
+						transaction.set(auditRef, {
+							action: "CREATE",
+							table_affected: "shifts",
+							record_id: newDocRef.id,
+							old_value: null,
+							new_value: data,
+							reason_for_change: "Auto-opened shift for new day",
+							user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
+							timestamp: new Date().toISOString(),
+						});
 
-					newlyOpenedShift = { id: newDocRef.id, ...data };
-				}
-			});
+						newlyOpenedShift = { id: newDocRef.id, ...data };
+					}
+				},
+			);
 		}
 
 		return res.status(200).json({
@@ -394,7 +414,7 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 			newlyOpenedShift,
 		});
 	} catch (error) {
-		console.error("Error getting missed data:", error);
+		logger.error({ err: error }, "Error getting missed data");
 		return res.status(500).json({ error: "Internal server error" });
 	}
 };

@@ -5,6 +5,7 @@ import {
 	deleteSale,
 	listSales,
 	updateSale,
+	verifySale,
 } from "../controllers/salesController.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validateBody, validateQuery } from "../middleware/validate.js";
@@ -42,6 +43,12 @@ router.delete(
 	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
 	validateBody(DeleteReasonSchema) as RequestHandler,
 	deleteSale as RequestHandler,
+);
+router.put(
+	"/:id/verify",
+	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
+	verifySale as RequestHandler,
 );
 
 export default router;

@@ -2,6 +2,7 @@ import { COLLECTIONS } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
+import { logger } from "../utils/logger.js";
 import { safeErrorMessage } from "../utils/safeError.js";
 
 export const listAuditLogs = async (req: AuthRequest, res: Response) => {
@@ -24,7 +25,12 @@ export const listAuditLogs = async (req: AuthRequest, res: Response) => {
 		}
 
 		const snapshot = await query.get();
-		const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+		const rows = snapshot.docs.map(
+			(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => ({
+				id: doc.id,
+				...(doc.data() as Record<string, unknown>),
+			}),
+		);
 
 		const nextCursor =
 			snapshot.docs.length === Number(limit)
@@ -33,7 +39,7 @@ export const listAuditLogs = async (req: AuthRequest, res: Response) => {
 
 		return res.status(200).json({ data: rows, nextCursor });
 	} catch (error: unknown) {
-		console.error("Error listing audit logs:", error);
+		logger.error({ err: error }, "Error listing audit logs");
 		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

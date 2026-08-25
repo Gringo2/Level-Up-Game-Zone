@@ -1,4 +1,5 @@
 import { COLLECTIONS } from "@level-up/shared";
+import { FieldValue } from "firebase-admin/firestore";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
@@ -17,6 +18,7 @@ describe("Sales Integration Tests", () => {
 		it("should successfully list sales", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "game_sales_logs") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 					const chainable: any = {
 						get: vi.fn().mockResolvedValue({
 							docs: [
@@ -31,6 +33,7 @@ describe("Sales Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 				const defaultChainable: any = {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					where: vi.fn().mockReturnThis(),
@@ -114,6 +117,7 @@ describe("Sales Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 				const chainable: any = {
 					get: vi.fn().mockImplementation(() => {
 						const docs = [
@@ -140,7 +144,7 @@ describe("Sales Integration Tests", () => {
 						});
 						return Promise.resolve({ docs });
 					}),
-					where: vi.fn((field: string, op: string, value: string) => {
+					where: vi.fn((_field: string, op: string, value: string) => {
 						if (op === ">=") range.start = value;
 						if (op === "<=") range.end = value;
 						return chainable;
@@ -526,6 +530,7 @@ describe("Sales Integration Tests", () => {
 		it("returns 500 when listing sales crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "game_sales_logs") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 						where: vi.fn().mockReturnThis(),
@@ -533,6 +538,7 @@ describe("Sales Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 				const defaultChainable: any = {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					where: vi.fn().mockReturnThis(),
@@ -552,6 +558,7 @@ describe("Sales Integration Tests", () => {
 		it("does not leak internal error details to clients", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "game_sales_logs") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 					const chainable: any = {
 						get: vi
 							.fn()
@@ -565,6 +572,7 @@ describe("Sales Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 				const defaultChainable: any = {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					where: vi.fn().mockReturnThis(),
@@ -685,6 +693,324 @@ describe("Sales Integration Tests", () => {
 				.send({ deleteReason: "Removing stale record" });
 
 			expect(response.status).toBe(401);
+		});
+	});
+
+	describe("ACP-008: TD-051 verification workflow + TD-052 unit_type persistence", () => {
+		const authHeader = "Bearer valid-mock-token";
+
+		const baseCollections = (
+			rateData: Record<string, unknown> | { exists: false },
+		) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ displayName: "Test User", role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi
+								.fn()
+								.mockResolvedValue(
+									"exists" in rateData && rateData.exists === false
+										? { exists: false }
+										: { exists: true, data: () => rateData },
+								),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({
+						id: "new-sale-123",
+						get: vi.fn().mockResolvedValue({
+							id: "sale-123",
+							data: () => ({ game_id: "rate-1", quantity_sold: 4 }),
+						}),
+					}),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+		};
+
+		it("TD-052: persists server-authoritative unit_type from the rate doc, ignoring client-supplied values", async () => {
+			baseCollections({
+				game_name: "PS4",
+				price_per_unit: 5,
+				unit_type: "Hour",
+			});
+
+			let createdPayload: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn(),
+					set: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						if (payload.action !== "CREATE") createdPayload = payload;
+					}),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/sales")
+				.set("Authorization", authHeader)
+				.send({
+					game_id: "rate-1",
+					game_name: "PS4",
+					quantity_sold: 2,
+					rate_applied: 999,
+					unit_type: "Bogus",
+				});
+
+			expect(response.status).toBe(201);
+			expect(response.body.unit_type).toBe("Hour");
+			expect(createdPayload?.unit_type).toBe("Hour");
+		});
+
+		it("TD-052: legacy rate without unit_type omits the key rather than writing undefined", async () => {
+			baseCollections({ game_name: "Pool", price_per_unit: 2 });
+
+			let createdPayload: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn(),
+					set: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						if (payload.action !== "CREATE") createdPayload = payload;
+					}),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/sales")
+				.set("Authorization", authHeader)
+				.send({
+					game_id: "rate-1",
+					game_name: "Pool",
+					quantity_sold: 3,
+					rate_applied: 2,
+				});
+
+			expect(response.status).toBe(201);
+			expect(createdPayload).toBeDefined();
+			expect(
+				Object.hasOwn(createdPayload as Record<string, unknown>, "unit_type"),
+			).toBe(false);
+		});
+
+		it("TD-052: update converges stored unit_type to the effective rate's value", async () => {
+			baseCollections({
+				game_name: "Pool",
+				price_per_unit: 2,
+				unit_type: "Game",
+			});
+
+			let capturedUpdate: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "sale-123",
+						data: () => ({
+							game_id: "rate-1",
+							game_name: "Pool",
+							quantity_sold: 2,
+							unit_type: "Hour",
+						}),
+					}),
+					set: vi.fn(),
+					update: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						capturedUpdate = payload;
+					}),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({ quantity_sold: 4, editReason: "Corrected quantity" });
+
+			expect(response.status).toBe(200);
+			expect(capturedUpdate?.unit_type).toBe("Game");
+		});
+
+		it("TD-052: update against a legacy rate clears stale unit_type on edit", async () => {
+			baseCollections({ game_name: "Pool", price_per_unit: 2 });
+
+			let capturedUpdate: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "sale-123",
+						data: () => ({
+							game_id: "rate-1",
+							game_name: "Pool",
+							quantity_sold: 2,
+							unit_type: "Hour",
+						}),
+					}),
+					set: vi.fn(),
+					update: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						capturedUpdate = payload;
+					}),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({ quantity_sold: 4, editReason: "Corrected quantity" });
+
+			expect(response.status).toBe(200);
+			expect(capturedUpdate?.unit_type).toEqual(FieldValue.delete());
+		});
+
+		it("TD-052: audit new_value stays Firestore-legal (no delete sentinel) on legacy-rate edit", async () => {
+			baseCollections({ game_name: "Pool", price_per_unit: 2 });
+
+			let capturedAudit: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "sale-123",
+						data: () => ({
+							game_id: "rate-1",
+							game_name: "Pool",
+							quantity_sold: 2,
+							unit_type: "Hour",
+						}),
+					}),
+					set: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						if (payload.action === "UPDATE") capturedAudit = payload;
+					}),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/sales/sale-123")
+				.set("Authorization", authHeader)
+				.send({ quantity_sold: 4, editReason: "Corrected quantity" });
+
+			expect(response.status).toBe(200);
+			expect(capturedAudit).toBeDefined();
+			expect(
+				Object.hasOwn(
+					capturedAudit?.new_value as Record<string, unknown>,
+					"unit_type",
+				),
+			).toBe(false);
+		});
+
+		it("TD-051: verifies a sale transactionally with an audit record", async () => {
+			baseCollections({ exists: false });
+
+			let capturedUpdate: Record<string, unknown> | undefined;
+			let capturedAudit: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "sale-123",
+						data: () => ({ game_name: "Pool", calculated_total: 10 }),
+					}),
+					set: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						capturedAudit = payload;
+					}),
+					update: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						capturedUpdate = payload;
+					}),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/sales/sale-123/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body.message).toBe("Verified successfully");
+			expect(capturedUpdate).toEqual({ verified: true });
+			expect(capturedAudit?.table_affected).toBe("game_sales_logs");
+			expect(capturedAudit?.action).toBe("UPDATE");
+		});
+
+		it("TD-051: returns 500 when verifying a non-existent sale (documented contract)", async () => {
+			baseCollections({ exists: false });
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: false,
+						data: () => undefined,
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.put("/api/sales/missing-sale/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Sale not found");
+		});
+
+		it("TD-051: staff cannot verify sales (manager/admin gated)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "sale-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.put("/api/sales/sale-123/verify")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(403);
 		});
 	});
 });

@@ -124,6 +124,23 @@ describe("Credits", () => {
 		});
 	});
 
+	it("TD-050: delete button exposes an accessible name", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([credit]))
+				.mockResolvedValueOnce(jsonResponse(employees)),
+		);
+		render(<Credits />);
+		await waitFor(() => {
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
+		});
+		expect(
+			screen.getByRole("button", { name: "Delete credit" }),
+		).toBeInTheDocument();
+	});
+
 	it("toasts error when load fails", async () => {
 		vi.stubGlobal(
 			"fetch",

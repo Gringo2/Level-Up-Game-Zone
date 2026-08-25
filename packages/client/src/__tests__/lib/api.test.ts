@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	API_BASE,
 	authFetch,
+	listFromPayload,
 	resolveApiBase,
 	safeJson,
 } from "../../lib/api.js";
@@ -30,6 +31,20 @@ function jsonResponse(body: unknown, contentType = "application/json") {
 		headers: { "Content-Type": contentType },
 	});
 }
+
+describe("listFromPayload (TD-032)", () => {
+	const rows = [{ id: "a" }, { id: "b" }];
+
+	it("passes legacy bare arrays through untouched", () => {
+		expect(listFromPayload(rows)).toEqual(rows);
+	});
+
+	it("unwraps the { data, nextCursor } envelope", () => {
+		expect(listFromPayload({ data: rows, nextCursor: "cursor-1" })).toEqual(
+			rows,
+		);
+	});
+});
 
 describe("safeJson", () => {
 	it("resolves a base URL against the runtime hostname", () => {

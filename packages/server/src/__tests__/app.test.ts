@@ -28,4 +28,14 @@ describe("App Composition Root Integration Tests", () => {
 			expect(response.body.error).toBe("Internal server error");
 		});
 	});
+
+	describe("TD-019: unknown /api routes stay JSON", () => {
+		it("returns a JSON 404 for unknown /api paths (never HTML)", async () => {
+			const response = await request(app).get("/api/does-not-exist");
+
+			expect(response.status).toBe(404);
+			expect(response.headers["content-type"]).toContain("application/json");
+			expect(response.body.error).toBe("Not found");
+		});
+	});
 });

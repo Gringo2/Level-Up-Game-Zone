@@ -1,8 +1,9 @@
 import { COLLECTIONS } from "@level-up/shared";
 import { db } from "../firebase.js";
+import { logger } from "../utils/logger.js";
 
 async function runMigration() {
-	console.log("Starting credits foreign key migration...");
+	logger.info("Starting credits foreign key migration...");
 
 	try {
 		// 1. Fetch all employees
@@ -15,7 +16,7 @@ async function runMigration() {
 			employeesByName[name] = doc.id;
 		});
 
-		console.log(`Loaded ${employeesSnap.size} employees for matching.`);
+		logger.info(`Loaded ${employeesSnap.size} employees for matching.`);
 
 		// 2. Fetch all credits
 		const creditsSnap = await db.collection(COLLECTIONS.CREDITS).get();
@@ -42,7 +43,7 @@ async function runMigration() {
 				updatedCount++;
 				batchOperationCount++;
 			} else {
-				console.warn(
+				logger.warn(
 					`[WARNING] No active employee found for credit ID ${doc.id} (Name: ${data.employee_name}). Skipping.`,
 				);
 				missingCount++;
@@ -59,12 +60,12 @@ async function runMigration() {
 			await batch.commit();
 		}
 
-		console.log("\nMigration Summary:");
-		console.log(`- Credits successfully linked: ${updatedCount}`);
-		console.log(`- Credits unlinked (historical/missing): ${missingCount}`);
-		console.log("Migration completed.");
+		logger.info("\nMigration Summary:");
+		logger.info(`- Credits successfully linked: ${updatedCount}`);
+		logger.info(`- Credits unlinked (historical/missing): ${missingCount}`);
+		logger.info("Migration completed.");
 	} catch (error) {
-		console.error("Migration failed:", error);
+		logger.error({ err: error }, "Migration failed");
 		process.exit(1);
 	}
 }

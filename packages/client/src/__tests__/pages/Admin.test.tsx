@@ -596,6 +596,19 @@ describe("Admin", () => {
 			expect(transportItems.length).toBeGreaterThanOrEqual(1);
 		});
 
+		it("TD-050: category deactivate button exposes an accessible name", async () => {
+			const fetchMock = vi.fn();
+			stubAdmin(fetchMock, [{ id: "c1", name: "Supplies", isActive: true }]);
+			vi.stubGlobal("fetch", fetchMock);
+
+			render(<Admin />);
+			await screen.findByText("PS4");
+
+			expect(
+				screen.getByRole("button", { name: "Deactivate category" }),
+			).toBeInTheDocument();
+		});
+
 		it("shows error toast when creating a duplicate category fails", async () => {
 			const fetchMock = vi.fn();
 			stubAdmin(fetchMock, [{ id: "c1", name: "Supplies", isActive: true }], (url, init) => {

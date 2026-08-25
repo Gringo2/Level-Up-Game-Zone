@@ -1,16 +1,17 @@
 import app from "./app.js";
+import { logger } from "./utils/logger.js";
 
 const PORT = process.env.PORT || 4001;
 
 const server = app.listen(PORT, () => {
-	console.log(`🚀 Server listening on http://localhost:${PORT}`);
+	logger.info(`🚀 Server listening on http://localhost:${PORT}`);
 });
 
 // Graceful shutdown on container/process signals
 const shutdown = (signal: string) => {
-	console.log(`[${signal}] Shutting down gracefully…`);
+	logger.info(`[${signal}] Shutting down gracefully…`);
 	server.close(() => {
-		console.log("Server closed.");
+		logger.info("Server closed.");
 		process.exit(0);
 	});
 };
@@ -20,10 +21,10 @@ process.on("SIGINT", () => shutdown("SIGINT"));
 
 // Process-level safety nets
 process.on("unhandledRejection", (reason) => {
-	console.error("[UnhandledRejection]", reason);
+	logger.error({ reason }, "[UnhandledRejection]");
 });
 
 process.on("uncaughtException", (err) => {
-	console.error("[UncaughtException]", err.message);
+	logger.error({ err }, "[UncaughtException]");
 	process.exit(1);
 });

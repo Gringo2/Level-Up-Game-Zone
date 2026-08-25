@@ -18,7 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { API_BASE, authFetch, safeJson } from "../lib/api";
+import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
 
 export function Credits() {
 	const { user } = useAuth();
@@ -30,6 +30,7 @@ export function Credits() {
 	);
 	const [loading, setLoading] = useState(false);
 	const [credits, setCredits] = useState<Credit[]>([]);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [employeeRoster, setEmployeeRoster] = useState<Employee[]>([]);
 	const [filterEmployeeId, setFilterEmployeeId] = useState("");
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -37,6 +38,36 @@ export function Credits() {
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [reason, setReason] = useState("");
+
+	const loadOlderCredits = async () => {
+		if (!nextCursor) return;
+		setLoading(true);
+		try {
+			const params = new URLSearchParams();
+			if (filterEmployeeId) params.set("employee_id", filterEmployeeId);
+			params.set("limit", "200");
+			params.set("cursor", nextCursor);
+			const res = await authFetch(
+				`${API_BASE}/api/credits?${params.toString()}`,
+			);
+			if (!res.ok) throw new Error("Failed to fetch credits");
+			const payload = (await safeJson(res)) as
+				| Credit[]
+				| { data: Credit[]; nextCursor: string | null };
+			const older = listFromPayload(payload);
+			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
+			setCredits((prev) =>
+				[...prev, ...older].sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			);
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to load credits");
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	useEffect(() => {
 		let mounted = true;
@@ -47,11 +78,10 @@ export function Credits() {
 				if (filterEmployeeId) {
 					params.set("employee_id", filterEmployeeId);
 				}
+				params.set("limit", "200");
 
 				const [creditsResponse, employeesResponse] = await Promise.all([
-					authFetch(
-						`${API_BASE}/api/credits${params.toString() ? `?${params.toString()}` : ""}`,
-					),
+					authFetch(`${API_BASE}/api/credits?${params.toString()}`),
 					authFetch(`${API_BASE}/api/employees`),
 				]);
 
@@ -59,7 +89,11 @@ export function Credits() {
 					throw new Error("Failed to fetch credits");
 				}
 
-				const data = (await safeJson(creditsResponse)) as Credit[];
+				const payload = (await safeJson(creditsResponse)) as
+					| Credit[]
+					| { data: Credit[]; nextCursor: string | null };
+				const data = listFromPayload(payload);
+				setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
 				const empData = employeesResponse.ok
 					? ((await safeJson(employeesResponse)) as Employee[])
 					: [];
@@ -456,6 +490,7 @@ export function Credits() {
 																className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
 																onClick={() => setDeletingId(credit.id)}
 																disabled={!!editingId}
+																aria-label="Delete credit"
 															>
 																<Trash2 className="h-3 w-3" />
 															</Button>
@@ -499,6 +534,19 @@ export function Credits() {
 								))
 							)}
 						</div>
+						{nextCursor && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="mt-3"
+								data-testid="load-older"
+								onClick={() => void loadOlderCredits()}
+								disabled={loading}
+							>
+								Load older
+							</Button>
+						)}
 					</CardContent>
 				</Card>
 			</div>

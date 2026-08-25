@@ -43,10 +43,10 @@ describe("Expenses Integration Tests", () => {
 					};
 					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -92,10 +92,10 @@ describe("Expenses Integration Tests", () => {
 					};
 					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -130,10 +130,10 @@ describe("Expenses Integration Tests", () => {
 					};
 					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -230,20 +230,23 @@ describe("Expenses Integration Tests", () => {
 				} as any;
 			});
 
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({
-						exists: true,
-						id: "exp-123",
-						data: () => ({ description: "Cleaning", amount: 15.5 }),
-					}),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(
+				// biome-ignore lint/suspicious/noExplicitAny: mocked transaction callback parameter
+				async (cb: (tx: any) => unknown) => {
+					const mockTx = {
+						get: vi.fn().mockResolvedValue({
+							exists: true,
+							id: "exp-123",
+							data: () => ({ description: "Cleaning", amount: 15.5 }),
+						}),
+						set: vi.fn(),
+						update: vi.fn(),
+						delete: vi.fn(),
+					};
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					return await cb(mockTx as any);
+				},
+			);
 
 			const response = await request(app)
 				.put("/api/expenses/exp-123")
@@ -272,20 +275,23 @@ describe("Expenses Integration Tests", () => {
 				} as any;
 			});
 
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({
-						exists: true,
-						id: "exp-123",
-						data: () => ({ description: "Cleaning", amount: 15.5 }),
-					}),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(
+				// biome-ignore lint/suspicious/noExplicitAny: mocked transaction callback parameter
+				async (cb: (tx: any) => unknown) => {
+					const mockTx = {
+						get: vi.fn().mockResolvedValue({
+							exists: true,
+							id: "exp-123",
+							data: () => ({ description: "Cleaning", amount: 15.5 }),
+						}),
+						set: vi.fn(),
+						update: vi.fn(),
+						delete: vi.fn(),
+					};
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					return await cb(mockTx as any);
+				},
+			);
 
 			const response = await request(app)
 				.delete("/api/expenses/exp-123")
@@ -314,20 +320,23 @@ describe("Expenses Integration Tests", () => {
 				} as any;
 			});
 
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({
-						exists: true,
-						id: "exp-123",
-						data: () => ({ description: "Cleaning", amount: 15.5 }),
-					}),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(
+				// biome-ignore lint/suspicious/noExplicitAny: mocked transaction callback parameter
+				async (cb: (tx: any) => unknown) => {
+					const mockTx = {
+						get: vi.fn().mockResolvedValue({
+							exists: true,
+							id: "exp-123",
+							data: () => ({ description: "Cleaning", amount: 15.5 }),
+						}),
+						set: vi.fn(),
+						update: vi.fn(),
+						delete: vi.fn(),
+					};
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					return await cb(mockTx as any);
+				},
+			);
 
 			const response = await request(app)
 				.put("/api/expenses/exp-123/verify")
@@ -345,6 +354,7 @@ describe("Expenses Integration Tests", () => {
 				uid: "staff-uid",
 				email: "staff@example.com",
 				role: "staff",
+				// biome-ignore lint/suspicious/noExplicitAny: DecodedIdToken lacks the mocked role field
 			} as any);
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
@@ -359,9 +369,9 @@ describe("Expenses Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					doc: vi.fn().mockReturnValue({ id: "exp-123" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -492,10 +502,10 @@ describe("Expenses Integration Tests", () => {
 					};
 					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -523,25 +533,28 @@ describe("Expenses Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					doc: vi.fn().mockReturnValue({ id: "missing-expense" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({
-						exists: false,
-						id: "missing-expense",
-						data: () => undefined,
-					}),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(
+				// biome-ignore lint/suspicious/noExplicitAny: mocked transaction callback parameter
+				async (cb: (tx: any) => unknown) => {
+					const mockTx = {
+						get: vi.fn().mockResolvedValue({
+							exists: false,
+							id: "missing-expense",
+							data: () => undefined,
+						}),
+						set: vi.fn(),
+						update: vi.fn(),
+						delete: vi.fn(),
+					};
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					return await cb(mockTx as any);
+				},
+			);
 		};
 
 		it("returns 500 when updating a non-existent expense (documented contract)", async () => {
@@ -625,10 +638,10 @@ describe("Expenses Integration Tests", () => {
 					};
 					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				return {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					doc: vi.fn().mockReturnValue({ id: "placeholder" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 

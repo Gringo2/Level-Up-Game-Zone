@@ -275,6 +275,7 @@ export function UserManagement() {
 												setDeleteReason("");
 											}}
 											title="Delete user account"
+											aria-label="Delete user"
 										>
 											<Trash2 className="h-4 w-4" />
 										</Button>

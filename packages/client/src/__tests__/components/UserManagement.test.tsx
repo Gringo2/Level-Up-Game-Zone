@@ -53,6 +53,16 @@ describe("UserManagement", () => {
 		});
 	});
 
+	it("TD-050: delete button exposes an accessible name", async () => {
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+		expect(screen.getAllByRole("button", { name: "Delete user" }).length).toBe(
+			mockUsers.length,
+		);
+	});
+
 	it("shows loading spinner on mount", () => {
 		const { container } = render(<UserManagement />);
 		expect(container.querySelector(".animate-spin")).not.toBeNull();

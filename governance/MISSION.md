@@ -1,27 +1,34 @@
 # CURRENT MISSION
 
 **Type:** Infrastructure
-**Mission:** M-85 API Port Migration 4000→4001 + AFR-003 Guard Remediation (M-84) + TD-057 Time-Bomb Fix
-**Status:** Locked
+**Mission:** M-87 Active Debt Resolution by Priority — Deploy Path (TD-018/019/023) + Firebase Init Hardening (TD-021/022) + Pagination (TD-032) + Hygiene/QA (TD-041/036) + Structured Logging (TD-024) Breaking Majors (TD-013, PO-approved 2026-08-25)
+**Status:** Verification (all gates green; pending PO commit → lock_guard)
 
 ## 1. Objective
-1. **M-85 / approved decision #2** — Express API default :4000 → **:4001** (PO's other project runs next-server on :4000); client loopback fallback, resolver tests, docs follow.
-2. **M-84 / AFR-003 (approved decision #1)** — `lock_guard.sh`: keyword matching replaced by structural check (≥1 checked, zero unchecked); loud warnings for incomplete/no-checkbox Active payloads. All four branches proven in isolated fixture repo.
-3. **TD-057** — Keno/GameSales "Today resets" date-rollover time-bomb defused via scoped fake-Date timers (ACP-007 remedy), root-caused by instrumented probe.
+Resolve all 10 AI-actionable Active Debt items in register-priority order (PO directive 2026-08-25: "resolve the active debt with priority"). TD-016 remains PO-only (`git rm --cached`) and is out of scope.
+
+1. **Phase A — Firebase init hardening (TD-021 HIGH-value, TD-022):** `firebase.ts` prefers `GOOGLE_APPLICATION_CREDENTIALS` env path → falls back to `SERVICE_ACCOUNT_KEY_PATH` env → falls back to legacy `../serviceAccountKey.json`; sync read wrapped with actionable startup error naming all three attempted locations instead of a raw crash.
+2. **Phase B — Deployment path (TD-019 → TD-023 → TD-018):** Express serves `packages/client/dist` static assets + SPA fallback (API routes take precedence); root `build` and `start` scripts (build both workspaces, then node dist server); multi-stage root `Dockerfile` (deps → build → runtime, non-root user, `CMD ["npm","start"]`) + `.dockerignore`.
+3. **Phase C — Scalability (TD-032):** cursor pagination on listSales/listKenoLogs/listExpenses/listCredits mirroring the auditLogs precedent (`limit` + `cursor` doc-id `startAfter`, `{data,nextCursor}` envelope) composed WITH existing date-range `where` clauses. Client entry pages consume envelope transparently (load-more only if trivially additive; otherwise full-envelope swap preserving current UX).
+4. **Phase D — Hygiene/QA (TD-041, TD-036):** `DELETE /api/employees/:id` manager/admin-gated with DeleteReasonSchema + audit record mirroring sibling deletes; RBAC E2E expansion (staff blocked from manager-only API routes via real 403s, manager vs admin route matrix, root-admin protection).
+5. **Phase E — Observability (TD-024):** structured logger replacing raw `console.*` across server src (JSON lines, level via `LOG_LEVEL`, error redaction reusing safeError sentinel discipline). Logger: pino (PO-approved buy decision 2026-08-25).
+6. **Phase F — Breaking majors (TD-013), PO-approved 2026-08-25:** `firebase-admin@12→14` + `uuid` chain to ≥11.1.1 via npm overrides; full controller-mock compatibility sweep; isolated last so Phases A–E land regardless.
 
 ## 3. Scope & Boundaries
-- **In Scope:** `.agents/scripts/lock_guard.sh`, `docs/adr/AFR-003*`, `packages/server/src/index.ts`, `packages/client/src/lib/api.ts`, `api.test.ts`, GameSales/Keno test files (TD-047 cases only), README, env examples.
-- **Out of Scope:** TD-044 small-subset flakiness (pre-existing; verified NOT a regression — stashed combo run fails 16/50 vs 15/50 post-change).
+- **In Scope:** `firebase.ts`, `app.ts` (static serving only), root/package manifests + Dockerfile/.dockerignore, 4 list controllers + their schemas/tests + minimal client consumption, employees route/controller/tests, `rbac.spec.ts`, new logger util + call-site conversion, dependency manifests.
+- **Out of Scope:** TD-016 (PO git command), history rewrite, client pagination UI beyond envelope compatibility, log aggregation infrastructure, any shared-baseline type changes (none required — verified).
 
 ## Design Notes
-- Guard enforcement path unchanged for complete payloads (live-proven at M-81/M-83 locks).
-- Fake timers scope: `{toFake:["Date"]}` only — real timers preserved so RTL waitFor works.
+- Static serving is prod-only behavior behind existing build outputs; dev flow (`vite` proxy-less loopback) untouched; E2E unaffected (webServer runs vite).
+- SPA fallback must not shadow `/api/*` (mounted after routes, excludes `/api` prefix).
+- Pagination envelope is additive: existing ranged GETs keep working when no `limit` passed (default 50 mirrors audit logs).
+- Employee delete = hard delete with mandatory reason + audit trail (parity with sales/keno/expenses deletes).
 
 ## Testing Strategy (Rule 28)
-Guard: fixture-repo branch matrix. Port: resolver assertions moved with behavior. TD-057: red existed live (rollover detonation captured pre-fix); green = target tests pass solo + full suite.
+Red-Green per item. Firebase init: table-driven location-resolution unit tests + missing-file negative asserting the actionable message. Static serving: supertest asserts HTML at `/` and 404 JSON preserved for unknown `/api/*`. Pagination: behavioral tests per endpoint — envelope shape, limit honored, cursor resumes without overlap/drop (Red against unpaginated code first). Employee delete: golden path + reason-required Zod negative + role gate + audit capture. Logger: redaction unit tests (no secret keys in output) + level filtering. Dockerfile: `docker build` probe if daemon available, else lint-level verification documented as environment-limited. TD-013: full battery before AND after; every controller suite green against upgraded SDK types.
 
 ## Evidence Payload
-- [x] Functional Verification: full suite **473/473** ✔ | guard branch matrix PASS ×4 | E2E unaffected (no :4000 deps in specs)
-- [x] Architectural Verification (AVP-001): tsc client+server ✔ | biome changed=0 | knip 0 | depcruise 0
-- [x] Dependency Graph Clean: zero dependency changes across all three work items
-- [x] ADR Compliance: AFR-003 status → Resolved w/ evidence; TD-057 resolved row truthful; TD-010 allowlist note (:3002/:4001) registered for future mission
+- [x] Functional Verification: full coverage-gated battery **549/549** (39 files) | E2E **9/9** | boot smoke: build→start→health/SPA/API-404 | docker image built+probed to credential-validation depth
+- [x] Architectural Verification (AVP-001): tsc ×2 ✔ | biome touched=0 ✔ | knip 0 ✔ | depcruise 0 ✔
+- [x] Dependency Graph: +pino@10 (server runtime), firebase-admin@14, overrides uuid@11.1.1, shared typescript devDep; residual 6 moderates upstream-blocked (documented TD-013)
+- [x] DEBT: TD-018/019/021/022/023/024/032/036/041 closed with evidence; TD-013 rewritten truthfully; ROADMAP M-56/M-58/M-59 synced; blast radius docs/reports/M-87_Blast_Radius_Report.md

@@ -31,6 +31,14 @@ export const API_BASE: string = resolveApiBase(
  * Returns an empty object instead of throwing SyntaxError when the server
  * returns a non-JSON body (e.g. HTML 502 Bad Gateway / 504 Gateway Timeout).
  */
+// TD-032: list endpoints return either a legacy bare array or the
+// { data, nextCursor } pagination envelope. This normalizes both.
+export function listFromPayload<T>(
+	payload: T[] | { data: T[]; nextCursor?: string | null },
+): T[] {
+	return Array.isArray(payload) ? payload : payload.data;
+}
+
 export async function safeJson<T = Record<string, unknown>>(
 	res: Response,
 ): Promise<T & { error?: string }> {

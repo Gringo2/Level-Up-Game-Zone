@@ -223,6 +223,146 @@ describe("Employees Integration Tests", () => {
 		});
 	});
 
+	describe("TD-041: employee deletion", () => {
+		it("deletes an employee transactionally with an audit record", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "emp-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			let capturedDelete = false;
+			let capturedAudit: Record<string, unknown> | undefined;
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						id: "emp-1",
+						data: () => ({ name: "Alice", isActive: true }),
+					}),
+					set: vi.fn((_ref: unknown, payload: Record<string, unknown>) => {
+						capturedAudit = payload;
+					}),
+					update: vi.fn(),
+					delete: vi.fn(() => {
+						capturedDelete = true;
+					}),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.delete("/api/employees/emp-1")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Offboarded" });
+
+			expect(response.status).toBe(200);
+			expect(capturedDelete).toBe(true);
+			expect(capturedAudit?.table_affected).toBe("employees");
+			expect(capturedAudit?.action).toBe("DELETE");
+			expect(capturedAudit?.reason_for_change).toBe("Offboarded");
+		});
+
+		it("returns 400 without a deleteReason (Zod)", async () => {
+			const response = await request(app)
+				.delete("/api/employees/emp-1")
+				.set("Authorization", authHeader)
+				.send({});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toContain("Required");
+		});
+
+		it("staff cannot delete employees (403)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "emp-1" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.delete("/api/employees/emp-1")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Attempt" });
+
+			expect(response.status).toBe(403);
+		});
+
+		it("returns 500 when deleting a non-existent employee (documented contract)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "admin" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "missing" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: false,
+						data: () => undefined,
+					}),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.delete("/api/employees/missing")
+				.set("Authorization", authHeader)
+				.send({ deleteReason: "Cleanup" });
+
+			expect(response.status).toBe(500);
+			expect(response.body.error).toContain("Employee not found");
+		});
+
+		it("returns 401 without credentials", async () => {
+			const response = await request(app)
+				.delete("/api/employees/emp-1")
+				.send({ deleteReason: "No token" });
+
+			expect(response.status).toBe(401);
+		});
+	});
+
 	describe("Negative Path (Rejection Scenarios)", () => {
 		it("should return 400 when creating employee with missing name (Zod)", async () => {
 			const response = await request(app)

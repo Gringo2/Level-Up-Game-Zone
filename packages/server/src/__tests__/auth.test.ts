@@ -1,5 +1,11 @@
 import type { NextFunction, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("../firebase.js", () => ({
+	auth: { verifyIdToken: vi.fn() },
+	db: { collection: vi.fn() },
+}));
+
 import type { AuthRequest } from "../middleware/auth.js";
 import { makeRequireAuth } from "../middleware/auth.js";
 

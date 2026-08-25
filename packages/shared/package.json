@@ -2,7 +2,13 @@
 	"name": "@level-up/shared",
 	"version": "1.0.0",
 	"type": "module",
-	"main": "src/index.ts",
-	"types": "src/index.ts",
-	"dependencies": {}
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"dependencies": {},
+	"scripts": {
+		"build": "tsc"
+	},
+	"devDependencies": {
+		"typescript": "~5.8.2"
+	}
 }

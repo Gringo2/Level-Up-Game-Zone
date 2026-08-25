@@ -47,9 +47,11 @@ export interface GameSalesLog {
 	quantity_sold: number;
 	rate_applied: number;
 	calculated_total: number;
+	unit_type?: string;
 	user_id: string;
 	user_name?: string;
 	date: string;
+	verified?: boolean;
 }
 
 export interface KenoLog {

@@ -2,6 +2,7 @@ import { COLLECTIONS } from "@level-up/shared";
 import type { NextFunction, Request, Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { auth, db } from "../firebase.js";
+import { logger } from "../utils/logger.js";
 
 export interface AuthRequest extends Request {
 	user: DecodedIdToken;
@@ -37,7 +38,7 @@ export const makeRequireAuth =
 			req.user = decodedToken;
 			next();
 		} catch (error) {
-			console.error("Error verifying auth token", error);
+			logger.error({ err: error }, "Error verifying auth token");
 			res.status(401).json({ error: "Unauthorized: Invalid token" });
 		}
 	};
@@ -72,7 +73,7 @@ export const requireRole = (allowedRoles: string[]) => {
 			}
 			next();
 		} catch (error) {
-			console.error("Error checking user role:", error);
+			logger.error({ err: error }, "Error checking user role");
 			res.status(500).json({ error: "Internal server error" });
 		}
 	};

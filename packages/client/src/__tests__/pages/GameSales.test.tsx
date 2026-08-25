@@ -271,7 +271,7 @@ describe("GameSales", () => {
 	it("deletes a sale via DELETE after a reason is provided", async () => {
 		render(<GameSales />);
 		await screen.findByText(/2 units @ \$5\.00/);
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		fireEvent.click(screen.getByRole("button", { name: "Delete game sale" }));
 
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Duplicate entry" },
@@ -385,7 +385,7 @@ describe("GameSales", () => {
 	it("dismisses delete confirmation when Cancel is clicked", async () => {
 		render(<GameSales />);
 		await screen.findByText(/2 units @ \$5\.00/);
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		fireEvent.click(screen.getByRole("button", { name: "Delete game sale" }));
 
 		expect(
 			screen.getByPlaceholderText("Reason for deletion..."),
@@ -401,7 +401,7 @@ describe("GameSales", () => {
 	it("shows error toast when delete sale fails", async () => {
 		render(<GameSales />);
 		await screen.findByText(/2 units @ \$5\.00/);
-		fireEvent.click(screen.getByRole("button", { name: "" }));
+		fireEvent.click(screen.getByRole("button", { name: "Delete game sale" }));
 
 		fireEvent.change(screen.getByPlaceholderText("Reason for deletion..."), {
 			target: { value: "Wrong entry" },
@@ -563,5 +563,133 @@ describe("GameSales", () => {
 		await screen.findByTestId("sales-range-summary");
 		expect(apply).toBeEnabled();
 		expect(screen.queryByTestId("history-loading")).not.toBeInTheDocument();
+	});
+
+	describe("ACP-008: verification workflow + unit-aware rows", () => {
+		const staffUser = { ...managerUser, role: "staff" as const };
+
+		it("TD-051: shows Unverified badge and a Verify button for managers", async () => {
+			render(<GameSales />);
+			expect(await screen.findByText("Unverified")).toBeInTheDocument();
+			expect(
+				screen.getByRole("button", { name: "Verify" }),
+			).toBeInTheDocument();
+			expect(screen.queryByText(/^Verified$/)).not.toBeInTheDocument();
+		});
+
+		it("TD-051: hides the Verify affordance from staff", async () => {
+			vi.mocked(useAuth).mockReturnValue({ user: staffUser, loading: false });
+			render(<GameSales />);
+			await screen.findByText(/2 units @ \$5\.00/);
+			expect(screen.getByText("Unverified")).toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: "Verify" }),
+			).not.toBeInTheDocument();
+		});
+
+		it("TD-051: verifies via PUT to /verify, toasts, and flips the badge", async () => {
+			render(<GameSales />);
+			await screen.findByText("Unverified");
+
+			fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+			await waitFor(() =>
+				expect(mockFetch).toHaveBeenCalledWith(
+					expect.stringMatching(/\/api\/sales\/sale-1\/verify$/),
+					expect.objectContaining({ method: "PUT" }),
+				),
+			);
+			await waitFor(() =>
+				expect(toast.success).toHaveBeenCalledWith("Log verified!"),
+			);
+			expect(await screen.findByText("Verified")).toBeInTheDocument();
+			expect(screen.queryByText("Unverified")).not.toBeInTheDocument();
+		});
+
+		it("TD-051: surfaces an error toast when verification fails", async () => {
+			mockFetch.mockImplementation((url: string) => {
+				if (
+					String(url).endsWith("/api/sales/sale-1/verify") ||
+					String(url).endsWith("/verify")
+				) {
+					return Promise.resolve(
+						jsonResponse({ error: "Verification failed" }, false, 500),
+					);
+				}
+				if (String(url).endsWith("/api/rates")) {
+					return Promise.resolve(jsonResponse(rates));
+				}
+				return Promise.resolve(jsonResponse([salesLog]));
+			});
+			render(<GameSales />);
+			await screen.findByText("Unverified");
+
+			fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+			await waitFor(() =>
+				expect(toast.error).toHaveBeenCalledWith("Verification failed"),
+			);
+			expect(screen.getByText("Unverified")).toBeInTheDocument();
+		});
+
+		it("TD-052: renders persisted unit_type in rows, falling back to units for legacy logs", async () => {
+			const modernLog = { ...salesLog, unit_type: "Hour" };
+			const legacyLog = {
+				...salesLog,
+				id: "legacy-sale",
+				game_name: "Pool",
+				game_id: "rate-2",
+				quantity_sold: 3,
+				rate_applied: 2,
+				calculated_total: 6,
+			};
+			mockFetch.mockImplementation(() =>
+				Promise.resolve(jsonResponse([modernLog, legacyLog])),
+			);
+
+			render(<GameSales />);
+
+			expect(await screen.findByText(/2 Hours @ \$5\.00/)).toBeInTheDocument();
+			expect(screen.getByText(/3 units @ \$2\.00/)).toBeInTheDocument();
+		});
+	});
+
+	it("TD-050: delete button exposes an accessible name", async () => {
+		render(<GameSales />);
+		await screen.findByText(/2 units @ \$5\.00/);
+		expect(
+			screen.getByRole("button", { name: "Delete game sale" }),
+		).toBeInTheDocument();
+	});
+	it("TD-032: consumes pagination envelope and appends older pages", async () => {
+		const first = { ...salesLog, id: "s1" };
+		const older = {
+			...salesLog,
+			id: "s0",
+			quantity_sold: 9,
+			calculated_total: 45,
+		};
+		mockFetch.mockImplementation((url: string) => {
+			const u = String(url);
+			if (u.endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			if (u.includes("cursor=")) {
+				return Promise.resolve(
+					jsonResponse({ data: [older], nextCursor: null }),
+				);
+			}
+			return Promise.resolve(jsonResponse({ data: [first], nextCursor: "c2" }));
+		});
+
+		render(<GameSales />);
+		expect(await screen.findByTestId("load-older")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Load older" }));
+
+		expect(await screen.findByText(/9 units @ \$5\.00/)).toBeInTheDocument();
+		await waitFor(() =>
+			expect(screen.queryByTestId("load-older")).not.toBeInTheDocument(),
+		);
 	});
 });

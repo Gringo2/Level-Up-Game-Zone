@@ -5,11 +5,14 @@
 		"packages/*"
 	],
 	"scripts": {
+		"dev": "npm run dev:server & npm run dev:client",
 		"dev:client": "npm run dev --workspace=@level-up/client",
 		"dev:server": "npm run dev --workspace=@level-up/server",
-		"dev": "npm run dev:server & npm run dev:client",
+		"predev:server": "npm run build --workspace=@level-up/shared",
+		"build": "npm run build --workspace=@level-up/shared && npm run build:client && npm run build:server",
 		"build:client": "npm run build --workspace=@level-up/client",
 		"build:server": "npm run build --workspace=@level-up/server",
+		"start": "node packages/server/dist/index.js",
 		"install:all": "npm install",
 		"depcruise": "depcruise packages --include-only '^packages' --no-config --output-type html > dependency-report.html",
 		"lint": "biome lint .",
@@ -35,5 +38,8 @@
 		"*.{ts,tsx,js,jsx,json}": [
 			"biome check --write --no-errors-on-unmatched"
 		]
+	},
+	"overrides": {
+		"uuid": "11.1.1"
 	}
 }

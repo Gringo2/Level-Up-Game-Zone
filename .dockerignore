@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.env
+.env.*
+*.log
+packages/server/serviceAccountKey.json
+packages/client/firebase-applet-config.json
+packages/client/.env.local
+tests
+docs
+governance
+coverage
+dependency-report.html

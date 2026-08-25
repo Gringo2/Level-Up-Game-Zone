@@ -8,7 +8,6 @@ import {
 	render,
 	screen,
 	waitFor,
-	within,
 } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -204,6 +203,42 @@ describe("Expenses", () => {
 		expect(
 			screen.queryByRole("button", { name: "Verify" }),
 		).not.toBeInTheDocument();
+	});
+
+	it("TD-053: disables sibling row actions while verification is in flight", async () => {
+		let resolveVerify: (v: Response) => void = () => {};
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (init?.method === "PUT" && url.endsWith("/verify")) {
+				return new Promise<Response>((resolve) => {
+					resolveVerify = resolve;
+				});
+			}
+			return Promise.resolve(jsonResponse([expense]));
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+		expect(screen.getByRole("button", { name: "Verify" })).toBeDisabled();
+		expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: "Delete expense" }),
+		).toBeDisabled();
+
+		await waitFor(() =>
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringMatching(/\/verify$/),
+				expect.objectContaining({ method: "PUT" }),
+			),
+		);
+		resolveVerify(jsonResponse({ ok: true }));
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Expense verified!"),
+		);
+		await waitFor(() =>
+			expect(screen.getByText("Verified")).toBeInTheDocument(),
+		);
 	});
 
 	it("deletes an expense via DELETE after a reason is provided", async () => {
@@ -744,5 +779,36 @@ describe("Expenses", () => {
 		resolveFetch(jsonResponse([expense]));
 		await screen.findByText("Paper Towels");
 		expect(screen.queryByTestId("history-loading")).not.toBeInTheDocument();
+	});
+
+	it("TD-050: delete button exposes an accessible name", async () => {
+		render(<Expenses />);
+		await screen.findByText("Paper Towels");
+		expect(
+			screen.getByRole("button", { name: "Delete expense" }),
+		).toBeInTheDocument();
+	});
+	it("TD-032: consumes pagination envelope and appends older pages", async () => {
+		const first = { ...expense, id: "e1" };
+		const older = { ...expense, id: "e0", item_name: "Stapler" };
+		mockFetch.mockImplementation((url: string) => {
+			const u = String(url);
+			if (u.includes("expense-categories")) {
+				return Promise.resolve(jsonResponse([]));
+			}
+			if (u.includes("cursor=")) {
+				return Promise.resolve(
+					jsonResponse({ data: [older], nextCursor: null }),
+				);
+			}
+			return Promise.resolve(jsonResponse({ data: [first], nextCursor: "c2" }));
+		});
+
+		render(<Expenses />);
+		expect(await screen.findByTestId("load-older")).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Load older" }));
+
+		expect(await screen.findByText("Stapler")).toBeInTheDocument();
 	});
 });

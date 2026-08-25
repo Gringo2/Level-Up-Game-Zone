@@ -18,7 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { API_BASE, authFetch, safeJson } from "../lib/api";
+import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -53,6 +53,7 @@ export function Keno() {
 	const [verifyingId, setVerifyingId] = useState<string | null>(null);
 	const [deletePending, setDeletePending] = useState(false);
 	const [historyPage, setHistoryPage] = useState(0);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [listLoading, setListLoading] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
@@ -68,7 +69,7 @@ export function Keno() {
 				new Date(`${rangeEnd}T00:00:00`),
 			).toISOString();
 			const response = await authFetch(
-				`${API_BASE}/api/keno?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}`,
+				`${API_BASE}/api/keno?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200`,
 			);
 			if (!response.ok) {
 				throw new Error(
@@ -76,7 +77,13 @@ export function Keno() {
 				);
 			}
 
-			const data = (await safeJson(response)) as KenoLog[];
+			const payload = (await safeJson<
+				KenoLog[] | { data: KenoLog[]; nextCursor: string | null }
+			>(response)) as
+				| KenoLog[]
+				| { data: KenoLog[]; nextCursor: string | null };
+			const data = listFromPayload(payload);
+			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
 			setLogs(
 				data.sort(
 					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -177,6 +184,42 @@ export function Keno() {
 			);
 		} finally {
 			setVerifyingId(null);
+		}
+	};
+
+	const loadOlderKeno = async () => {
+		if (!nextCursor) return;
+		setListLoading(true);
+		try {
+			const startISO = getShopStartOfDay(
+				new Date(`${rangeStart}T00:00:00`),
+			).toISOString();
+			const endISO = getShopEndOfDay(
+				new Date(`${rangeEnd}T00:00:00`),
+			).toISOString();
+			const res = await authFetch(
+				`${API_BASE}/api/keno?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200&cursor=${encodeURIComponent(nextCursor)}`,
+			);
+			if (!res.ok) throw new Error("Failed to fetch keno logs");
+			const payload = (await safeJson(res)) as
+				| KenoLog[]
+				| { data: KenoLog[]; nextCursor: string | null };
+			const older = listFromPayload(payload);
+			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
+			setLogs((prev) =>
+				[...prev, ...older].sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to load keno logs",
+			);
+		} finally {
+			setListLoading(false);
 		}
 	};
 
@@ -501,6 +544,7 @@ export function Keno() {
 																disabled={
 																	!!editingId || !!verifyingId || deletePending
 																}
+																aria-label="Delete keno log"
 															>
 																<Trash2 className="h-4 w-4" />
 															</Button>
@@ -540,6 +584,19 @@ export function Keno() {
 										Next
 									</Button>
 								</div>
+							)}
+							{nextCursor && (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="mt-3"
+									data-testid="load-older"
+									onClick={() => void loadOlderKeno()}
+									disabled={listLoading}
+								>
+									Load older
+								</Button>
 							)}
 						</div>
 					</CardContent>

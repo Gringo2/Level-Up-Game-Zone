@@ -1,3 +1,4 @@
+import path from "node:path";
 import cors from "cors";
 import dotenv from "dotenv";
 import express, {
@@ -5,12 +6,44 @@ import express, {
 	type Request,
 	type Response,
 } from "express";
+import helmet from "helmet";
+import { registerClientStatic } from "./staticHosting.js";
 
 dotenv.config();
 
+import {
+	API_RATE_LIMIT_MAX,
+	buildApiRateLimit,
+	buildCorsOptions,
+	buildMutationRateLimit,
+	MUTATION_RATE_LIMIT_MAX,
+	parseAllowedOrigins,
+} from "./middleware/security.js";
+import { logger } from "./utils/logger.js";
+
 const app = express();
 
-app.use(cors());
+app.use(helmet());
+app.use(cors(buildCorsOptions(parseAllowedOrigins(process.env.CORS_ORIGINS))));
+const RATE_LIMIT_WINDOW_MS = Number(
+	process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000,
+);
+app.use(
+	"/api",
+	buildApiRateLimit({
+		windowMs: RATE_LIMIT_WINDOW_MS,
+		max: API_RATE_LIMIT_MAX,
+	}),
+);
+app.use(
+	"/api",
+	buildMutationRateLimit(
+		buildApiRateLimit({
+			windowMs: RATE_LIMIT_WINDOW_MS,
+			max: MUTATION_RATE_LIMIT_MAX,
+		}),
+	),
+);
 app.use(express.json());
 
 import auditLogsRoutes from "./routes/auditLogs.js";
@@ -40,10 +73,19 @@ app.use("/api/users", usersRoutes);
 app.use("/api/employees", employeesRoutes);
 app.use("/api/audit-logs", auditLogsRoutes);
 
+// TD-019: unknown /api paths must answer JSON, never the SPA shell.
+app.use("/api", (_req: Request, res: Response) => {
+	res.status(404).json({ error: "Not found" });
+});
+
+// TD-019: serve the built client with SPA fallback when dist exists
+// (production unified deployment; inert in dev/test).
+registerClientStatic(app, path.resolve(process.cwd(), "packages/client/dist"));
+
 // Global Express error handler — must be registered after all routes
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-	console.error("[Express Error]", err.message);
+	logger.error({ err }, "[Express Error]");
 	res.status(500).json({ error: "Internal server error" });
 });
 

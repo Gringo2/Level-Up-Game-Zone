@@ -18,7 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { API_BASE, authFetch, safeJson } from "../lib/api";
+import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -38,9 +38,11 @@ export function GameSales() {
 	const [loading, setLoading] = useState(false);
 	const [loadingRates, setLoadingRates] = useState(true);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [verifyingId, setVerifyingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [deletePending, setDeletePending] = useState(false);
 	const [historyPage, setHistoryPage] = useState(0);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [listLoading, setListLoading] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
@@ -93,13 +95,16 @@ export function GameSales() {
 			const endISO = getShopEndOfDay(
 				new Date(`${rangeEnd}T00:00:00`),
 			).toISOString();
-			const salesResponse = await authFetch(
-				`${API_BASE}/api/sales?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}`,
-			);
+			const base = `${API_BASE}/api/sales?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200`;
+			const salesResponse = await authFetch(base);
 			if (!salesResponse.ok) {
 				throw new Error("Failed to fetch sales logs");
 			}
-			const fetchedSales = await safeJson<GameSalesLog[]>(salesResponse);
+			const payload = await safeJson<
+				GameSalesLog[] | { data: GameSalesLog[]; nextCursor: string | null }
+			>(salesResponse);
+			const fetchedSales = listFromPayload(payload);
+			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
 			setLogs(
 				fetchedSales.sort(
 					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -153,6 +158,68 @@ export function GameSales() {
 		setSelectedRateId("");
 		setQuantity("");
 		setEditReason("");
+	};
+
+	const handleVerify = async (id: string) => {
+		setVerifyingId(id);
+		try {
+			if (!user) return;
+			const response = await authFetch(`${API_BASE}/api/sales/${id}/verify`, {
+				method: "PUT",
+			});
+			if (!response.ok)
+				throw new Error((await safeJson(response)).error || "Failed to verify");
+
+			toast.success("Log verified!");
+			setLogs((prev) =>
+				prev.map((l) => (l.id === id ? { ...l, verified: true } : l)),
+			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to verify game sale",
+			);
+		} finally {
+			setVerifyingId(null);
+		}
+	};
+
+	const loadOlderSales = async () => {
+		if (!nextCursor || rangeStart > rangeEnd) return;
+		setListLoading(true);
+		try {
+			const startISO = getShopStartOfDay(
+				new Date(`${rangeStart}T00:00:00`),
+			).toISOString();
+			const endISO = getShopEndOfDay(
+				new Date(`${rangeEnd}T00:00:00`),
+			).toISOString();
+			const res = await authFetch(
+				`${API_BASE}/api/sales?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200&cursor=${encodeURIComponent(nextCursor)}`,
+			);
+			if (!res.ok) throw new Error("Failed to fetch sales logs");
+			const payload = await safeJson<
+				GameSalesLog[] | { data: GameSalesLog[]; nextCursor: string | null }
+			>(res);
+			const older = listFromPayload(payload);
+			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
+			setLogs((prev) =>
+				[...prev, ...older].sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			);
+		} catch (err: unknown) {
+			console.error(err);
+			toast.error(
+				err instanceof Error && err.message
+					? err.message
+					: "Failed to load sales data",
+			);
+		} finally {
+			setListLoading(false);
+		}
 	};
 
 	const handleDelete = async (id: string) => {
@@ -560,7 +627,8 @@ export function GameSales() {
 														{log.game_name}
 													</span>
 													<span className="text-zinc-500">
-														{log.quantity_sold} units @ $
+														{log.quantity_sold}{" "}
+														{log.unit_type ? `${log.unit_type}s` : "units"} @ $
 														{log.rate_applied.toFixed(2)} ={" "}
 														<span className="font-semibold text-zinc-900">
 															${log.calculated_total.toFixed(2)}
@@ -574,9 +642,29 @@ export function GameSales() {
 															{log.user_name}
 														</span>
 													)}
+													{log.verified ? (
+														<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm text-xs">
+															Verified
+														</span>
+													) : (
+														<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm text-xs">
+															Unverified
+														</span>
+													)}
 													{(user?.role === ROLES.MANAGER ||
 														user?.role === ROLES.ADMIN) && (
 														<div className="ml-auto flex items-center gap-2">
+															{!log.verified && (
+																<Button
+																	size="sm"
+																	variant="outline"
+																	className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+																	onClick={() => void handleVerify(log.id)}
+																	disabled={!!verifyingId || deletePending}
+																>
+																	Verify
+																</Button>
+															)}
 															<Button
 																size="sm"
 																variant="outline"
@@ -591,6 +679,7 @@ export function GameSales() {
 																className="text-red-600 hover:text-red-700 hover:bg-red-50"
 																onClick={() => setDeletingId(log.id)}
 																disabled={!!editingId || deletePending}
+																aria-label="Delete game sale"
 															>
 																<Trash2 className="h-4 w-4" />
 															</Button>
@@ -630,6 +719,19 @@ export function GameSales() {
 										Next
 									</Button>
 								</div>
+							)}
+							{nextCursor && (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="mt-3"
+									data-testid="load-older"
+									onClick={() => void loadOlderSales()}
+									disabled={listLoading}
+								>
+									Load older
+								</Button>
 							)}
 						</div>
 					</CardContent>

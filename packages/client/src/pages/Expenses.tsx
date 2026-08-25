@@ -18,7 +18,7 @@ import { ConfirmDialog } from "../components/ui/confirm-dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
-import { API_BASE, authFetch, safeJson } from "../lib/api";
+import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
 import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -41,11 +41,14 @@ export function Expenses() {
 	const [loading, setLoading] = useState(false);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [historyPage, setHistoryPage] = useState(0);
+	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [listLoading, setListLoading] = useState(false);
 	const [allCategories, setAllCategories] = useState<ExpenseCategory[]>([]);
 	const categories = allCategories.filter((c) => c.isActive);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [verifyingId, setVerifyingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const [deletePending, setDeletePending] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [filterDateFrom, setFilterDateFrom] = useState(() =>
@@ -54,6 +57,44 @@ export function Expenses() {
 	const [filterDateTo, setFilterDateTo] = useState(() =>
 		new Date().toISOString().slice(0, 10),
 	);
+
+	const loadOlderExpenses = async () => {
+		if (!nextCursor || filterDateFrom > filterDateTo) return;
+		setListLoading(true);
+		try {
+			const dayStart = getShopStartOfDay(
+				new Date(filterDateFrom),
+			).toISOString();
+			const dayEnd = getShopEndOfDay(new Date(filterDateTo)).toISOString();
+			const params = new URLSearchParams();
+			params.set("startDate", dayStart);
+			params.set("endDate", dayEnd);
+			params.set("limit", "200");
+			params.set("cursor", nextCursor);
+			const res = await authFetch(
+				`${API_BASE}/api/expenses?${params.toString()}`,
+			);
+			if (!res.ok)
+				throw new Error(
+					(await safeJson(res)).error || "Failed to fetch expenses",
+				);
+			const payload = (await safeJson(res)) as
+				| Expense[]
+				| { data: Expense[]; nextCursor: string | null };
+			const older = listFromPayload(payload);
+			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
+			setExpenses((prev) =>
+				[...prev, ...older].sort(
+					(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+				),
+			);
+		} catch (err) {
+			console.error(err);
+			toast.error("Failed to load expenses");
+		} finally {
+			setListLoading(false);
+		}
+	};
 
 	useEffect(() => {
 		let mounted = true;
@@ -96,6 +137,7 @@ export function Expenses() {
 				const params = new URLSearchParams();
 				params.set("startDate", dayStart);
 				params.set("endDate", dayEnd);
+				params.set("limit", "200");
 
 				const expensesRes = await authFetch(
 					`${API_BASE}/api/expenses?${params.toString()}`,
@@ -107,10 +149,14 @@ export function Expenses() {
 					);
 				}
 
-				const data = (await safeJson(expensesRes)) as Expense[];
+				const payload = (await safeJson(expensesRes)) as
+					| Expense[]
+					| { data: Expense[]; nextCursor: string | null };
+				const data = listFromPayload(payload);
 
 				if (mounted) {
 					setExpenses(data);
+					setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
 					setHistoryPage(0);
 				}
 			} catch (err) {
@@ -179,6 +225,7 @@ export function Expenses() {
 			toast.error("Please provide a reason for deletion.");
 			return;
 		}
+		setDeletePending(true);
 		try {
 			const response = await authFetch(`${API_BASE}/api/expenses/${id}`, {
 				method: "DELETE",
@@ -197,10 +244,13 @@ export function Expenses() {
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Failed to delete expense");
+		} finally {
+			setDeletePending(false);
 		}
 	};
 
 	const handleVerify = async (id: string) => {
+		setVerifyingId(id);
 		try {
 			const response = await authFetch(
 				`${API_BASE}/api/expenses/${id}/verify`,
@@ -218,6 +268,8 @@ export function Expenses() {
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error("Failed to verify expense");
+		} finally {
+			setVerifyingId(null);
 		}
 	};
 
@@ -631,7 +683,8 @@ export function Expenses() {
 																	size="sm"
 																	variant="outline"
 																	className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-																	onClick={() => handleVerify(expense.id)}
+																	onClick={() => void handleVerify(expense.id)}
+																	disabled={!!verifyingId || deletePending}
 																>
 																	Verify
 																</Button>
@@ -640,7 +693,9 @@ export function Expenses() {
 																size="sm"
 																variant="outline"
 																onClick={() => handleEdit(expense)}
-																disabled={!!editingId}
+																disabled={
+																	!!editingId || !!verifyingId || deletePending
+																}
 															>
 																<Edit2 className="h-4 w-4 mr-1" /> Edit
 															</Button>
@@ -649,7 +704,10 @@ export function Expenses() {
 																variant="ghost"
 																className="text-red-600 hover:text-red-700 hover:bg-red-50"
 																onClick={() => setDeletingId(expense.id)}
-																disabled={!!editingId}
+																disabled={
+																	!!editingId || !!verifyingId || deletePending
+																}
+																aria-label="Delete expense"
 															>
 																<Trash2 className="h-4 w-4" />
 															</Button>
@@ -689,6 +747,19 @@ export function Expenses() {
 										Next
 									</Button>
 								</div>
+							)}
+							{nextCursor && (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="mt-3"
+									data-testid="load-older"
+									onClick={() => void loadOlderExpenses()}
+									disabled={listLoading}
+								>
+									Load older
+								</Button>
 							)}
 						</div>
 					</CardContent>

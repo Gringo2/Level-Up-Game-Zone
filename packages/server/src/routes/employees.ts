@@ -2,6 +2,7 @@ import { ROLES } from "@level-up/shared";
 import { type RequestHandler, Router } from "express";
 import {
 	createEmployee,
+	deleteEmployee,
 	listEmployees,
 	updateEmployee,
 } from "../controllers/employeesController.js";
@@ -9,6 +10,7 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
 	CreateEmployeeSchema,
+	DeleteReasonSchema,
 	UpdateEmployeeSchema,
 } from "../schemas/index.js";
 
@@ -28,6 +30,14 @@ router.put(
 	requireRole([ROLES.ADMIN]) as RequestHandler,
 	validateBody(UpdateEmployeeSchema) as RequestHandler,
 	updateEmployee as RequestHandler,
+);
+
+router.delete(
+	"/:id",
+	requireAuth as RequestHandler,
+	requireRole([ROLES.ADMIN]) as RequestHandler,
+	validateBody(DeleteReasonSchema) as RequestHandler,
+	deleteEmployee as RequestHandler,
 );
 
 export default router;
