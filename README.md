@@ -24,7 +24,7 @@ packages/server/serviceAccountKey.json
 
 This file is gitignored and must not be committed. The client Firebase configuration lives in `packages/client/.env.local` as `VITE_FIREBASE_*` variables (see `.env.example`; untracked since M-82/TD-016). The server optionally takes `FIRESTORE_DATABASE_ID` in `packages/server/.env`.
 
-### Server Security Configuration (M-86)
+### Server Security Configuration
 
 The Express API ships with helmet security headers, per-IP rate limiting, and a CORS allowlist (TD-010/011/012). All three are configurable via environment variables in `packages/server/.env` — see the root `.env.example`:
 

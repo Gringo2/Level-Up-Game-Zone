@@ -11,7 +11,9 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 ## Deferred Debt (Awaiting Product Owner Decision)
 
-**Gate:** All items below involve the shift identity model — how Shifts relate to Employees vs Users. They are parked until the Product Owner records a decision on that model (link direction, identity source, backfill strategy). No implementation work may begin on these items before that decision exists.
+**Resolved model decision:** Employees are the store roster/payroll records. User records are auth/role records for authenticated staff, manager, and admin accounts. A manager or admin may also be an employee, but that is the explicit bridge case: the same person can hold both identities, and the linkage is stored only when the relationship is true. Employees may exist without a system login, and users may exist without an employee record.
+
+**Gate:** All items below involve the shift identity model — how Shifts relate to Employees vs Users. They are parked until the Product Owner records a decision on the linking policy for the explicit subset where a user also has employee roster data (link direction, identity source, backfill strategy). No implementation work may begin on these items before that decision exists.
 
 | ID | Reason | Impact | Priority | Owner | Pending On |
 | :--- | :--- | :--- | :--- | :--- | :--- |

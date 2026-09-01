@@ -24,7 +24,8 @@ export const listEmployees = async (_req: AuthRequest, res: Response) => {
 export const createEmployee = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const { name, position, base_salary, hired_date, break_day } = req.body;
+	const { name, position, base_salary, hired_date, break_day, user_uid } =
+		req.body;
 
 	try {
 		const trimmedName = name.trim();
@@ -46,6 +47,7 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 			hired_date,
 			break_day: break_day || null,
 			isActive: true,
+			...(user_uid ? { user_uid } : {}),
 			created_at: new Date().toISOString(),
 		};
 
@@ -104,6 +106,7 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 		base_salary,
 		hired_date,
 		break_day,
+		user_uid,
 		isActive,
 		editReason,
 	} = req.body;
@@ -164,6 +167,7 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 					newValues.base_salary = parseFloat(base_salary);
 				if (hired_date !== undefined) newValues.hired_date = hired_date;
 				if (break_day !== undefined) newValues.break_day = break_day;
+				if (user_uid !== undefined) newValues.user_uid = user_uid || null;
 				if (isActive !== undefined) newValues.isActive = isActive;
 
 				transaction.update(docRef, newValues);

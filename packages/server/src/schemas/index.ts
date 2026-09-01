@@ -294,6 +294,11 @@ export const CreateEmployeeSchema = z.object({
 		.nullable()
 		.optional()
 		.default(null),
+	user_uid: z
+		.string()
+		.trim()
+		.min(1, "User UID must be a non-empty string")
+		.optional(),
 });
 
 export const UpdateEmployeeSchema = z.object({
@@ -312,6 +317,11 @@ export const UpdateEmployeeSchema = z.object({
 			"Sunday",
 		])
 		.nullable()
+		.optional(),
+	user_uid: z
+		.string()
+		.trim()
+		.min(1, "User UID must be a non-empty string")
 		.optional(),
 	isActive: z.boolean().optional(),
 	editReason: z

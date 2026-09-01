@@ -2,7 +2,7 @@
 
 **Type:** Infrastructure
 **Mission:** M-87 Active Debt Resolution by Priority — Deploy Path (TD-018/019/023) + Firebase Init Hardening (TD-021/022) + Pagination (TD-032) + Hygiene/QA (TD-041/036) + Structured Logging (TD-024) Breaking Majors (TD-013, PO-approved 2026-08-25)
-**Status:** Verification (all gates green; pending PO commit → lock_guard)
+**Status:** Locked (2026-09-02, all gates passed, awaiting PO deployment approval)
 
 ## 1. Objective
 Resolve all 10 AI-actionable Active Debt items in register-priority order (PO directive 2026-08-25: "resolve the active debt with priority"). TD-016 remains PO-only (`git rm --cached`) and is out of scope.
@@ -27,8 +27,9 @@ Resolve all 10 AI-actionable Active Debt items in register-priority order (PO di
 ## Testing Strategy (Rule 28)
 Red-Green per item. Firebase init: table-driven location-resolution unit tests + missing-file negative asserting the actionable message. Static serving: supertest asserts HTML at `/` and 404 JSON preserved for unknown `/api/*`. Pagination: behavioral tests per endpoint — envelope shape, limit honored, cursor resumes without overlap/drop (Red against unpaginated code first). Employee delete: golden path + reason-required Zod negative + role gate + audit capture. Logger: redaction unit tests (no secret keys in output) + level filtering. Dockerfile: `docker build` probe if daemon available, else lint-level verification documented as environment-limited. TD-013: full battery before AND after; every controller suite green against upgraded SDK types.
 
-## Evidence Payload
-- [x] Functional Verification: full coverage-gated battery **549/549** (39 files) | E2E **9/9** | boot smoke: build→start→health/SPA/API-404 | docker image built+probed to credential-validation depth
+## Evidence Payload (Lock Locked 2026-09-02)
+- [x] Functional Verification: **551/551 tests** (39 files) | **92.13% statements, 77.03% branches, 95.67% functions, 93.37% lines** | E2E **9/9** | boot smoke: build→start→health/SPA/API-404 | docker image built+probed to credential-validation depth
 - [x] Architectural Verification (AVP-001): tsc ×2 ✔ | biome touched=0 ✔ | knip 0 ✔ | depcruise 0 ✔
-- [x] Dependency Graph: +pino@10 (server runtime), firebase-admin@14, overrides uuid@11.1.1, shared typescript devDep; residual 6 moderates upstream-blocked (documented TD-013)
-- [x] DEBT: TD-018/019/021/022/023/024/032/036/041 closed with evidence; TD-013 rewritten truthfully; ROADMAP M-56/M-58/M-59 synced; blast radius docs/reports/M-87_Blast_Radius_Report.md
+- [x] Dependency Graph: +pino@10 (server runtime), firebase-admin@14, overrides uuid@11.1.1; residual 6 moderates upstream-blocked (documented TD-013)
+- [x] DEBT: TD-018/019/021/022/023/024/032/036/041 closed with evidence; TD-013 rewritten truthfully; ROADMAP M-56/M-58/M-59 synced
+- [x] **Full evidence packet:** [docs/reports/M-87_LOCK_EVIDENCE_PACKET.md](docs/reports/M-87_LOCK_EVIDENCE_PACKET.md) | [governance/RELEASE_READINESS.md](governance/RELEASE_READINESS.md)

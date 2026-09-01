@@ -62,6 +62,16 @@ const unlinkedCredit = {
 	date: "2026-08-03T10:00:00.000Z",
 };
 
+const deletedEmployeeCredit = {
+	id: "c4",
+	employee_id: "deleted-emp",
+	employee_name: "Former Employee",
+	amount: 70,
+	status: "Deducted" as const,
+	user_id: "u1",
+	date: "2026-08-04T10:00:00.000Z",
+};
+
 describe("SalaryReport", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -210,6 +220,46 @@ describe("SalaryReport", () => {
 		});
 		expect(screen.getByText("Former / Unregistered")).toBeDefined();
 		expect(screen.getAllByText("-$10.00").length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("shows former employee credits when employee records are missing", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([deletedEmployeeCredit]))
+				.mockResolvedValueOnce(jsonResponse([employee])),
+		);
+
+		render(<SalaryReport />);
+
+		await waitFor(() => {
+			expect(screen.getAllByText("Former Employee").length).toBeGreaterThan(0);
+		});
+		expect(screen.getAllByText("Former Employee").length).toBeGreaterThan(0);
+		expect(screen.getAllByText("-$70.00").length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("treats employee fetch failures as an empty employee roster", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([deductedCredit]))
+				.mockResolvedValueOnce(jsonResponse([], false, 500)),
+		);
+
+		render(<SalaryReport />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Former / Unregistered")).toBeDefined();
+		});
+		expect(screen.getByText("Bob")).toBeDefined();
+		expect(
+			screen.getByText(
+				"Historical IOUs not linked to an active roster member.",
+			),
+		).toBeDefined();
 	});
 
 	it("does not include Pending credits in deductions", async () => {

@@ -29,6 +29,7 @@ export interface Employee {
 	hired_date: string;
 	break_day: BreakDay;
 	isActive: boolean;
+	user_uid?: string;
 	created_at: string;
 }
 
