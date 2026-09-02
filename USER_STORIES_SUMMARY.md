@@ -9,17 +9,17 @@ To prevent conflating distinct engineering domains, the system analysis has been
 
 | Document | Domain Scope | Target Audience | Primary Focus |
 |---|---|---|---|
-| 📄 **[userstories.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/userstories.md)** | End-User Business Capabilities | Product Owners, End Users | Functional user requirements (*"As a <Role>, I can <Action>..."*) |
-| 🎨 **[UI_UX_BEHAVIORS.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/UI_UX_BEHAVIORS.md)** | UI & UX Interactivity | UX Designers, Frontend Engineers | Visual feedback, modal overlays, layout rules, and tooltips |
-| ⚙️ **[SYSTEM_MECHANISMS.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/SYSTEM_MECHANISMS.md)** | System & Infrastructure | Backend & Lead Architects | Atomic transactions, timezone boundaries, OAuth fallbacks, test hooks |
-| 🛡️ **[STABILITY_GAP_ANALYSIS.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/STABILITY_GAP_ANALYSIS.md)** | Codebase Stability & Resilience | QA & Engineering Leads | Input validation, crash boundaries, error middleware, transport protocols |
+| 📄 **[userstories.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/userstories.md)** | End-User Business Capabilities | Product Owners, End Users | Functional user requirements (*"As a <Role>, I can <Action>..."*) |
+| 🎨 **[UI_UX_BEHAVIORS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/UI_UX_BEHAVIORS.md)** | UI & UX Interactivity | UX Designers, Frontend Engineers | Visual feedback, modal overlays, layout rules, and tooltips |
+| ⚙️ **[SYSTEM_MECHANISMS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/SYSTEM_MECHANISMS.md)** | System & Infrastructure | Backend & Lead Architects | Atomic transactions, timezone boundaries, OAuth fallbacks, test hooks |
+| 🛡️ **[STABILITY_GAP_ANALYSIS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/STABILITY_GAP_ANALYSIS.md)** | Codebase Stability & Resilience | QA & Engineering Leads | Input validation, crash boundaries, error middleware, transport protocols |
 
 
 ---
 
 ## Executive Summary
 
-### 1. End-User Business Capabilities ([userstories.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/userstories.md))
+### 1. End-User Business Capabilities ([userstories.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/userstories.md))
 - **26 Verified User Stories** across 8 operational modules:
   - Authentication & Security (3 stories)
   - Shift Management & Blind Count Closing (5 stories)
@@ -30,7 +30,7 @@ To prevent conflating distinct engineering domains, the system analysis has been
   - Reports, Analytics & Salary Deductions (3 stories)
   - Admin Settings, Rate Management & User Roles (5 stories)
 
-### 2. UI & UX Interactivity Specifications ([UI_UX_BEHAVIORS.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/UI_UX_BEHAVIORS.md))
+### 2. UI & UX Interactivity Specifications ([UI_UX_BEHAVIORS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/UI_UX_BEHAVIORS.md))
 - Frosted backdrop shift opening modal lockout (`backdrop-blur-sm z-50`).
 - Dynamic sidebar role-permission menu item filtering (`staff`, `manager`, `admin`).
 - Surplus vs shortage dynamic cash variance color feedback (`text-emerald-400` vs `text-red-400`).
@@ -40,7 +40,7 @@ To prevent conflating distinct engineering domains, the system analysis has been
 - Real-time reactive form field calculations (Game Sales totals and Keno Net profit).
 - Universal Sonner toast notification feedback system (`top-center` richColors).
 
-### 3. System & Infrastructure Mechanisms ([SYSTEM_MECHANISMS.md](file:///home/gringo2/gringo2/Level-Up-Game-Zone/SYSTEM_MECHANISMS.md))
+### 3. System & Infrastructure Mechanisms ([SYSTEM_MECHANISMS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/SYSTEM_MECHANISMS.md))
 - OAuth popup-blocked fallback mechanism (`signInWithPopup` → `signInWithRedirect`).
 - Profile auto-registration and admin bootstrap mechanism (`GET /api/users/me` 404 handler).
 - Atomic multi-collection Firestore audit transaction guarantees (`db.runTransaction()`).

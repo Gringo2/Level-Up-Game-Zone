@@ -11,7 +11,6 @@ import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateCreditSchema,
 	CreditsQuerySchema,
-	DateRangeQuerySchema,
 	DeleteReasonSchema,
 	UpdateCreditSchema,
 } from "../schemas/index.js";

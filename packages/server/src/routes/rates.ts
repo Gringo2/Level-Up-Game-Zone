@@ -14,12 +14,7 @@ import {
 
 const router = Router();
 
-router.get(
-	"/",
-	requireAuth as RequestHandler,
-	requireRole([ROLES.ADMIN]) as RequestHandler,
-	listRates as RequestHandler,
-);
+router.get("/", requireAuth as RequestHandler, listRates as RequestHandler);
 router.post(
 	"/",
 	requireAuth as RequestHandler,

@@ -780,6 +780,153 @@ describe("Game Rates Integration Tests", () => {
 		});
 	});
 
+	describe("Role-Based Access Control (RBAC)", () => {
+		it("allows staff role to GET /api/rates for the POS catalog", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "rate-ps4",
+									data: () => ({
+										game_name: "PS4",
+										price_per_unit: 10,
+										isActive: true,
+									}),
+								},
+							],
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.get("/api/rates")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveLength(1);
+			expect(response.body[0].game_name).toBe("PS4");
+		});
+
+		it("allows manager role to GET /api/rates", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "manager" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						get: vi.fn().mockResolvedValue({
+							docs: [
+								{
+									id: "rate-pool",
+									data: () => ({
+										game_name: "Pool",
+										price_per_unit: 15,
+										isActive: true,
+									}),
+								},
+							],
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.get("/api/rates")
+				.set("Authorization", authHeader);
+
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveLength(1);
+			expect(response.body[0].game_name).toBe("Pool");
+		});
+
+		it("blocks staff role from POST /api/rates with 403 Forbidden", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.post("/api/rates")
+				.set("Authorization", authHeader)
+				.send({
+					game_name: "VR",
+					price_per_unit: 25,
+					unit_type: "Hour",
+				});
+
+			expect(response.status).toBe(403);
+			expect(response.body.error).toContain("Insufficient role permissions");
+		});
+
+		it("blocks staff role from PUT /api/rates/:id with 403 Forbidden", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { get: vi.fn().mockResolvedValue({ docs: [] }) } as any;
+			});
+
+			const response = await request(app)
+				.put("/api/rates/rate-123")
+				.set("Authorization", authHeader)
+				.send({
+					price_per_unit: 30,
+					editReason: "Unauthorized rate change attempt",
+				});
+
+			expect(response.status).toBe(403);
+			expect(response.body.error).toContain("Insufficient role permissions");
+		});
+	});
+
 	describe("Unauthorized (missing credentials)", () => {
 		it("returns 401 without a bearer token on GET", async () => {
 			const response = await request(app).get("/api/rates");

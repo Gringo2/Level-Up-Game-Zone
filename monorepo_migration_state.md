@@ -24,7 +24,7 @@ Created Express routes and controllers to handle all business logic securely via
 
 ### C. Frontend "Thin Client" Migration (100% Implemented)
 - Systematically removed all instances of Firebase client SDK mutations (`addDoc`, `updateDoc`, `setDoc`, `deleteDoc`) across `packages/client/src`.
-- Refactored `App.tsx` and `UserManagement.tsx` to communicate exclusively with the `http://localhost:4000/api/*` backend using JWT `Bearer` token authentication.
+- Refactored `App.tsx` and `UserManagement.tsx` to communicate exclusively with the `http://localhost:4001/api/*` backend using JWT `Bearer` token authentication.
 
 ### D. Zero-Trust Role Verification
 - Patched the backend verification logic. The server no longer trusts the frontend payload or JWT for role claims. Instead, it deterministically queries the Firestore `users` collection to verify if the actor has `admin` or `manager` privileges before approving financial logs.

@@ -1,5 +1,9 @@
 # Migration Remaining Work Plan
 
+> [!NOTE]
+> **HISTORICAL ARCHIVE (SUPERSEDED):**
+> This artifact represents an early-phase gap analysis produced during the initial migration audit. All findings recorded herein (Thin Client migration, auth profile bootstrapping, mission status gating, and Firestore SDK decoupling) have been **100% resolved and verified** across Missions M-82 through M-87. It is retained strictly as an immutable engineering audit record.
+
 ## Evidence Summary
 
 This artifact is generated from the current workspace observation and verification evidence. It is a remediation plan for the implementation gap between the migration milestone summary in [monorepo_migration_state.md](monorepo_migration_state.md) and the present runtime/architecture evidence.
