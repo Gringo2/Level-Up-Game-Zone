@@ -37,9 +37,8 @@ Documents in this tier are exclusively dedicated to the Antigravity IDE intercep
 *   **Behavioral specifications**: Concrete definitions of how components must behave, API contracts, and interface definitions.
 
 
-## `apps/` and `packages/` - Implementation & Source
+## `packages/` - Implementation & Source
 This is the executable system. Code here must reflect the constraints defined in the governance and architectural tiers.
-*   **`apps/`**: Host applications, Composition Roots, and transport layers (e.g., `apps/browser-lab`). These wire the system together.
 *   **`packages/`**: Isolated, decoupled domain and technical capabilities (e.g., `packages/browser-runtime`). These implement the abstractions.
 
 ## `assets/` - Visual & Conceptual Design

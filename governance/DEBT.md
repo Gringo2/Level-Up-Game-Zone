@@ -26,7 +26,7 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 ## Resolved Debt
 
-| TD-016 | **Firebase client config untracked from git** — `packages/client/firebase-applet-config.json` untracked from git index and covered by `.gitignore` (executed by PO in commit `a4603c4`). Client loads public config from `VITE_FIREBASE_*` in `.env.local` (TD-016). | 2026-09-02 |
+| TD-016 | **Firebase client config untracked from git** — `packages/client/firebase-applet-config.json` is absent from the git index and covered by `.gitignore` (executed by PO in commit `a4603c4`). Client loads public config from `VITE_FIREBASE_*` in `.env.local`. | 2026-09-02 |
 | TD-018 | Multi-stage root Dockerfile (node:22-slim; build -> prune -> scoped prod install with --ignore-scripts for husky-less runtime; non-root user; PORT env). Empirically verified: image builds, boots, serves /api/health, honors GOOGLE_APPLICATION_CREDENTIALS mount, reaches SDK credential validation with dummy key. .dockerignore added. M-87. | 2026-08-25 |
 | TD-019 | Express serves built client + SPA fallback (staticHosting.ts, inert without dist); unknown /api/* answered JSON 404 never HTML (Red-Green at app level). Live probe: SPA 200 text/html at /, JSON health, API-404 json. M-87. | 2026-08-25 |
 | TD-021 | Credential resolution order GOOGLE_APPLICATION_CREDENTIALS > SERVICE_ACCOUNT_KEY_PATH > legacy repo-relative file (resolveCredentialPath, table-driven tests). firebase.ts migrated to firebase-admin@14 named subpath imports (app/credential/firestore/auth). M-87. | 2026-08-25 |

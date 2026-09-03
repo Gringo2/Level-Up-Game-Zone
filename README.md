@@ -52,17 +52,16 @@ npm run dev:client
 
 ## Build And Run
 
-Build each workspace:
+Build the shared package, client, and server:
 
 ```bash
-npm run build:server
-npm run build:client
+npm run build
 ```
 
-After building, run the compiled server with:
+After building, run the compiled server from the repository root with:
 
 ```bash
-npm run start --workspace=@level-up/server
+npm start
 ```
 
 To preview the production client build:

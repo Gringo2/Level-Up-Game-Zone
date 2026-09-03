@@ -23,4 +23,5 @@
 - **admin@14:** transaction/doc callback typing annotated (~100 sites, no logic changes); FieldValue/auth/firestore subpath imports verified stable.
 
 ## 4. Verification State
+The following verification snapshot is historical evidence collected on 2026-08-25; later lock evidence supersedes its test count.
 Full coverage-gated battery **549/549** (39 files, thresholds pass incl. pages floors restored via new envelope tests) · tsc ×2 clean · biome touched=0 · knip 0 · depcruise 0 · E2E **9/9** · docker image probe passed to credential-validation depth · prod boot smoke (health/SPA/API-404) green.

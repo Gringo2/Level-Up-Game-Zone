@@ -9,6 +9,10 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Changed (2026-09-02 — M-87)
+- Completed deployment infrastructure, Firebase credential hardening, pagination, admin-gated employee deletion, structured logging, and RBAC verification.
+- Upgraded `firebase-admin` to 14 and pinned the `uuid` override to 11.1.1; current audit leaves 3 moderate `qs` advisories in the Express 4 dependency range.
+
 ### Added (Mission 33 — Backend Coverage Completion: Shifts & Users)
 - Expanded `shiftsController.test.ts` 8 -> 29 tests and `usersController.test.ts` 6 -> 29 tests (Rule-28 golden + negative + not-found + DB-crash paths).
 - Coverage: shifts 55.6% -> 93.1%, users 38.2% -> 91.7% statement coverage (both 100% funcs); all 9 Express controllers now >= 62.9%.

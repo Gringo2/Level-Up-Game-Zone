@@ -21,7 +21,7 @@
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | Total Test Files | — | 39 | ✅ PASS |
-| Total Tests | — | 551 | ✅ PASS |
+| Total Tests | — | 555 | ✅ PASS |
 | Statement Coverage | 80%+ | 92.13% | ✅ PASS |
 | Branch Coverage | 75%+ | 77.03% | ✅ PASS |
 | Function Coverage | 90%+ | 95.67% | ✅ PASS |
@@ -77,7 +77,7 @@
 
 | Item | Owner | Status | Action |
 |------|-------|--------|--------|
-| TD-016: Firebase client config still tracked | Product Owner | PO-only | `git rm --cached packages/client/firebase-applet-config.json` (one-time, history rewrite explicitly out of scope) |
+| TD-016: Firebase client config | Product Owner | Resolved | Untracked by the PO in commit `a4603c4`; history rewrite remains out of scope |
 | TD-013: Firebase-admin breaking majors (v14, uuid chain) | Engineering | Resolved in M-87 | Full battery re-verified post-upgrade |
 | Upstream blocked dependencies | Planning | Tracked | See governance/DEBT.md |
 
@@ -86,7 +86,7 @@
 ## 🎯 Release Sign-Off Checklist
 
 - [x] Build compiles cleanly (tsc, vite)
-- [x] Full test suite passes (551/551 tests)
+- [x] Full test suite passes (555/555 tests)
 - [x] Coverage thresholds met (branches 77%+, statements 92%+)
 - [x] Linting clean (biome, knip, depcruise)
 - [x] Domain model (employee/user bridge) enforced at all tiers
@@ -99,8 +99,8 @@
 ## 🔒 Handoff to Product Owner
 
 **Remaining PO Actions:**
-1. Execute: `git rm --cached packages/client/firebase-applet-config.json` (one-time)
-2. Review and approve any breaking dependency bumps (firebase-admin@14, uuid@11.1.1) if not already approved
+1. Review the remaining 3 moderate `qs` advisories in the Express 4 dependency range
+2. Review and approve the firebase-admin@14 and uuid@11.1.1 dependency state if not already approved
 3. Proceed to deployment when ready
 
 **AI Implementor Constraint:**  

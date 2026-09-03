@@ -4,11 +4,10 @@ This document specifies all **Frontend Interactive Behaviors, Visual Feedback St
 
 ---
 
-## 1. Shift Opening Modal Overlay Lockout Behavior
-- **Trigger:** A Manager or Admin navigates to the application when `activeShift === null` (no shift currently open).
-- **UI Behavior:** A full-page modal dialog overlay with a frosted backdrop (`backdrop-blur-sm z-50 bg-zinc-900/50`) renders over the main layout.
-- **Constraint:** The background application navigation and interactive controls are completely non-interactive until an opening float amount is entered and submitted via "Start Shift".
-- **Source Location:** [Layout.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/layouts/Layout.tsx#L173-L208).
+## 1. Non-Blocking Shift and Backdated Entry Behavior
+- **Behavior:** A missing current shift does not block navigation or financial data entry. Users can review history and submit backdated financial entries without resolving a missed-shift modal.
+- **Constraint:** Shift open/close/reconciliation remains operational, while business dates are selected explicitly on financial entry forms.
+- **Source Location:** [ADR-008](docs/adr/ADR-008_NonBlocking_Shifts_Backdated_Entry.md).
 
 ---
 
