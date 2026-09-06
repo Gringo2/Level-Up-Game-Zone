@@ -165,6 +165,7 @@ describe("Shifts Integration Tests", () => {
 		it("should successfully list shifts", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
 						where: vi.fn().mockReturnThis(),
 						orderBy: vi.fn().mockReturnThis(),
@@ -177,6 +178,7 @@ describe("Shifts Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				const defaultChainable: any = {
 					where: vi.fn().mockReturnThis(),
 					orderBy: vi.fn().mockReturnThis(),
@@ -199,6 +201,7 @@ describe("Shifts Integration Tests", () => {
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
 						where: vi.fn().mockReturnThis(),
 						orderBy: vi.fn().mockReturnThis(),
@@ -216,6 +219,7 @@ describe("Shifts Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				const defaultChainable: any = {
 					where: vi.fn().mockReturnThis(),
 					orderBy: vi.fn().mockReturnThis(),
@@ -622,6 +626,7 @@ describe("Shifts Integration Tests", () => {
 		it("returns 500 when listing shifts crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
 						where: vi.fn().mockReturnThis(),
 						orderBy: vi.fn().mockReturnThis(),
@@ -629,6 +634,7 @@ describe("Shifts Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				const defaultChainable: any = {
 					where: vi.fn().mockReturnThis(),
 					orderBy: vi.fn().mockReturnThis(),

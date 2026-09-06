@@ -29,6 +29,7 @@ describe("Keno Integration Tests", () => {
 					} as any;
 				}
 				if (path === "keno_logs") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
 						get: vi.fn().mockResolvedValue({
 							docs: [
@@ -43,6 +44,7 @@ describe("Keno Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				const defaultChainable: any = {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					where: vi.fn().mockReturnThis(),
@@ -71,6 +73,7 @@ describe("Keno Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				const chainable: any = {
 					get: vi.fn().mockImplementation(() => {
 						const docs = [
@@ -97,7 +100,7 @@ describe("Keno Integration Tests", () => {
 						});
 						return Promise.resolve({ docs });
 					}),
-					where: vi.fn((field: string, op: string, value: string) => {
+					where: vi.fn((_field: string, op: string, value: string) => {
 						if (op === ">=") range.start = value;
 						if (op === "<=") range.end = value;
 						return chainable;
@@ -688,6 +691,7 @@ describe("Keno Integration Tests", () => {
 					} as any;
 				}
 				if (path === "keno_logs") {
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),
 						where: vi.fn().mockReturnThis(),
@@ -695,6 +699,7 @@ describe("Keno Integration Tests", () => {
 					};
 					return chainable;
 				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				const defaultChainable: any = {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					where: vi.fn().mockReturnThis(),
