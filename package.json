@@ -19,7 +19,7 @@
 		"format": "biome format --write .",
 		"knip": "knip",
 		"scan": "semgrep scan --config auto",
-		"prepare": "husky"
+		"prepare": "husky || true"
 	},
 	"devDependencies": {
 		"@ast-grep/cli": "^0.39.0",
