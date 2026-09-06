@@ -1,6 +1,6 @@
 {
 	"ignoreDependencies": ["autoprefixer", "vite", "@ast-grep/cli"],
-	"ignore": [".agents/**", "packages/server/src/scripts/**", "loader.cjs"],
+	"ignore": [".agents/**", "packages/server/src/scripts/**", "server.js"],
 	"ignoreBinaries": ["semgrep"],
 	"ignoreExportsUsedInFile": true
 }

@@ -6,6 +6,8 @@ build/
 dist/
 coverage/
 *.tsbuildinfo
+*.tar.gz
+*.zip
 
 # Sensitive Environment & Secrets
 .env
