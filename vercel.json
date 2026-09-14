@@ -7,7 +7,7 @@
 			"destination": "/api"
 		},
 		{
-			"source": "/((?!api/).*)",
+			"source": "/(.*)",
 			"destination": "/index.html"
 		}
 	]
