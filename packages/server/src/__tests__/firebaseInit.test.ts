@@ -24,8 +24,12 @@ vi.mock("firebase-admin/firestore", () => ({
 }));
 vi.mock("firebase-admin/auth", () => ({ getAuth: () => adminMock.auth() }));
 
-const { resolveCredentialPath, readServiceAccount, FirebaseConfigError } =
-	await import("../firebase.js");
+const {
+	resolveCredentialPath,
+	readServiceAccount,
+	resolveServiceAccount,
+	FirebaseConfigError,
+} = await import("../firebase.js");
 
 describe("TD-021/TD-022: firebase init hardening", () => {
 	describe("resolveCredentialPath precedence", () => {
@@ -110,6 +114,52 @@ describe("TD-021/TD-022: firebase init hardening", () => {
 				expect(readServiceAccount(file)).toMatchObject({
 					project_id: "proj-1",
 				});
+			} finally {
+				rmSync(dir, { recursive: true, force: true });
+			}
+		});
+	});
+
+	describe("resolveServiceAccount environment support (Vercel / serverless)", () => {
+		it("parses credentials directly from FIREBASE_SERVICE_ACCOUNT_KEY env var", () => {
+			const creds = {
+				project_id: "vercel-proj",
+				client_email: "service@vercel.iam.gserviceaccount.com",
+			};
+			const result = resolveServiceAccount({
+				FIREBASE_SERVICE_ACCOUNT_KEY: JSON.stringify(creds),
+			});
+			expect(result).toMatchObject({
+				project_id: "vercel-proj",
+				client_email: "service@vercel.iam.gserviceaccount.com",
+			});
+		});
+
+		it("throws FirebaseConfigError if FIREBASE_SERVICE_ACCOUNT_KEY is malformed JSON", () => {
+			expect(() =>
+				resolveServiceAccount({
+					FIREBASE_SERVICE_ACCOUNT_KEY: "{not json",
+				}),
+			).toThrow(FirebaseConfigError);
+		});
+
+		it("throws FirebaseConfigError if FIREBASE_SERVICE_ACCOUNT_KEY lacks project_id", () => {
+			expect(() =>
+				resolveServiceAccount({
+					FIREBASE_SERVICE_ACCOUNT_KEY: JSON.stringify({ no_project: true }),
+				}),
+			).toThrow(FirebaseConfigError);
+		});
+
+		it("falls back to file-based resolution when FIREBASE_SERVICE_ACCOUNT_KEY is absent", () => {
+			const dir = mkdtempSync(path.join(tmpdir(), "fb-init-"));
+			try {
+				const file = path.join(dir, "fallback.json");
+				writeFileSync(file, JSON.stringify({ project_id: "fallback-proj" }));
+				const result = resolveServiceAccount({
+					SERVICE_ACCOUNT_KEY_PATH: file,
+				});
+				expect(result).toMatchObject({ project_id: "fallback-proj" });
 			} finally {
 				rmSync(dir, { recursive: true, force: true });
 			}

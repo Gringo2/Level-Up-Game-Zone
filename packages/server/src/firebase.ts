@@ -72,11 +72,38 @@ export function readServiceAccount(filePath: string): Record<string, unknown> {
 	return parsed as Record<string, unknown>;
 }
 
+export function resolveServiceAccount(
+	env: NodeJS.ProcessEnv = process.env,
+): Record<string, unknown> {
+	if (env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_KEY);
+		} catch {
+			throw new FirebaseConfigError(
+				"Server cannot start: FIREBASE_SERVICE_ACCOUNT_KEY is not valid JSON. Ensure the entire JSON key is copied correctly into environment variables.",
+			);
+		}
+
+		if (
+			typeof parsed !== "object" ||
+			parsed === null ||
+			!("project_id" in parsed)
+		) {
+			throw new FirebaseConfigError(
+				"Server cannot start: FIREBASE_SERVICE_ACCOUNT_KEY does not look like a service-account key (missing project_id).",
+			);
+		}
+
+		return parsed as Record<string, unknown>;
+	}
+
+	return readServiceAccount(resolveCredentialPath(env));
+}
+
 if (!getApps().length) {
 	initializeApp({
-		credential: cert(
-			readServiceAccount(resolveCredentialPath()) as Parameters<typeof cert>[0],
-		),
+		credential: cert(resolveServiceAccount() as Parameters<typeof cert>[0]),
 	});
 }
 
