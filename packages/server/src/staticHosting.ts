@@ -13,7 +13,11 @@ export function registerClientStatic(app: Express, clientDist: string): void {
 
 	app.use(expressStatic(distDir));
 
-	app.get("*", (req, res, next) => {
+	app.use((req, res, next) => {
+		if (req.method !== "GET" && req.method !== "HEAD") {
+			next();
+			return;
+		}
 		if (req.path.startsWith("/api")) {
 			next();
 			return;

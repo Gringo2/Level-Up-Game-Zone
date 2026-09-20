@@ -23,7 +23,28 @@ import { logger } from "./utils/logger.js";
 
 const app = express();
 
-app.use(helmet());
+app.use(
+	helmet({
+		crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+		contentSecurityPolicy: {
+			directives: {
+				defaultSrc: ["'self'"],
+				scriptSrc: ["'self'", "https://apis.google.com"],
+				frameSrc: ["'self'", "https://*.firebaseapp.com"],
+				connectSrc: [
+					"'self'",
+					"https://*.googleapis.com",
+					"https://*.firebaseio.com",
+					"https://identitytoolkit.googleapis.com",
+					"https://securetoken.googleapis.com",
+				],
+				imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
+				styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+				fontSrc: ["'self'", "https:", "data:"],
+			},
+		},
+	}),
+);
 app.use(cors(buildCorsOptions(parseAllowedOrigins(process.env.CORS_ORIGINS))));
 const RATE_LIMIT_WINDOW_MS = Number(
 	process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000,
