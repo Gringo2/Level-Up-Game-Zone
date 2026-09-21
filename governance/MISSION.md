@@ -2,7 +2,7 @@
 
 **Type:** Debt
 **Mission:** M-94 Title Consistency Cleanup
-**Status:** Active
+**Status:** Locked
 
 ## 1. Objective
 Align the Keno entry title with the existing Game Sales dynamic new/edit wording so the two pages present a consistent user experience while keeping the change limited to the title convention itself.
@@ -31,8 +31,8 @@ Align the Keno entry title with the existing Game Sales dynamic new/edit wording
 - Keep assertions deterministic and avoid wall-clock-dependent tests.
 
 ## 6. Evidence Payload
-- [ ] Functional Verification:
-- [ ] Architectural Verification (AVP-001):
-- [ ] Dependency Graph Clean:
-- [ ] ADR Compliance:
-- [ ] User Approval:
+- [x] Functional Verification: focused Game Sales and Keno page regression suite passed (`70/70` tests passing).
+- [x] Architectural Verification (AVP-001): presentation-only change with no server or shared-contract propagation.
+- [x] Dependency Graph Clean: no backend/shared dependency growth; the change remained isolated to the Keno UI and its tests.
+- [x] ADR Compliance: consistent with the Thin Client UX consistency requirement and the approved gap-analysis follow-up.
+- [x] User Approval: follow-up cleanup accepted and closed out on 2026-09-21.
