@@ -19,7 +19,11 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
-import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+import {
+	getShopDateString,
+	getShopEndOfDay,
+	getShopStartOfDay,
+} from "../lib/dateUtils";
 import {
 	groupLogsByDay,
 	HISTORY_PAGE_SIZE,
@@ -35,9 +39,7 @@ export function Expenses() {
 	const [quantity, setQuantity] = useState("");
 	const [unitPrice, setUnitPrice] = useState("");
 	const [unit, setUnit] = useState("");
-	const [entryDate, setEntryDate] = useState(() =>
-		new Date().toISOString().slice(0, 10),
-	);
+	const [entryDate, setEntryDate] = useState(() => getShopDateString());
 	const [loading, setLoading] = useState(false);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [historyPage, setHistoryPage] = useState(0);
@@ -52,11 +54,9 @@ export function Expenses() {
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [filterDateFrom, setFilterDateFrom] = useState(() =>
-		new Date().toISOString().slice(0, 10),
+		getShopDateString(),
 	);
-	const [filterDateTo, setFilterDateTo] = useState(() =>
-		new Date().toISOString().slice(0, 10),
-	);
+	const [filterDateTo, setFilterDateTo] = useState(() => getShopDateString());
 
 	const loadOlderExpenses = async () => {
 		if (!nextCursor || filterDateFrom > filterDateTo) return;
@@ -200,7 +200,7 @@ export function Expenses() {
 		setDescription(expense.description);
 		setAmount(expense.amount.toString());
 		setCategory(expense.category || categories[0]?.name || "");
-		setEntryDate(new Date(expense.date).toISOString().slice(0, 10));
+		setEntryDate(getShopDateString(new Date(expense.date)));
 		setQuantity(expense.quantity?.toString() ?? "");
 		setUnitPrice(expense.unit_price?.toString() ?? "");
 		setUnit(expense.unit || "");
@@ -213,7 +213,7 @@ export function Expenses() {
 		setDescription("");
 		setAmount("");
 		setCategory(categories[0]?.name || "");
-		setEntryDate(new Date().toISOString().slice(0, 10));
+		setEntryDate(getShopDateString());
 		setQuantity("");
 		setUnitPrice("");
 		setUnit("");

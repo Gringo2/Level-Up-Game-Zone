@@ -19,15 +19,14 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
+import { getShopDateString } from "../lib/dateUtils";
 
 export function Credits() {
 	const { user } = useAuth();
 	const [employeeId, setEmployeeId] = useState("");
 	const [employeeName, setEmployeeName] = useState("");
 	const [amount, setAmount] = useState("");
-	const [entryDate, setEntryDate] = useState(() =>
-		new Date().toISOString().slice(0, 10),
-	);
+	const [entryDate, setEntryDate] = useState(() => getShopDateString());
 	const [loading, setLoading] = useState(false);
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);

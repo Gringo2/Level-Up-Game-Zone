@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	getShopDate,
+	getShopDateString,
 	getShopEndOfDay,
 	getShopStartOfDay,
+	shopDateToInstant,
 } from "../../lib/dateUtils.js";
 
 // Africa/Addis_Ababa is fixed UTC+3 with no DST.
@@ -35,5 +37,17 @@ describe("dateUtils (Africa/Addis_Ababa)", () => {
 		expect(zoned.getTimezoneOffset()).toBe(-180);
 		expect(zoned.getTime()).toBeGreaterThanOrEqual(before);
 		expect(zoned.getTime()).toBeLessThanOrEqual(after);
+	});
+
+	it("formats the current shop date in Addis time rather than UTC", () => {
+		vi.setSystemTime(new Date("2026-01-01T21:00:00.000Z"));
+		expect(getShopDateString()).toBe("2026-01-02");
+		vi.useRealTimers();
+	});
+
+	it("converts a shop date string to the correct Addis-midnight instant", () => {
+		expect(shopDateToInstant("2026-01-02").toISOString()).toBe(
+			"2026-01-01T21:00:00.000Z",
+		);
 	});
 });

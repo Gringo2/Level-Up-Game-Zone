@@ -19,7 +19,11 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
-import { getShopEndOfDay, getShopStartOfDay } from "../lib/dateUtils";
+import {
+	getShopDateString,
+	getShopEndOfDay,
+	getShopStartOfDay,
+} from "../lib/dateUtils";
 import {
 	groupLogsByDay,
 	HISTORY_PAGE_SIZE,
@@ -40,9 +44,7 @@ export function GameSales() {
 	const [logs, setLogs] = useState<GameSalesLog[]>([]);
 	const [selectedRateId, setSelectedRateId] = useState("");
 	const [quantity, setQuantity] = useState("");
-	const [entryDate, setEntryDate] = useState(() =>
-		new Date().toISOString().slice(0, 10),
-	);
+	const [entryDate, setEntryDate] = useState(() => getShopDateString());
 	const [loading, setLoading] = useState(false);
 	const [loadingRates, setLoadingRates] = useState(true);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export function GameSales() {
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [loadingDefaults, setLoadingDefaults] = useState(false);
-	const todayStr = new Date().toISOString().slice(0, 10);
+	const todayStr = getShopDateString();
 	const [rangeStart, setRangeStart] = useState(todayStr);
 	const [rangeEnd, setRangeEnd] = useState(todayStr);
 
