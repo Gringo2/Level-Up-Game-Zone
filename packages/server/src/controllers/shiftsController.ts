@@ -310,7 +310,7 @@ export const updateFloat = async (req: AuthRequest, res: Response) => {
 	}
 };
 
-export const getMissedData = async (req: AuthRequest, res: Response) => {
+export const getMissedData = async (_req: AuthRequest, res: Response) => {
 	try {
 		await autoLabelStaleShifts();
 
@@ -366,55 +366,115 @@ export const getMissedData = async (req: AuthRequest, res: Response) => {
 			(date) => !resolvedDates.includes(date),
 		);
 
-		let newlyOpenedShift = null;
-
-		// AUTO-OPEN LOGIC
-		if (unresolvedGaps.length === 0 && missedShifts.length === 0) {
-			await db.runTransaction(
-				async (transaction: FirebaseFirestore.Transaction) => {
-					const openShiftsQuery = db
-						.collection(COLLECTIONS.SHIFTS)
-						.where("status", "==", SHIFT_STATUSES.OPEN);
-					const openShiftsSnap = await transaction.get(openShiftsQuery);
-
-					if (openShiftsSnap.empty) {
-						const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
-						const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
-
-						const user = req.user;
-						const data = {
-							manager_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
-							manager_name: user?.email || SYSTEM_IDENTITY.DISPLAY_NAME,
-							start_time: new Date().toISOString(),
-							opening_float: 0,
-							status: SHIFT_STATUSES.OPEN,
-						};
-
-						transaction.set(newDocRef, data);
-						transaction.set(auditRef, {
-							action: "CREATE",
-							table_affected: "shifts",
-							record_id: newDocRef.id,
-							old_value: null,
-							new_value: data,
-							reason_for_change: "Auto-opened shift for new day",
-							user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
-							timestamp: new Date().toISOString(),
-						});
-
-						newlyOpenedShift = { id: newDocRef.id, ...data };
-					}
-				},
-			);
-		}
-
 		return res.status(200).json({
 			missedShifts,
 			gapDates: unresolvedGaps,
-			newlyOpenedShift,
 		});
 	} catch (error) {
 		logger.error({ err: error }, "Error getting missed data");
 		return res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+/**
+ * ACP-011 Option B — POST /api/shifts/auto-open
+ *
+ * Dedicated endpoint for programmatic shift creation when the state is confirmed
+ * clean (no gaps, no missed shifts, no open shift). Fixes:
+ *  D1 — opening_float sourced from caller, never hardcoded.
+ *  D2 — manager_name sourced from caller, never email.
+ *  D3 — side-effect removed from getMissedData (read endpoint stays read-only).
+ *  D4 — same-business-day guard prevents double-shift on a single day.
+ *  D5 — transaction return-value pattern; closure variable never used.
+ */
+export const autoOpenShift = async (req: AuthRequest, res: Response) => {
+	const user = req.user;
+	const { floatAmount, managerName } = req.body as {
+		floatAmount: number;
+		managerName: string;
+	};
+
+	try {
+		// D4: same-business-day guard — query closed shifts from the last 24 h
+		// and compare local calendar dates (matching the pattern in autoLabelStaleShifts).
+		const oneDayAgo = new Date();
+		oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+		const recentClosedSnap = await db
+			.collection(COLLECTIONS.SHIFTS)
+			.where("status", "==", SHIFT_STATUSES.CLOSED)
+			.where("start_time", ">=", oneDayAgo.toISOString())
+			.get();
+
+		const todayDateString = new Date().toLocaleDateString("en-CA");
+		const closedToday = recentClosedSnap.docs.some((doc) => {
+			const shift = doc.data() as { start_time: string };
+			return (
+				new Date(shift.start_time).toLocaleDateString("en-CA") ===
+				todayDateString
+			);
+		});
+
+		if (closedToday) {
+			return res.status(409).json({
+				error:
+					"A shift was already closed today. Open a new shift manually if required.",
+			});
+		}
+
+		// D5: use transaction return value — retry-safe; closure variables are never used.
+		const openShiftsQuery = db
+			.collection(COLLECTIONS.SHIFTS)
+			.where("status", "==", SHIFT_STATUSES.OPEN);
+
+		const newShift = await db.runTransaction(
+			async (transaction: FirebaseFirestore.Transaction) => {
+				const openShiftsSnap = await transaction.get(openShiftsQuery);
+
+				if (!openShiftsSnap.empty) {
+					// Shift already exists — return null to signal no-op.
+					return null;
+				}
+
+				const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
+				const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
+
+				// D1: float from validated request body, not hardcoded.
+				// D2: name from validated request body, not user.email.
+				const data = {
+					manager_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
+					manager_name: managerName,
+					start_time: new Date().toISOString(),
+					opening_float: floatAmount,
+					status: SHIFT_STATUSES.OPEN,
+				};
+
+				transaction.set(newDocRef, data);
+				transaction.set(auditRef, {
+					action: "CREATE",
+					table_affected: "shifts",
+					record_id: newDocRef.id,
+					old_value: null,
+					new_value: data,
+					reason_for_change: "Auto-opened shift (explicit caller action)",
+					user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
+					timestamp: new Date().toISOString(),
+				});
+
+				// Return value — the only path that reflects the committed write.
+				return { id: newDocRef.id, ...data };
+			},
+		);
+
+		if (newShift === null) {
+			return res
+				.status(409)
+				.json({ error: "An active shift is already open." });
+		}
+
+		return res.status(201).json(newShift);
+	} catch (error: unknown) {
+		logger.error({ err: error }, "Error auto-opening shift");
+		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

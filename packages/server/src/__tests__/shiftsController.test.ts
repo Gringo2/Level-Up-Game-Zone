@@ -236,7 +236,10 @@ describe("Shifts Integration Tests", () => {
 			expect(staleShiftRef.update).toHaveBeenCalledWith({ status: "MISSED" });
 		});
 
-		it("should auto-generate a new OPEN shift in getMissedData if no gaps exist (M-29 behavior)", async () => {
+		it("getMissedData does NOT auto-open a shift (ACP-011: side-effect removed)", async () => {
+			// Verifies the side-effect was removed from getMissedData.
+			// Even with no gaps and no missed shifts, the response must NOT contain
+			// newlyOpenedShift and runTransaction must NOT be called.
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {
 					return {
@@ -244,7 +247,7 @@ describe("Shifts Integration Tests", () => {
 						orderBy: vi.fn().mockReturnThis(),
 						limit: vi.fn().mockReturnThis(),
 						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
-						doc: vi.fn().mockReturnValue({ id: "auto-opened-123" }),
+						doc: vi.fn().mockReturnValue({ id: "should-never-be-used" }),
 
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
@@ -254,27 +257,15 @@ describe("Shifts Integration Tests", () => {
 				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
 			});
 
-			// Override runTransaction specifically to yield empty for the openShiftsQuery
-			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
-				const mockTx = {
-					get: vi.fn().mockResolvedValue({ empty: true }),
-					set: vi.fn(),
-					update: vi.fn(),
-					delete: vi.fn(),
-				};
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return await cb(mockTx as any);
-			});
-
 			const response = await request(app)
 				.get("/api/shifts/missed")
 				.set("Authorization", authHeader);
 
 			expect(response.status).toBe(200);
-			expect(response.body.newlyOpenedShift).toMatchObject({
-				id: "auto-opened-123",
-				status: "OPEN",
-			});
+			// newlyOpenedShift must NOT be present in the response.
+			expect(response.body).not.toHaveProperty("newlyOpenedShift");
+			// runTransaction must NOT have been called from getMissedData.
+			expect(db.runTransaction).not.toHaveBeenCalled();
 		});
 
 		it("should return missed shifts and unresolved gap dates when gaps exist", async () => {
@@ -354,7 +345,8 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body.missedShifts).toHaveLength(1);
 			expect(response.body.missedShifts[0].id).toBe("missed-1");
 			expect(response.body.gapDates).toEqual(expectedGaps.slice(1));
-			expect(response.body.newlyOpenedShift).toBeNull();
+			// ACP-011: newlyOpenedShift no longer returned by getMissedData.
+			expect(response.body).not.toHaveProperty("newlyOpenedShift");
 		});
 	});
 
@@ -794,6 +786,137 @@ describe("Shifts Integration Tests", () => {
 		it("returns 401 without a bearer token on missed-data GET", async () => {
 			const response = await request(app).get("/api/shifts/missed");
 			expect(response.status).toBe(401);
+		});
+
+		it("returns 401 without a bearer token on auto-open POST", async () => {
+			const response = await request(app).post("/api/shifts/auto-open");
+			expect(response.status).toBe(401);
+		});
+	});
+
+	describe("Auto-Open Shift (ACP-011 Option B)", () => {
+		it("returns 201 and creates a shift when state is clean", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "auto-shift-001" }),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnValue({ id: "audit-001" }) } as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ empty: true }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/auto-open")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Night Manager" });
+
+			expect(response.status).toBe(201);
+			expect(response.body.status).toBe("OPEN");
+			expect(response.body.opening_float).toBe(150);
+			expect(response.body.manager_name).toBe("Night Manager");
+			// D2 fix: manager_name must NOT be an email address.
+			expect(response.body.manager_name).not.toMatch(/@/);
+		});
+
+		it("returns 409 when an open shift already exists (D5 no-op path)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "ignored" }),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
+			});
+
+			// Transaction finds an existing open shift — callback returns null.
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ empty: false, docs: [{}] }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/auto-open")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 0, managerName: "Day Manager" });
+
+			expect(response.status).toBe(409);
+			expect(response.body.error).toMatch(/already open/i);
+		});
+
+		it("returns 409 when a shift was already closed today (D4 guard)", async () => {
+			const todayIso = new Date().toISOString();
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({
+							empty: false,
+							docs: [
+								{ data: () => ({ status: "CLOSED", start_time: todayIso }) },
+							],
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/auto-open")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 0, managerName: "Day Manager" });
+
+			expect(response.status).toBe(409);
+			expect(response.body.error).toMatch(/already closed today/i);
+			// D4 fix: transaction must NOT be called; guard fires before it.
+			expect(db.runTransaction).not.toHaveBeenCalled();
+		});
+
+		it("returns 400 when floatAmount is missing (schema validation)", async () => {
+			const response = await request(app)
+				.post("/api/shifts/auto-open")
+				.set("Authorization", authHeader)
+				.send({ managerName: "Day Manager" }); // floatAmount absent
+
+			expect(response.status).toBe(400);
+		});
+
+		it("returns 400 when managerName is missing (schema validation)", async () => {
+			const response = await request(app)
+				.post("/api/shifts/auto-open")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 100 }); // managerName absent
+
+			expect(response.status).toBe(400);
 		});
 	});
 });

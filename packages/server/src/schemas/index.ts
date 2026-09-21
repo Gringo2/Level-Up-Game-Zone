@@ -52,6 +52,13 @@ export const StartShiftSchema = z.object({
 	managerName: z.string().trim().min(1, "Manager name is required"),
 });
 
+// ACP-011: dedicated auto-open schema — kept separate from StartShiftSchema
+// so the two flows can evolve independently and audit records are unambiguous.
+export const AutoOpenShiftSchema = z.object({
+	floatAmount: nonNegativeNumber("Opening float"),
+	managerName: z.string().trim().min(1, "Manager name is required"),
+});
+
 export const CloseShiftSchema = z.object({
 	actualCashCounted: nonNegativeNumber("Actual cash counted"),
 	shortageReason: z.string().optional(),

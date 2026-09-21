@@ -1,5 +1,6 @@
 import { type RequestHandler, Router } from "express";
 import {
+	autoOpenShift,
 	closeShift,
 	getMissedData,
 	listShifts,
@@ -9,6 +10,7 @@ import {
 import { requireAuth } from "../middleware/auth.js";
 import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
+	AutoOpenShiftSchema,
 	CloseShiftSchema,
 	DateRangeQuerySchema,
 	StartShiftSchema,
@@ -48,6 +50,14 @@ router.get(
 	"/missed",
 	requireAuth as RequestHandler,
 	getMissedData as RequestHandler,
+);
+
+// ACP-011: dedicated auto-open endpoint — replaces the side-effect that was in getMissedData.
+router.post(
+	"/auto-open",
+	requireAuth as RequestHandler,
+	validateBody(AutoOpenShiftSchema) as RequestHandler,
+	autoOpenShift as RequestHandler,
 );
 
 export default router;
