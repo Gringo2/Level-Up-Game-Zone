@@ -25,8 +25,13 @@ describe("Shifts Integration Tests", () => {
 					} as any;
 				}
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit-123" }) } as any;
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
 			});
 
 			const response = await request(app)
@@ -66,8 +71,10 @@ describe("Shifts Integration Tests", () => {
 					} as any;
 				}
 				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
 					where: vi.fn().mockReturnThis(),
-					get: vi.fn().mockResolvedValue({ docs: [] }),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [], empty: true }),
 
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
@@ -145,8 +152,10 @@ describe("Shifts Integration Tests", () => {
 					} as any;
 				}
 				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
 					where: vi.fn().mockReturnThis(),
-					get: vi.fn().mockResolvedValue({ docs: [] }),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [], empty: true }),
 
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
@@ -734,8 +743,13 @@ describe("Shifts Integration Tests", () => {
 					} as any;
 				}
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit-123" }) } as any;
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
 			});
 
 			const response = await request(app)
@@ -759,8 +773,13 @@ describe("Shifts Integration Tests", () => {
 					} as any;
 				}
 
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit-123" }) } as any;
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
 			});
 
 			vi.mocked(db.runTransaction).mockRejectedValueOnce(
@@ -806,8 +825,13 @@ describe("Shifts Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit-001" }) } as any;
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-001" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
 			});
 
 			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
@@ -845,8 +869,13 @@ describe("Shifts Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
-				return { doc: vi.fn().mockReturnValue({ id: "audit" }) } as any;
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
 			});
 
 			// Transaction finds an existing open shift — callback returns null.
@@ -917,6 +946,338 @@ describe("Shifts Integration Tests", () => {
 				.send({ floatAmount: 100 }); // managerName absent
 
 			expect(response.status).toBe(400);
+		});
+	});
+
+	describe("M-101 Shift-Employee Linkage and Shift Close Audit Logging (ACP-010 Phase 1)", () => {
+		it("records atomic audit log entry when shift is closed without shortage reason", async () => {
+			const mockSet = vi.fn();
+			const mockUpdate = vi.fn();
+
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									status: "OPEN",
+									start_time: "2026-08-01T10:00:00Z",
+									opening_float: 100,
+								}),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-close-001" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [], empty: true }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						data: () => ({
+							status: "OPEN",
+							opening_float: 100,
+							start_time: "2026-08-01T10:00:00Z",
+						}),
+					}),
+					getAll: vi.fn().mockResolvedValue([]),
+					set: mockSet,
+					update: mockUpdate,
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/shift-m101-close/close")
+				.set("Authorization", authHeader)
+				.send({ actualCashCounted: 100 });
+
+			expect(response.status).toBe(200);
+			expect(mockSet).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "audit-close-001" }),
+				expect.objectContaining({
+					action: "UPDATE",
+					table_affected: "shifts",
+					record_id: "shift-m101-close",
+					old_value: {
+						status: "OPEN",
+						opening_float: 100,
+					},
+					new_value: expect.objectContaining({
+						status: "CLOSED",
+						actual_cash_counted: 100,
+						variance: 0,
+					}),
+					reason_for_change: "Closed shift",
+					user_id: "mock-admin-uid",
+				}),
+			);
+		});
+
+		it("records atomic audit log entry with shortage reason when shortage reason is provided", async () => {
+			const mockSet = vi.fn();
+			const mockUpdate = vi.fn();
+
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									status: "OPEN",
+									start_time: "2026-08-01T10:00:00Z",
+									opening_float: 100,
+								}),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-close-002" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [], empty: true }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({
+						exists: true,
+						data: () => ({
+							status: "OPEN",
+							opening_float: 100,
+							start_time: "2026-08-01T10:00:00Z",
+						}),
+					}),
+					getAll: vi.fn().mockResolvedValue([]),
+					set: mockSet,
+					update: mockUpdate,
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/shift-m101-close/close")
+				.set("Authorization", authHeader)
+				.send({
+					actualCashCounted: 90,
+					shortageReason: "Cash drawer discrepancy",
+				});
+
+			expect(response.status).toBe(200);
+			expect(mockSet).toHaveBeenCalledWith(
+				expect.objectContaining({ id: "audit-close-002" }),
+				expect.objectContaining({
+					action: "UPDATE",
+					table_affected: "shifts",
+					record_id: "shift-m101-close",
+					reason_for_change: "Closed shift (Cash drawer discrepancy)",
+				}),
+			);
+		});
+
+		it("attaches employee_id when starting a shift and user matches an active employee (TD-040)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "new-shift-emp-1" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						limit: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({
+							empty: false,
+							docs: [
+								{
+									id: "emp-matched-001",
+									data: () => ({ name: "Alice", isActive: true }),
+								},
+							],
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-emp-001" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Alice Manager" });
+
+			expect(response.status).toBe(201);
+			expect(response.body.employee_id).toBe("emp-matched-001");
+		});
+
+		it("leaves employee_id undefined when user does not match any active employee (backward compatibility)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "new-shift-unlinked" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						limit: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({
+							empty: true,
+							docs: [],
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-unlinked" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Unlinked Manager" });
+
+			expect(response.status).toBe(201);
+			expect(response.body.employee_id).toBeUndefined();
+		});
+
+		it("leaves employee_id undefined when employee record exists but isActive is false", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "new-shift-inactive-emp" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						where: vi.fn((field, _op, val) => {
+							// Mock firestore filtering where isActive == true returns empty
+							if (field === "isActive" && val === true) {
+								return {
+									limit: vi.fn().mockReturnThis(),
+									get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+								};
+							}
+							return {
+								where: vi.fn().mockReturnThis(),
+								limit: vi.fn().mockReturnThis(),
+								get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+							};
+						}),
+						limit: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-inactive" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/shifts")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Inactive Manager" });
+
+			expect(response.status).toBe(201);
+			expect(response.body.employee_id).toBeUndefined();
+		});
+
+		it("attaches employee_id when auto-opening a shift and user matches an active employee (TD-040)", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+						doc: vi.fn().mockReturnValue({ id: "auto-shift-emp-001" }),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "employees") {
+					return {
+						where: vi.fn().mockReturnThis(),
+						limit: vi.fn().mockReturnThis(),
+						get: vi.fn().mockResolvedValue({
+							empty: false,
+							docs: [
+								{
+									id: "emp-auto-matched-999",
+									data: () => ({ name: "Bob", isActive: true }),
+								},
+							],
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-auto-001" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ empty: true, docs: [] }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ empty: true }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/shifts/auto-open")
+				.set("Authorization", authHeader)
+				.send({ floatAmount: 150, managerName: "Bob Manager" });
+
+			expect(response.status).toBe(201);
+			expect(response.body.employee_id).toBe("emp-auto-matched-999");
 		});
 	});
 });

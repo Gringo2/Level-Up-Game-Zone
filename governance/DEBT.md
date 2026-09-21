@@ -16,15 +16,16 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 | ID | Reason | Impact | Priority | Owner | Pending On |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| TD-030 | **No audit log on shift close** — `startShift` and `updateFloat` write audit entries. `closeShift` does not. Audit Logs page will not show shift-close events. (`shiftsController.ts:92-178`) | MEDIUM — audit trail gap | Medium | Backend | Shift decision |
-| TD-038 | **Employee and User are disconnected entities** — No `employee.user_uid` or `user.employee_id` foreign key. A person who works at the store (Employee: name, salary, position) and a person who logs into the system (User: email, role, auth UID) are two unrelated records. Cannot answer "which system user is which store employee." | HIGH — architectural gap | High | Architecture | Shift decision |
-| TD-040 | **Shifts reference users, not employees** — `shift.manager_id` stores `user.uid` (Firebase Auth UID). No way to connect a shift to an employee's salary information programmatically. Payroll cannot use shift data. (`shiftsController.ts:60`) | MEDIUM — payroll disconnect | Medium | Backend | Shift decision |
+| TD-038 | **Employee and User are disconnected entities** — No `employee.user_uid` or `user.employee_id` foreign key linkage UI. A person who works at the store (Employee: name, salary, position) and a person who logs into the system (User: email, role, auth UID) are two unrelated records without admin linkage UI. | HIGH — architectural gap | High | Architecture | ACP-010 Phase 2 |
 
 | TD-049 | **Create/edit prepends row without range re-check** — verified resolved under M-95 by re-checking the active range before retaining or prepending rows in the Game Sales and Keno history lists. This debt entry was left stale in the ledger and is now reconciled as part of M-96. | LOW — no remaining defect; governance cleanup only | Low | Frontend | M-96 |
 
 
 
 ## Resolved Debt
+
+| TD-030 | **Audit log on shift close** — Added atomic audit logging to `closeShift` inside `db.runTransaction` in `shiftsController.ts` with action `UPDATE`, table `shifts`, `old_value`, `new_value`, and contextual `reason_for_change`. Resolved in M-101 (ACP-010 Phase 1). | 2026-09-22 |
+| TD-040 | **Shifts reference employees** — Added optional `employee_id?: string` to `Shift` model in `@level-up/shared`. `startShift` and `autoOpenShift` query `employees` collection by authenticated `user.uid` where `isActive == true` and auto-attach `employee_id` to the shift. Resolved in M-101 (ACP-010 Phase 1). | 2026-09-22 |
 
 | TD-016 | **Firebase client config untracked from git** — `packages/client/firebase-applet-config.json` is absent from the git index and covered by `.gitignore` (executed by PO in commit `a4603c4`). Client loads public config from `VITE_FIREBASE_*` in `.env.local`. | 2026-09-02 |
 | TD-018 | Multi-stage root Dockerfile (node:22-slim; build -> prune -> scoped prod install with --ignore-scripts for husky-less runtime; non-root user; PORT env). Empirically verified: image builds, boots, serves /api/health, honors GOOGLE_APPLICATION_CREDENTIALS mount, reaches SDK credential validation with dummy key. .dockerignore added. M-87. | 2026-08-25 |

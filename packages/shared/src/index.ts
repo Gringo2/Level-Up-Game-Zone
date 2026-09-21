@@ -105,6 +105,7 @@ export interface Shift {
 	id: string;
 	manager_id: string;
 	manager_name: string;
+	employee_id?: string;
 	start_time: string;
 	end_time?: string;
 	opening_float: number;

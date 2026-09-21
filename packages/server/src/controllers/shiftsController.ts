@@ -82,16 +82,30 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 			return res.status(400).json({ error: "An active shift is already open" });
 		}
 
-		const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
-		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
+		// TD-040: Auto-resolve employee_id if user is linked to an active store employee
+		let employeeId: string | undefined;
+		if (user?.uid) {
+			const empSnap = await db
+				.collection(COLLECTIONS.EMPLOYEES)
+				.where("user_uid", "==", user.uid)
+				.where("isActive", "==", true)
+				.limit(1)
+				.get();
+			if (!empSnap.empty && empSnap.docs.length > 0) {
+				employeeId = empSnap.docs[0].id;
+			}
+		}
 
-		const data = {
+		const data: Record<string, unknown> = {
 			manager_id: user.uid,
 			manager_name: managerName || user.email || "Unknown",
 			start_time: new Date().toISOString(),
 			opening_float: parseFloat(floatAmount),
 			status: SHIFT_STATUSES.OPEN,
+			...(employeeId ? { employee_id: employeeId } : {}),
 		};
+		const newDocRef = db.collection(COLLECTIONS.SHIFTS).doc();
+		const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
 
 		await db.runTransaction(
 			async (transaction: FirebaseFirestore.Transaction) => {
@@ -118,6 +132,7 @@ export const startShift = async (req: AuthRequest, res: Response) => {
 
 export const closeShift = async (req: AuthRequest, res: Response) => {
 	try {
+		const user = req.user;
 		const { id } = req.params;
 		const { actualCashCounted, shortageReason } = req.body;
 
@@ -228,6 +243,24 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 				};
 
 				transaction.update(shiftRef, updateData);
+
+				// TD-030: Shift close audit record
+				const auditRef = db.collection(COLLECTIONS.AUDIT_LOGS).doc();
+				transaction.set(auditRef, {
+					action: "UPDATE",
+					table_affected: "shifts",
+					record_id: id,
+					old_value: {
+						status: shiftData.status,
+						opening_float: shiftData.opening_float,
+					},
+					new_value: updateData,
+					reason_for_change: shortageReason
+						? `Closed shift (${shortageReason})`
+						: "Closed shift",
+					user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
+					timestamp: new Date().toISOString(),
+				});
 			},
 		);
 
@@ -422,6 +455,20 @@ export const autoOpenShift = async (req: AuthRequest, res: Response) => {
 			});
 		}
 
+		// TD-040: Auto-resolve employee_id if user is linked to an active store employee
+		let employeeId: string | undefined;
+		if (user?.uid) {
+			const empSnap = await db
+				.collection(COLLECTIONS.EMPLOYEES)
+				.where("user_uid", "==", user.uid)
+				.where("isActive", "==", true)
+				.limit(1)
+				.get();
+			if (!empSnap.empty && empSnap.docs.length > 0) {
+				employeeId = empSnap.docs[0].id;
+			}
+		}
+
 		// D5: use transaction return value — retry-safe; closure variables are never used.
 		const openShiftsQuery = db
 			.collection(COLLECTIONS.SHIFTS)
@@ -441,12 +488,13 @@ export const autoOpenShift = async (req: AuthRequest, res: Response) => {
 
 				// D1: float from validated request body, not hardcoded.
 				// D2: name from validated request body, not user.email.
-				const data = {
+				const data: Record<string, unknown> = {
 					manager_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
 					manager_name: managerName,
 					start_time: new Date().toISOString(),
 					opening_float: floatAmount,
 					status: SHIFT_STATUSES.OPEN,
+					...(employeeId ? { employee_id: employeeId } : {}),
 				};
 
 				transaction.set(newDocRef, data);
