@@ -420,6 +420,94 @@ describe("GameSales", () => {
 		);
 	});
 
+	it("keeps an updated sale visible when its persisted date is still in range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (init?.method === "PUT") {
+				return Promise.resolve(
+					jsonResponse({
+						...salesLog,
+						id: "sale-1",
+						date: "2026-08-23T12:00:00Z",
+						quantity_sold: 3,
+					}),
+				);
+			}
+			if (url.endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return Promise.resolve(jsonResponse([salesLog]));
+		});
+
+		try {
+			render(<GameSales />);
+			await screen.findByText(/2 units @ \$5\.00/);
+			fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+			fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+				target: { value: "Adjust quantity" },
+			});
+			fireEvent.change(screen.getByLabelText("Quantity (Hours)"), {
+				target: { value: "3" },
+			});
+			fireEvent.submit(
+				screen.getByText("Update Sale").closest("form") as HTMLFormElement,
+			);
+
+			await waitFor(() =>
+				expect(screen.getByText(/3 units @ \$5\.00/)).toBeInTheDocument(),
+			);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("removes an updated sale from the active list when its persisted date falls outside the range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (init?.method === "PUT") {
+				return Promise.resolve(
+					jsonResponse({
+						...salesLog,
+						id: "sale-1",
+						date: "2026-08-22T12:00:00Z",
+						quantity_sold: 3,
+					}),
+				);
+			}
+			if (url.endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return Promise.resolve(jsonResponse([salesLog]));
+		});
+
+		try {
+			render(<GameSales />);
+			await screen.findByText(/2 units @ \$5\.00/);
+			fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+			fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+				target: { value: "Move to prior day" },
+			});
+			fireEvent.change(screen.getByLabelText("Quantity (Hours)"), {
+				target: { value: "3" },
+			});
+			fireEvent.submit(
+				screen.getByText("Update Sale").closest("form") as HTMLFormElement,
+			);
+
+			await waitFor(() =>
+				expect(toast.success).toHaveBeenCalledWith(
+					"Game sale updated successfully!",
+				),
+			);
+			expect(screen.queryByText(/3 units @ \$5\.00/)).not.toBeInTheDocument();
+			expect(screen.queryByText(/2 units @ \$5\.00/)).not.toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("shows an error toast when loading fails", async () => {
 		mockFetch.mockResolvedValue(jsonResponse({ error: "boom" }, false, 500));
 		render(<GameSales />);

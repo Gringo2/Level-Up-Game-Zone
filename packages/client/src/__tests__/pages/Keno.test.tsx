@@ -430,6 +430,88 @@ describe("Keno", () => {
 		expect(await screen.findByText("Net: $55.00")).toBeInTheDocument();
 	});
 
+	it("keeps an updated Keno entry visible when its persisted date remains in range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((_: string, init?: RequestInit) => {
+			if (init?.method === "PUT") {
+				return Promise.resolve(
+					jsonResponse({
+						...kenoLog,
+						id: "keno-1",
+						date: "2026-08-23T12:00:00Z",
+						net_profit: 75,
+					}),
+				);
+			}
+			return Promise.resolve(jsonResponse([kenoLog]));
+		});
+
+		try {
+			render(<Keno />);
+			await screen.findByText("Net: $60.00");
+			fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+			fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+				target: { value: "Adjust net" },
+			});
+			fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+				target: { value: "75" },
+			});
+			fireEvent.submit(
+				screen.getByText("Update Keno").closest("form") as HTMLFormElement,
+			);
+
+			await waitFor(() =>
+				expect(screen.getByText("Net: $75.00")).toBeInTheDocument(),
+			);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("removes an updated Keno entry from the active list when its persisted date falls outside the range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((_: string, init?: RequestInit) => {
+			if (init?.method === "PUT") {
+				return Promise.resolve(
+					jsonResponse({
+						...kenoLog,
+						id: "keno-1",
+						date: "2026-08-22T12:00:00Z",
+						net_profit: 75,
+					}),
+				);
+			}
+			return Promise.resolve(jsonResponse([kenoLog]));
+		});
+
+		try {
+			render(<Keno />);
+			await screen.findByText("Net: $60.00");
+			fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+			fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+				target: { value: "Move to prior day" },
+			});
+			fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+				target: { value: "75" },
+			});
+			fireEvent.submit(
+				screen.getByText("Update Keno").closest("form") as HTMLFormElement,
+			);
+
+			await waitFor(() =>
+				expect(toast.success).toHaveBeenCalledWith(
+					"Keno log updated successfully!",
+				),
+			);
+			expect(screen.queryByText("Net: $75.00")).not.toBeInTheDocument();
+			expect(screen.queryByText("Net: $60.00")).not.toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("hides management actions from staff users", async () => {
 		vi.mocked(useAuth).mockReturnValue({
 			user: {

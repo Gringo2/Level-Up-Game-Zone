@@ -263,7 +263,15 @@ export function Keno() {
 					);
 				const updated = await safeJson<KenoLog>(response);
 				toast.success("Keno log updated successfully!");
-				setLogs((prev) => prev.map((l) => (l.id === editingId ? updated : l)));
+				setLogs((prev) => {
+					const withoutUpdated = prev.filter((l) => l.id !== editingId);
+					if (!isWithinActiveRange(updated.date)) {
+						return withoutUpdated;
+					}
+					return [...withoutUpdated, updated].sort(
+						(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+					);
+				});
 				cancelEdit();
 			} else {
 				const response = await authFetch(`${API_BASE}/api/keno`, {
