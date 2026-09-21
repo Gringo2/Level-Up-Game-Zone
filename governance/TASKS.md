@@ -100,4 +100,5 @@ M-78 review pass (2026-08-22): 9/9 footprint, additive-only page diffs, guard-or
 | M-92 | Filter-Aware History Mutations (2026-09-21, Locked; PO-approved); prevent out-of-range backdated Game Sales and Keno creates from appearing in the active filtered history list using shop-local date comparisons, while preserving backdating and existing API contracts. Verified by 569/569 unit tests and 11/11 E2E tests. |
 | M-93 | Filter-Aware History Updates (2026-09-21, Locked; PO-approved); keep the active history list truthful after create/edit mutations by enforcing the active range invariant for Game Sales and Keno without widening scope beyond the two history pages. |
 | M-94 | Title Consistency Cleanup (2026-09-21, Locked; PO-approved); align the Keno entry title with the Game Sales create/edit convention while keeping the fix limited to presentation and page-state wording. |
+| M-95 | Range Recheck After Mutation (2026-09-21, Locked; verified); keep the visible Game Sales and Keno history lists truthful after successful create/edit mutations by re-checking the active range before retaining or prepending rows. |
 
