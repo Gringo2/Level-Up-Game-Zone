@@ -5,17 +5,14 @@ import * as dotenv from "dotenv";
 import { cert, getApp, getApps, initializeApp } from "firebase-admin";
 import { getAuth } from "firebase-admin/auth";
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// To connect to a real Firebase project locally, you will need a Service Account Key.
-// 1. Go to Firebase Console -> Project Settings -> Service Accounts
-// 2. Generate New Private Key
-// 3. Save it to packages/server/serviceAccountKey.json (ADD THIS TO .gitignore!)
-// Resolution order (TD-021): GOOGLE_APPLICATION_CREDENTIALS > SERVICE_ACCOUNT_KEY_PATH
-// > the legacy repo-relative key file.
+if (process.env.NODE_ENV !== "test") {
+	dotenv.config();
+	dotenv.config({ path: path.join(__dirname, "../.env") });
+	dotenv.config({ path: path.join(__dirname, "../../../.env") });
+}
 
 import { getFirestore } from "firebase-admin/firestore";
 
@@ -113,5 +110,17 @@ if (!getApps().length) {
 export const db = process.env.FIRESTORE_DATABASE_ID
 	? getFirestore(getApp(), process.env.FIRESTORE_DATABASE_ID)
 	: getFirestore();
+
+if (process.env.NODE_ENV !== "test") {
+	if (process.env.FIRESTORE_DATABASE_ID) {
+		console.error(
+			`[Firebase] Active Firestore Database: "${process.env.FIRESTORE_DATABASE_ID}"`,
+		);
+	} else {
+		console.error(
+			"[Firebase Warning] FIRESTORE_DATABASE_ID is NOT set. Connecting to (default) database.",
+		);
+	}
+}
 
 export const auth = getAuth(getApp());

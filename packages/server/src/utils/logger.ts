@@ -22,7 +22,7 @@ export function createLogger(
 			redact: { paths: REDACT_PATHS, censor: "[REDACTED]" },
 			base: undefined,
 		},
-		stream,
+		stream ?? process.stderr,
 	);
 }
 
