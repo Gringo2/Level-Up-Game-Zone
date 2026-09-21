@@ -57,7 +57,9 @@ export async function authFetch(
 	input: RequestInfo | URL,
 	init?: RequestInit,
 ): Promise<Response> {
-	const token = await auth.currentUser?.getIdToken();
+	const e2eToken =
+		import.meta.env.DEV && window.__E2E_USER__ ? "e2e-test-token" : undefined;
+	const token = e2eToken || (await auth.currentUser?.getIdToken());
 	if (!token) {
 		await signOut(auth);
 		throw new Error("Not authenticated");

@@ -22,9 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 	useEffect(() => {
 		// E2E Test Mocking Hook
-		// @ts-expect-error
 		if (typeof window !== "undefined" && window.__E2E_USER__) {
-			// @ts-expect-error
 			setUser(window.__E2E_USER__);
 			setLoading(false);
 			return;

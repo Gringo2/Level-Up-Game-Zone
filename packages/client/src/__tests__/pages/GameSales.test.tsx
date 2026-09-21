@@ -107,6 +107,20 @@ describe("GameSales", () => {
 		expect(screen.queryByText("No games configured!")).not.toBeInTheDocument();
 	});
 
+	it("keeps the sale amount before metadata and actions in the history row", async () => {
+		render(<GameSales />);
+		const row = await screen.findByTestId("gamesale-history-row");
+		const rowText = row.textContent ?? "";
+
+		expect(rowText.indexOf("$10.00")).toBeLessThan(rowText.indexOf("2 units"));
+		expect(row).toContainElement(
+			screen.getByRole("button", { name: "Verify" }),
+		);
+		expect(row).toContainElement(
+			screen.getByRole("button", { name: "Delete game sale" }),
+		);
+	});
+
 	it("fetches today's sales range server-side on load", async () => {
 		mockFetch.mockImplementation((url: string) => {
 			if (String(url).endsWith("/api/rates")) {

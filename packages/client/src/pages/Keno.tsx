@@ -483,51 +483,54 @@ export function Keno() {
 														<span className="font-medium">{group.label}</span>
 													</div>
 												)}
-												<div className="flex items-center gap-2 px-3 py-1.5 text-sm flex-wrap">
-													<span className="text-zinc-400 tabular-nums w-16 shrink-0">
-														{format(d, "h:mm a")}
-													</span>
-													{log.user_name && (
-														<span className="text-zinc-500 truncate max-w-[10rem]">
-															{log.user_name}
+												<div
+													className="grid gap-3 px-3 py-2 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+													data-testid="keno-history-row"
+												>
+													<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+														<span
+															className={`font-semibold ${log.net_profit < 0 ? "text-red-500" : "text-emerald-600"}`}
+														>
+															Net: ${log.net_profit.toFixed(2)}
 														</span>
-													)}
-													{log.sales != null && log.payouts != null && (
-														<span className="text-xs text-zinc-400 hidden md:inline">
-															Sales ${log.sales.toFixed(2)} &middot; Payouts $
-															{log.payouts.toFixed(2)}
+														<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+															{format(d, "h:mm a")}
 														</span>
-													)}
-													<span
-														className={`ml-auto font-semibold ${log.net_profit < 0 ? "text-red-500" : "text-emerald-600"}`}
-													>
-														Net: ${log.net_profit.toFixed(2)}
-													</span>
-													{log.verified ? (
-														<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm text-xs">
-															Verified
-														</span>
-													) : (
-														<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm text-xs">
-															Unverified
-														</span>
-													)}
-													{!log.verified &&
-														(user?.role === ROLES.MANAGER ||
-															user?.role === ROLES.ADMIN) && (
-															<Button
-																size="sm"
-																variant="outline"
-																className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-																onClick={() => handleVerify(log.id)}
-																disabled={!!verifyingId || deletePending}
-															>
-																Verify
-															</Button>
+														{log.user_name && (
+															<span className="text-zinc-500 truncate max-w-[10rem]">
+																{log.user_name}
+															</span>
 														)}
+														{log.sales != null && log.payouts != null && (
+															<span className="text-xs text-zinc-400 hidden md:inline">
+																Sales ${log.sales.toFixed(2)} &middot; Payouts $
+																{log.payouts.toFixed(2)}
+															</span>
+														)}
+														{log.verified ? (
+															<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-sm text-xs">
+																Verified
+															</span>
+														) : (
+															<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-sm text-xs">
+																Unverified
+															</span>
+														)}
+													</div>
 													{(user?.role === ROLES.MANAGER ||
 														user?.role === ROLES.ADMIN) && (
-														<>
+														<div className="flex flex-wrap items-center gap-2 md:justify-end">
+															{!log.verified && (
+																<Button
+																	size="sm"
+																	variant="outline"
+																	className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+																	onClick={() => handleVerify(log.id)}
+																	disabled={!!verifyingId || deletePending}
+																>
+																	Verify
+																</Button>
+															)}
 															<Button
 																size="sm"
 																variant="outline"
@@ -550,7 +553,7 @@ export function Keno() {
 															>
 																<Trash2 className="h-4 w-4" />
 															</Button>
-														</>
+														</div>
 													)}
 												</div>
 											</div>

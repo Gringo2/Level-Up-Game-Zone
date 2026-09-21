@@ -106,6 +106,22 @@ describe("Keno", () => {
 		expect(screen.getByRole("button", { name: "Verify" })).toBeInTheDocument();
 	});
 
+	it("keeps the net amount before metadata and actions in the history row", async () => {
+		render(<Keno />);
+		const row = await screen.findByTestId("keno-history-row");
+		const rowText = row.textContent ?? "";
+
+		expect(rowText.indexOf("Net: $60.00")).toBeLessThan(
+			rowText.indexOf("Sales $100.00"),
+		);
+		expect(row).toContainElement(
+			screen.getByRole("button", { name: "Verify" }),
+		);
+		expect(row).toContainElement(
+			screen.getByRole("button", { name: "Delete keno log" }),
+		);
+	});
+
 	it("renders the empty state when there are no keno logs", async () => {
 		mockFetch.mockResolvedValue(jsonResponse([]));
 		render(<Keno />);

@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 5 — Maturation
-**Current Mission:** M-88 Lint Zero-Warning Restoration — Hygiene (firebaseInit unused imports + mock-chain noExplicitAny annotations)
+**Current Mission:** M-91 History Row Scanability
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0
