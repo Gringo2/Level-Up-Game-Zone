@@ -2,6 +2,7 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
+import type { KenoLog } from "@level-up/shared";
 import {
 	cleanup,
 	fireEvent,
@@ -287,6 +288,77 @@ describe("Keno", () => {
 		});
 	});
 
+	it("inserts a created Keno entry when its shop date is inside the active range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((_: string, init?: RequestInit) => {
+			if (init?.method === "POST") {
+				return Promise.resolve(
+					jsonResponse({
+						...kenoLog,
+						id: "created-keno",
+						date: "2026-08-23T12:00:00Z",
+						net_profit: 75,
+					}),
+				);
+			}
+			return Promise.resolve(jsonResponse([]));
+		});
+
+		try {
+			render(<Keno />);
+			await screen.findByText("No Keno logged today yet.");
+			fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+				target: { value: "75" },
+			});
+			fireEvent.submit(
+				screen.getByText("Daily Keno Entry").closest("form") as HTMLFormElement,
+			);
+			await screen.findByTestId("keno-history-row");
+			expect(screen.getByText("Net: $75.00")).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("does not insert a created Keno entry outside the active range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((_: string, init?: RequestInit) => {
+			if (init?.method === "POST") {
+				return Promise.resolve(
+					jsonResponse({
+						...kenoLog,
+						id: "outside-keno",
+						date: "2026-08-22T12:00:00Z",
+						net_profit: 75,
+					}),
+				);
+			}
+			return Promise.resolve(jsonResponse([]));
+		});
+
+		try {
+			render(<Keno />);
+			await screen.findByText("No Keno logged today yet.");
+			fireEvent.change(screen.getByLabelText("Date"), {
+				target: { value: "2026-08-23" },
+			});
+			fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
+				target: { value: "75" },
+			});
+			fireEvent.submit(
+				screen.getByText("Daily Keno Entry").closest("form") as HTMLFormElement,
+			);
+			await waitFor(() =>
+				expect(toast.success).toHaveBeenCalledWith("Keno logged successfully!"),
+			);
+			expect(screen.queryByTestId("keno-history-row")).not.toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("verifies a keno log via PUT", async () => {
 		render(<Keno />);
 		await screen.findByText("Net: $60.00");
@@ -544,7 +616,7 @@ describe("Keno", () => {
 		});
 
 		it("returns empty groups for empty input", () => {
-			expect(groupLogsByDay([], (log) => log.net_profit)).toEqual([]);
+			expect(groupLogsByDay<KenoLog>([], (log) => log.net_profit)).toEqual([]);
 		});
 
 		it("shows pager only beyond page size and navigates with bounds", async () => {

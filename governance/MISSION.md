@@ -1,43 +1,41 @@
 # CURRENT MISSION
 
 **Type:** Debt
-**Mission:** M-91 History Row Scanability
+**Mission:** M-92 Filter-Aware History Mutations
 **Status:** Locked
 
 ## 1. Objective
-Improve the visual hierarchy and scanability of transaction history rows so users can identify the primary amount, business date/time, verification state, and available actions quickly across desktop and narrow-screen layouts.
+Prevent a newly created backdated Game Sales or Keno entry from appearing in a history list that does not include its saved date. The active date filter must remain truthful immediately after a successful create mutation.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - Review and improve history-row hierarchy in `packages/client/src/pages/GameSales.tsx`
-  - Review and improve history-row hierarchy in `packages/client/src/pages/Keno.tsx`
-  - Add a development-only E2E authentication fixture for existing `window.__E2E_USER__` tests
-  - Preserve existing verification, edit, delete, filtering, loading, and unit-aware display behavior
-  - Add focused regression coverage to the existing Game Sales and Keno page tests
-  - Verify desktop and narrow-screen layouts without overflow or overlapping controls
+  - Make Game Sales create updates respect the active `rangeStart`/`rangeEnd` filter.
+  - Make Keno create updates respect the active `rangeStart`/`rangeEnd` filter.
+  - Preserve backdated entry capability and shop-local date semantics.
+  - Add negative and positive mutation-range regression coverage.
 - **Out of Scope:**
   - Backend routes, controllers, schemas, or database changes
-  - New transaction capabilities or authorization changes
-  - Replacing the existing component/design system
-  - Redesigning unrelated pages
-  - Pagination or virtualization, tracked separately under TD-032/M-87
+  - Changing the allowed backdating capability
+  - Changes to Expenses or Credits history behavior
+  - Date-picker redesign, pagination, or row visual hierarchy
+  - New dependencies or shared state abstractions
+  - Edit-date movement; current edit payloads do not change record dates
 
 ## 4. Design Notes
-- Root cause: history rows compress timestamp, actor, amount, status, and actions into a compact `flex-wrap` layout, making the primary operational signal harder to scan at all widths.
-- Proposed direction: make the primary financial signal dominant, group date/actor metadata as supporting context, keep verification discoverable, and place row actions consistently.
-- Blast radius: client presentation only; no API, shared contract, or server schema changes are expected.
-- E2E fixture boundary: Vite development mode and the existing `window.__E2E_USER__` hook only; production builds retain Firebase token enforcement.
-- Acceptance criteria: at 1280px the primary signal precedes metadata and status with actions trailing; at 375px there is no horizontal overflow and actions remain visible, reachable, correctly labeled, and disabled during pending operations.
+- Root cause: create mutation handlers prepend returned records without checking the active date range.
+- Proposed direction: use existing filter state and `getShopDateString(new Date(record.date))`; conditionally insert only records whose shop-local date is inclusively within the active range.
+- Blast radius: client state consistency in Game Sales and Keno; no API, shared contract, or server schema changes are expected.
+- Acceptance criteria: in-range creates appear once, out-of-range creates remain absent, active filter values and backdating behavior remain unchanged, and no duplicate fetch or mutation is introduced.
 
 ## 5. Testing Strategy
-- Unit/page tests: preserve row content, verification state, unit-aware labels, and action availability.
-- Responsive checks: verify narrow-screen rendering and absence of horizontal overflow.
-- Negative coverage: verify pending or unavailable row actions remain contained and do not duplicate requests.
-- Validation criterion: relevant page tests, TypeScript checks, lint, and architecture gates pass.
+- Page tests: Game Sales and Keno cover in-range and out-of-range creates.
+- Negative coverage: non-matching records are absent from the rendered list.
+- Time determinism: tests use explicit fixed date inputs and no wall-clock assertions.
+- Validation criterion: focused tests, TypeScript, Biome, and architecture gates pass.
 
 ## 6. Evidence Payload
-- [x] Functional Verification: canonical lock gates passed; 39 test files / 565 tests passed and 11/11 Playwright tests passed.
-- [x] Architectural Verification (AVP-001): canonical lock gates passed, including 375px/1280px responsive checks and repository-wide E2E verification.
-- [x] Dependency Graph Clean: canonical lock gates passed; no forbidden dependency propagation detected; blast-radius report recorded in `docs/reports/M-91_Blast_Radius_Report.md`.
-- [x] ADR Compliance: presentation-only client changes preserve Thin Client boundaries and existing mutation/API behavior.
-- [x] User Approval: GO received 2026-09-21; implementation authorized
+- [x] Functional Verification: canonical lock gates passed; 39 test files / 569 tests passed and 11/11 Playwright tests passed.
+- [x] Architectural Verification (AVP-001): canonical lock gates passed with no backend/shared/API contract propagation.
+- [x] Dependency Graph Clean: canonical lock gates passed; no forbidden dependency propagation detected; blast-radius report recorded in `docs/reports/M-92_Blast_Radius_Report.md`.
+- [x] ADR Compliance: preserves Thin Client boundaries, server-authoritative responses, shop-local date semantics, and approved backdating.
+- [x] User Approval: implement received 2026-09-21

@@ -59,6 +59,10 @@ export function Keno() {
 	const [listLoading, setListLoading] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
+	const isWithinActiveRange = (date: string) => {
+		const shopDate = getShopDateString(new Date(date));
+		return shopDate >= rangeStart && shopDate <= rangeEnd;
+	};
 
 	const loadKenoLogs = useCallback(async () => {
 		if (rangeStart > rangeEnd) return;
@@ -277,7 +281,9 @@ export function Keno() {
 						(await safeJson(response)).error || "Failed to log keno",
 					);
 				const newLog = await safeJson<KenoLog>(response);
-				setLogs((prev) => [newLog, ...prev]);
+				if (isWithinActiveRange(newLog.date)) {
+					setLogs((prev) => [newLog, ...prev]);
+				}
 				setNetAmount("");
 				toast.success("Keno logged successfully!");
 			}

@@ -60,6 +60,10 @@ export function GameSales() {
 	const todayStr = getShopDateString();
 	const [rangeStart, setRangeStart] = useState(todayStr);
 	const [rangeEnd, setRangeEnd] = useState(todayStr);
+	const isWithinActiveRange = (date: string) => {
+		const shopDate = getShopDateString(new Date(date));
+		return shopDate >= rangeStart && shopDate <= rangeEnd;
+	};
 
 	useEffect(() => {
 		let mounted = true;
@@ -326,7 +330,9 @@ export function GameSales() {
 						(await safeJson(response)).error || "Failed to log sale",
 					);
 				const newLog = await safeJson<GameSalesLog>(response);
-				setLogs((prev) => [newLog, ...prev]);
+				if (isWithinActiveRange(newLog.date)) {
+					setLogs((prev) => [newLog, ...prev]);
+				}
 				setQuantity("");
 				toast.success("Game sale logged successfully!");
 			}

@@ -292,6 +292,89 @@ describe("GameSales", () => {
 		});
 	});
 
+	it("inserts a created sale when its shop date is inside the active range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (url.endsWith("/api/rates"))
+				return Promise.resolve(jsonResponse(rates));
+			if (init?.method === "POST") {
+				return Promise.resolve(
+					jsonResponse({
+						...salesLog,
+						id: "created-sale",
+						date: "2026-08-23T12:00:00Z",
+					}),
+				);
+			}
+			return Promise.resolve(jsonResponse([]));
+		});
+
+		try {
+			render(<GameSales />);
+			await screen.findByRole("option", { name: /PS4/ });
+			fireEvent.change(screen.getByLabelText("Game / Table"), {
+				target: { value: "rate-1" },
+			});
+			fireEvent.change(screen.getByLabelText("Quantity (Hours)"), {
+				target: { value: "2" },
+			});
+			fireEvent.submit(
+				screen.getByText("New Entry").closest("form") as HTMLFormElement,
+			);
+			await screen.findByTestId("gamesale-history-row");
+			expect(screen.getAllByText("$10.00").length).toBeGreaterThan(0);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("does not insert a created sale outside the active range", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-08-23T12:00:00Z"));
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (url.endsWith("/api/rates"))
+				return Promise.resolve(jsonResponse(rates));
+			if (init?.method === "POST") {
+				return Promise.resolve(
+					jsonResponse({
+						...salesLog,
+						id: "outside-sale",
+						date: "2026-08-22T12:00:00Z",
+					}),
+				);
+			}
+			return Promise.resolve(jsonResponse([]));
+		});
+
+		try {
+			render(<GameSales />);
+			await screen.findByRole("option", { name: /PS4/ });
+			fireEvent.change(screen.getByLabelText("Date"), {
+				target: { value: "2026-08-23" },
+			});
+			fireEvent.change(screen.getByLabelText("Game / Table"), {
+				target: { value: "rate-1" },
+			});
+			fireEvent.change(screen.getByLabelText("Quantity (Hours)"), {
+				target: { value: "2" },
+			});
+			fireEvent.submit(
+				screen.getByText("New Entry").closest("form") as HTMLFormElement,
+			);
+			await waitFor(() =>
+				expect(toast.success).toHaveBeenCalledWith(
+					"Game sale logged successfully!",
+				),
+			);
+			expect(
+				screen.queryByTestId("gamesale-history-row"),
+			).not.toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("deletes a sale via DELETE after a reason is provided", async () => {
 		render(<GameSales />);
 		await screen.findByText(/2 units @ \$5\.00/);
