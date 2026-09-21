@@ -34,6 +34,12 @@ vi.mock("sonner", () => ({
 	toast: { error: vi.fn(), success: vi.fn() },
 }));
 
+import { useAuth } from "../../contexts/AuthContext.js";
+
+vi.mock("../../contexts/AuthContext.js", () => ({
+	useAuth: vi.fn(() => ({ user: null, loading: false })),
+}));
+
 const jsonResponse = (data: unknown, ok = true, status = 200) =>
 	new Response(JSON.stringify(data), {
 		status,
@@ -775,9 +781,33 @@ describe("Admin", () => {
 
 	// biome-ignore format: migrated block
 	describe("employee hiring (M-74, moved from EmployeeRoster)", () => {
+		beforeEach(() => {
+			vi.mocked(useAuth).mockReturnValue({
+				user: {
+					uid: "u-admin",
+					displayName: "Admin User",
+					role: "admin",
+					email: "admin@gamezone.com",
+				},
+				loading: false,
+			});
+		});
+
+		afterEach(() => {
+			vi.mocked(useAuth).mockReturnValue({
+				user: null,
+				loading: false,
+			});
+		});
+
 		const stubHiring = (
 			fetchMock: ReturnType<typeof vi.fn>,
-			opts: { post?: unknown; fail?: boolean } = {},
+			opts: {
+				post?: unknown;
+				fail?: boolean;
+				users?: unknown[];
+				employees?: unknown[];
+			} = {},
 		) => {
 			fetchMock.mockImplementation((url: string, init?: RequestInit) => {
 				if (String(url).includes("/api/employees")) {
@@ -786,7 +816,10 @@ describe("Admin", () => {
 							? jsonResponse({ error: "boom" }, false, 500)
 							: jsonResponse(opts.post);
 					}
-					return jsonResponse([]);
+					return jsonResponse(opts.employees || []);
+				}
+				if (String(url).includes("/api/users")) {
+					return jsonResponse(opts.users || []);
 				}
 				if (String(url).includes("expense-categories")) {
 					return jsonResponse([]);
@@ -939,6 +972,66 @@ describe("Admin", () => {
 					"Employee Dana added to roster!",
 				);
 			});
+		});
+
+		it("adds an employee with a linked system account", async () => {
+			const newEmp = {
+				id: "e10",
+				name: "Eve",
+				position: "Staff",
+				base_salary: 600,
+				hired_date: "2026-02-01",
+				break_day: null,
+				user_uid: "uid-eve",
+				isActive: true,
+				created_at: "2026-02-01T00:00:00.000Z",
+			};
+			const mockUsers = [
+				{
+					uid: "uid-eve",
+					email: "eve@gamezone.com",
+					displayName: "Eve User",
+					role: "staff",
+				},
+			];
+			const fetchMock = vi.fn();
+			stubHiring(fetchMock, { post: newEmp, users: mockUsers });
+			vi.stubGlobal("fetch", fetchMock);
+
+			render(<Admin />);
+			await screen.findByText("PS4");
+
+			fireEvent.change(screen.getByPlaceholderText("e.g. John Doe"), {
+				target: { value: "Eve" },
+			});
+			fireEvent.change(
+				screen.getByPlaceholderText("e.g. Cashier, Floor Attendant"),
+				{ target: { value: "Staff" } },
+			);
+			fireEvent.change(screen.getByPlaceholderText("e.g. 500.00"), {
+				target: { value: "600" },
+			});
+
+			const linkedSelect = screen.getByLabelText(
+				"Linked System Account (Optional)",
+			);
+			await screen.findByRole("option", { name: /Eve User/i });
+			fireEvent.change(linkedSelect, { target: { value: "uid-eve" } });
+
+			fireEvent.click(screen.getByText("Add Employee"));
+
+			await waitFor(() => {
+				expect(fetchMock).toHaveBeenCalledWith(
+					expect.stringContaining("/api/employees"),
+					expect.objectContaining({
+						method: "POST",
+						body: expect.stringContaining('"user_uid":"uid-eve"'),
+					}),
+				);
+			});
+			expect(toast.success).toHaveBeenCalledWith(
+				"Employee Eve added to roster!",
+			);
 		});
 
 		it("toasts add error when no token is available", async () => {

@@ -360,4 +360,32 @@ describe("UserManagement", () => {
 			expect(toast.error).toHaveBeenCalled();
 		});
 	});
+
+	it("displays linked employee badge when user is linked to an active employee", async () => {
+		const mockEmps = [
+			{ id: "e1", name: "Alice Worker", user_uid: "u1", isActive: true },
+		];
+		mockFetch.mockImplementation((url: string) => {
+			return Promise.resolve({
+				ok: true,
+				status: 200,
+				url,
+			});
+		});
+		(safeJson as ReturnType<typeof vi.fn>).mockImplementation(
+			(res: { url?: string }) => {
+				if (res?.url?.includes("/api/employees")) {
+					return Promise.resolve(mockEmps);
+				}
+				return Promise.resolve(mockUsers);
+			},
+		);
+
+		render(<UserManagement />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		expect(screen.getByText("Linked: Alice Worker")).toBeInTheDocument();
+	});
 });

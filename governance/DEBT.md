@@ -16,14 +16,10 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 
 | ID | Reason | Impact | Priority | Owner | Pending On |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| TD-038 | **Employee and User are disconnected entities** — No `employee.user_uid` or `user.employee_id` foreign key linkage UI. A person who works at the store (Employee: name, salary, position) and a person who logs into the system (User: email, role, auth UID) are two unrelated records without admin linkage UI. | HIGH — architectural gap | High | Architecture | ACP-010 Phase 2 |
-
-| TD-049 | **Create/edit prepends row without range re-check** — verified resolved under M-95 by re-checking the active range before retaining or prepending rows in the Game Sales and Keno history lists. This debt entry was left stale in the ledger and is now reconciled as part of M-96. | LOW — no remaining defect; governance cleanup only | Low | Frontend | M-96 |
-
-
 
 ## Resolved Debt
 
+| TD-038 | **Employee-User Linkage UI & Uniqueness Enforcement** — Added 1-to-1 uniqueness validation on `user_uid` across active employees in `employeesController.ts` with HTTP 409 rejection. Added system account selector in `Admin.tsx` (create) and `EmployeeRoster.tsx` (edit), disabling already-linked accounts. Added linked employee/account badges in `UserManagement.tsx` and `EmployeeRoster.tsx`. Resolved in M-102 (ACP-010 Phase 2). | 2026-09-22 |
 | TD-030 | **Audit log on shift close** — Added atomic audit logging to `closeShift` inside `db.runTransaction` in `shiftsController.ts` with action `UPDATE`, table `shifts`, `old_value`, `new_value`, and contextual `reason_for_change`. Resolved in M-101 (ACP-010 Phase 1). | 2026-09-22 |
 | TD-040 | **Shifts reference employees** — Added optional `employee_id?: string` to `Shift` model in `@level-up/shared`. `startShift` and `autoOpenShift` query `employees` collection by authenticated `user.uid` where `isActive == true` and auto-attach `employee_id` to the shift. Resolved in M-101 (ACP-010 Phase 1). | 2026-09-22 |
 

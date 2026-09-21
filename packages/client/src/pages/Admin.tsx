@@ -1,10 +1,11 @@
 import type {
+	AppUser,
 	BreakDay,
 	Employee,
 	ExpenseCategory,
 	GameRate,
 } from "@level-up/shared";
-import { UNIT_TYPES } from "@level-up/shared";
+import { ROLES, UNIT_TYPES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, Pencil, RotateCcw, Trash2, X } from "lucide-react";
 import type React from "react";
@@ -21,6 +22,7 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
 
 interface EditState {
@@ -62,6 +64,38 @@ export function Admin() {
 	);
 	const [breakDay, setBreakDay] = useState<BreakDay>(null);
 	const [submitLoading, setSubmitLoading] = useState(false);
+
+	const { user: currentUser } = useAuth();
+	const [users, setUsers] = useState<AppUser[]>([]);
+	const [existingEmployees, setExistingEmployees] = useState<Employee[]>([]);
+	const [linkedUserUid, setLinkedUserUid] = useState<string>("");
+
+	useEffect(() => {
+		if (currentUser?.role !== ROLES.ADMIN) return;
+		let mounted = true;
+		const loadLinkageData = async () => {
+			try {
+				const [usersRes, empRes] = await Promise.all([
+					authFetch(`${API_BASE}/api/users`),
+					authFetch(`${API_BASE}/api/employees`),
+				]);
+				if (usersRes.ok) {
+					const userData = (await safeJson(usersRes)) as AppUser[];
+					if (mounted && Array.isArray(userData)) setUsers(userData);
+				}
+				if (empRes.ok) {
+					const empData = (await safeJson(empRes)) as Employee[];
+					if (mounted && Array.isArray(empData)) setExistingEmployees(empData);
+				}
+			} catch (err) {
+				console.error("Failed to load users/employees for linkage", err);
+			}
+		};
+		void loadLinkageData();
+		return () => {
+			mounted = false;
+		};
+	}, [currentUser?.role]);
 
 	useEffect(() => {
 		let mounted = true;
@@ -395,6 +429,7 @@ export function Admin() {
 					base_salary: parseFloat(baseSalary),
 					hired_date: hiredDate,
 					break_day: breakDay,
+					...(linkedUserUid ? { user_uid: linkedUserUid } : {}),
 				}),
 			});
 
@@ -411,6 +446,8 @@ export function Admin() {
 			setBaseSalary("");
 			setHiredDate(new Date().toISOString().split("T")[0]);
 			setBreakDay(null);
+			setLinkedUserUid("");
+			setExistingEmployees((prev) => [...prev, newEmployee]);
 			toast.success(`Employee ${newEmployee.name} added to roster!`);
 		} catch (err: unknown) {
 			console.error(err);
@@ -848,6 +885,40 @@ export function Admin() {
 										<option value="Saturday">Saturday</option>
 										<option value="Sunday">Sunday</option>
 									</select>
+								</div>
+								<div className="space-y-2 md:col-span-2">
+									<Label htmlFor="linkedUser">
+										Linked System Account (Optional)
+									</Label>
+									<select
+										id="linkedUser"
+										value={linkedUserUid}
+										onChange={(e) => setLinkedUserUid(e.target.value)}
+										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+									>
+										<option value="">None (Unlinked)</option>
+										{users.map((u) => {
+											const linkedEmp = existingEmployees.find(
+												(e) => e.isActive && e.user_uid === u.uid,
+											);
+											return (
+												<option
+													key={u.uid}
+													value={u.uid}
+													disabled={Boolean(linkedEmp)}
+												>
+													{u.displayName || u.email} ({u.role})
+													{linkedEmp
+														? ` — Already linked to ${linkedEmp.name}`
+														: ""}
+												</option>
+											);
+										})}
+									</select>
+									<p className="text-xs text-zinc-500">
+										Connecting a system login links active shift floats and
+										audit reporting directly to this store employee.
+									</p>
 								</div>
 							</div>
 							<Button

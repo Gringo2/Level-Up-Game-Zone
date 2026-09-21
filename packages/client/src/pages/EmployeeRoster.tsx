@@ -1,4 +1,4 @@
-import type { BreakDay, Employee } from "@level-up/shared";
+import type { AppUser, BreakDay, Employee } from "@level-up/shared";
 import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Edit2, Loader2, UserCheck, UserX, X } from "lucide-react";
@@ -24,12 +24,14 @@ interface EditState {
 	baseSalary: string;
 	hiredDate: string;
 	breakDay: BreakDay;
+	userUid: string;
 	editReason: string;
 }
 
 export function EmployeeRoster() {
 	const { user } = useAuth();
 	const [employees, setEmployees] = useState<Employee[]>([]);
+	const [users, setUsers] = useState<AppUser[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	// Form State
@@ -69,6 +71,28 @@ export function EmployeeRoster() {
 		};
 	}, []);
 
+	useEffect(() => {
+		if (user?.role !== ROLES.ADMIN) return;
+		let mounted = true;
+		const loadUsers = async () => {
+			try {
+				const response = await authFetch(`${API_BASE}/api/users`);
+				if (response.ok) {
+					const data = (await safeJson(response)) as AppUser[];
+					if (mounted && Array.isArray(data)) {
+						setUsers(data);
+					}
+				}
+			} catch (err: unknown) {
+				console.error("Failed to fetch users for employee linkage", err);
+			}
+		};
+		void loadUsers();
+		return () => {
+			mounted = false;
+		};
+	}, [user?.role]);
+
 	const startEdit = (emp: Employee) => {
 		setEditState({
 			id: emp.id,
@@ -77,6 +101,7 @@ export function EmployeeRoster() {
 			baseSalary: emp.base_salary.toString(),
 			hiredDate: emp.hired_date,
 			breakDay: emp.break_day,
+			userUid: emp.user_uid || "",
 			editReason: "",
 		});
 	};
@@ -106,6 +131,7 @@ export function EmployeeRoster() {
 						base_salary: parseFloat(editState.baseSalary),
 						hired_date: editState.hiredDate,
 						break_day: editState.breakDay,
+						user_uid: editState.userUid || null,
 						editReason: editState.editReason.trim(),
 					}),
 				},
@@ -276,6 +302,43 @@ export function EmployeeRoster() {
 													<option value="Sunday">Sunday</option>
 												</select>
 											</div>
+											<div className="space-y-2 md:col-span-2">
+												<Label htmlFor="edit-user-uid">
+													Linked System Account (Optional)
+												</Label>
+												<select
+													id="edit-user-uid"
+													value={editState.userUid}
+													onChange={(e) =>
+														setEditState((s) =>
+															s ? { ...s, userUid: e.target.value } : s,
+														)
+													}
+													className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+												>
+													<option value="">None (Unlinked)</option>
+													{users.map((u) => {
+														const linkedToOther = employees.find(
+															(other) =>
+																other.id !== editState.id &&
+																other.isActive &&
+																other.user_uid === u.uid,
+														);
+														return (
+															<option
+																key={u.uid}
+																value={u.uid}
+																disabled={Boolean(linkedToOther)}
+															>
+																{u.displayName || u.email} ({u.role})
+																{linkedToOther
+																	? ` — Already linked to ${linkedToOther.name}`
+																	: ""}
+															</option>
+														);
+													})}
+												</select>
+											</div>
 										</div>
 										<div className="space-y-2">
 											<Label className="text-amber-600">
@@ -329,6 +392,13 @@ export function EmployeeRoster() {
 												>
 													{emp.isActive ? "Active" : "Inactive"}
 												</span>
+												{emp.user_uid && (
+													<span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+														Account:{" "}
+														{users.find((u) => u.uid === emp.user_uid)?.email ||
+															emp.user_uid}
+													</span>
+												)}
 											</div>
 											<div className="text-sm text-zinc-500 mt-1 flex flex-wrap gap-4">
 												<span>Base Salary: ${emp.base_salary.toFixed(2)}</span>

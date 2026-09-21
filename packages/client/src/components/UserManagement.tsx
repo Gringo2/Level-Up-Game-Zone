@@ -1,4 +1,4 @@
-import type { AppUser } from "@level-up/shared";
+import type { AppUser, Employee } from "@level-up/shared";
 import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
 import { Loader2, Trash2 } from "lucide-react";
@@ -11,6 +11,7 @@ import { ConfirmDialog } from "./ui/confirm-dialog";
 
 export function UserManagement() {
 	const [users, setUsers] = useState<AppUser[]>([]);
+	const [employees, setEmployees] = useState<Employee[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	const [inviteEmail, setInviteEmail] = useState("");
@@ -30,18 +31,31 @@ export function UserManagement() {
 
 	useEffect(() => {
 		let mounted = true;
-		const loadUsers = async () => {
+		const loadData = async () => {
 			try {
-				const response = await authFetch(`${API_BASE}/api/users`);
-				if (!response.ok) {
+				const [usersRes, empRes] = await Promise.all([
+					authFetch(`${API_BASE}/api/users`),
+					authFetch(`${API_BASE}/api/employees`),
+				]);
+				if (!usersRes.ok) {
 					throw new Error(
-						(await safeJson(response)).error || "Failed to fetch users",
+						(await safeJson(usersRes)).error || "Failed to fetch users",
 					);
 				}
 
-				const data = (await safeJson(response)) as AppUser[];
+				const userData = (await safeJson(usersRes)) as AppUser[];
+				if (mounted && Array.isArray(userData)) {
+					setUsers(userData);
+				}
+
+				if (empRes.ok) {
+					const empData = (await safeJson(empRes)) as Employee[];
+					if (mounted && Array.isArray(empData)) {
+						setEmployees(empData);
+					}
+				}
+
 				if (mounted) {
-					setUsers(data);
 					setLoading(false);
 				}
 			} catch (err) {
@@ -53,7 +67,7 @@ export function UserManagement() {
 			}
 		};
 
-		void loadUsers();
+		void loadData();
 		return () => {
 			mounted = false;
 		};
@@ -241,7 +255,19 @@ export function UserManagement() {
 						<tbody className="divide-y">
 							{users.map((user) => (
 								<tr key={user.uid} className="border-b last:border-0">
-									<td className="px-4 py-3">{user.displayName}</td>
+									<td className="px-4 py-3">
+										<div>{user.displayName}</div>
+										{(() => {
+											const linkedEmp = employees.find(
+												(e) => e.isActive && e.user_uid === user.uid,
+											);
+											return linkedEmp ? (
+												<span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium mt-0.5">
+													Linked: {linkedEmp.name}
+												</span>
+											) : null;
+										})()}
+									</td>
 									<td className="px-4 py-3">{user.email}</td>
 									<td className="px-4 py-3">
 										<select

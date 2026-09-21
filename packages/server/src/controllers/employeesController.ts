@@ -1,4 +1,4 @@
-import { COLLECTIONS } from "@level-up/shared";
+import { COLLECTIONS, type Employee } from "@level-up/shared";
 import type { Response } from "express";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
@@ -70,6 +70,19 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 					throw new Error("DUPLICATE_NAME");
 				}
 
+				if (user_uid) {
+					const duplicateUser = allDocs.some(
+						(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => {
+							// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+							const d = doc.data() as Record<string, any> | undefined;
+							return doc.exists && d?.isActive && d?.user_uid === user_uid;
+						},
+					);
+					if (duplicateUser) {
+						throw new Error("DUPLICATE_USER_LINKAGE");
+					}
+				}
+
 				transaction.set(newDocRef, data);
 				transaction.set(auditRef, {
 					action: "CREATE",
@@ -90,6 +103,11 @@ export const createEmployee = async (req: AuthRequest, res: Response) => {
 			return res
 				.status(409)
 				.json({ error: "An active employee with this name already exists" });
+		}
+		if ((error as Error).message === "DUPLICATE_USER_LINKAGE") {
+			return res.status(409).json({
+				error: "A store employee is already linked to this system user account",
+			});
 		}
 		logger.error({ err: error }, "Error creating employee");
 		return res.status(500).json({ error: safeErrorMessage(error) });
@@ -120,7 +138,11 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 
 		// biome-ignore lint/suspicious/noExplicitAny: Firestore document reference type
 		let allDocRefs: any[] = [];
-		if (normalizedTarget !== null) {
+		if (
+			normalizedTarget !== null ||
+			user_uid !== undefined ||
+			isActive === true
+		) {
 			const existingSnapshot = await db.collection(COLLECTIONS.EMPLOYEES).get();
 			allDocRefs = existingSnapshot.docs.map(
 				(doc: FirebaseFirestore.DocumentSnapshot<unknown>) =>
@@ -130,34 +152,64 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 
 		await db.runTransaction(
 			async (transaction: FirebaseFirestore.Transaction) => {
-				if (normalizedTarget !== null && allDocRefs) {
-					const allDocs =
-						allDocRefs.length > 0
-							? await transaction.getAll(...allDocRefs)
-							: [];
-					const duplicate = allDocs.some(
-						(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => {
-							// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
-							const d = doc.data() as Record<string, any> | undefined;
-							return (
-								doc.exists &&
-								doc.id !== id &&
-								d?.isActive &&
-								d?.name?.trim().toLowerCase() === normalizedTarget
-							);
-						},
-					);
-					if (duplicate) {
-						throw new Error("DUPLICATE_NAME");
-					}
-				}
-
 				const docSnap = await transaction.get(docRef);
 				if (!docSnap.exists) {
 					throw new Error("Employee not found");
 				}
 
-				const oldDoc = { id: docSnap.id, ...docSnap.data() };
+				const oldDoc = {
+					id: docSnap.id,
+					...(docSnap.data() as Partial<Employee> & Record<string, unknown>),
+				};
+
+				if (allDocRefs.length > 0) {
+					const allDocs = await transaction.getAll(...allDocRefs);
+					if (normalizedTarget !== null) {
+						const duplicate = allDocs.some(
+							(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => {
+								// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+								const d = doc.data() as Record<string, any> | undefined;
+								return (
+									doc.exists &&
+									doc.id !== id &&
+									d?.isActive &&
+									d?.name?.trim().toLowerCase() === normalizedTarget
+								);
+							},
+						);
+						if (duplicate) {
+							throw new Error("DUPLICATE_NAME");
+						}
+					}
+
+					const effectiveUserUid =
+						user_uid !== undefined
+							? user_uid
+							: isActive === true
+								? oldDoc.user_uid
+								: null;
+					const targetIsActive =
+						isActive !== undefined ? isActive : oldDoc.isActive;
+
+					if (effectiveUserUid && targetIsActive) {
+						const duplicateUser = allDocs.some(
+							(doc: FirebaseFirestore.DocumentSnapshot<unknown>) => {
+								// biome-ignore lint/suspicious/noExplicitAny: Firestore document data
+								const d = doc.data() as Record<string, any> | undefined;
+								return (
+									doc.exists &&
+									doc.id !== id &&
+									d?.isActive &&
+									d?.user_uid === effectiveUserUid
+								);
+							},
+						);
+						if (duplicateUser) {
+							throw new Error("DUPLICATE_USER_LINKAGE");
+						}
+					}
+				}
+
 				// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
 				const newValues: Record<string, any> = {};
 
@@ -191,6 +243,11 @@ export const updateEmployee = async (req: AuthRequest, res: Response) => {
 			return res
 				.status(409)
 				.json({ error: "An active employee with this name already exists" });
+		}
+		if ((error as Error).message === "DUPLICATE_USER_LINKAGE") {
+			return res.status(409).json({
+				error: "A store employee is already linked to this system user account",
+			});
 		}
 		logger.error({ err: error }, "Error updating employee");
 		return res.status(500).json({ error: safeErrorMessage(error) });

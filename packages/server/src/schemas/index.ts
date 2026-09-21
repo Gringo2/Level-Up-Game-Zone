@@ -304,8 +304,11 @@ export const CreateEmployeeSchema = z.object({
 	user_uid: z
 		.string()
 		.trim()
-		.min(1, "User UID must be a non-empty string")
-		.optional(),
+		.nullable()
+		.optional()
+		.transform((val) =>
+			val === undefined ? undefined : val === "" || val === null ? null : val,
+		),
 });
 
 export const UpdateEmployeeSchema = z.object({
@@ -328,8 +331,11 @@ export const UpdateEmployeeSchema = z.object({
 	user_uid: z
 		.string()
 		.trim()
-		.min(1, "User UID must be a non-empty string")
-		.optional(),
+		.nullable()
+		.optional()
+		.transform((val) =>
+			val === undefined ? undefined : val === "" || val === null ? null : val,
+		),
 	isActive: z.boolean().optional(),
 	editReason: z
 		.string()

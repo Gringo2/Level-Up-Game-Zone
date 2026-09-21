@@ -2,7 +2,13 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
@@ -63,6 +69,32 @@ const emp2 = {
 
 const employees = [emp, emp2];
 
+const createRosterFetchMock = (options?: {
+	employeesList?: unknown[];
+	usersList?: unknown[];
+	putResponse?: unknown;
+	putOk?: boolean;
+	putStatus?: number;
+}) => {
+	const {
+		employeesList = employees,
+		usersList = [],
+		putResponse,
+		putOk = true,
+		putStatus = 200,
+	} = options || {};
+
+	return vi.fn((url: string, init?: RequestInit) => {
+		if (String(url).includes("/api/users")) {
+			return jsonResponse(usersList);
+		}
+		if (init?.method === "PUT") {
+			return jsonResponse(putResponse, putOk, putStatus);
+		}
+		return jsonResponse(employeesList);
+	});
+};
+
 describe("EmployeeRoster", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -88,7 +120,7 @@ describe("EmployeeRoster", () => {
 	});
 
 	it("loads and displays employees sorted by name", async () => {
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
+		vi.stubGlobal("fetch", createRosterFetchMock());
 
 		render(<EmployeeRoster />);
 
@@ -103,7 +135,7 @@ describe("EmployeeRoster", () => {
 	});
 
 	it("shows empty state when no employees", async () => {
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+		vi.stubGlobal("fetch", createRosterFetchMock({ employeesList: [] }));
 
 		render(<EmployeeRoster />);
 
@@ -130,10 +162,9 @@ describe("EmployeeRoster", () => {
 	});
 
 	it("edits an employee inline via PUT", async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse({ ...emp, name: "Alice Updated" }));
+		const fetchMock = createRosterFetchMock({
+			putResponse: { ...emp, name: "Alice Updated" },
+		});
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -166,7 +197,7 @@ describe("EmployeeRoster", () => {
 	});
 
 	it("disables Save Changes when edit reason is empty", async () => {
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
+		vi.stubGlobal("fetch", createRosterFetchMock());
 
 		render(<EmployeeRoster />);
 
@@ -190,10 +221,9 @@ describe("EmployeeRoster", () => {
 	});
 
 	it("toggles employee active status via PUT", async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse({ ...emp, isActive: false }));
+		const fetchMock = createRosterFetchMock({
+			putResponse: { ...emp, isActive: false },
+		});
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -270,10 +300,11 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 	});
 
 	it("toasts edit error when the save PUT fails", async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+		const fetchMock = createRosterFetchMock({
+			putResponse: { error: "boom" },
+			putOk: false,
+			putStatus: 500,
+		});
 		vi.stubGlobal("fetch", fetchMock);
 
 		render(<EmployeeRoster />);
@@ -295,10 +326,11 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 	});
 
 	it("toasts toggle error when the status PUT fails", async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse({ error: "boom" }, false, 500));
+		const fetchMock = createRosterFetchMock({
+			putResponse: { error: "boom" },
+			putOk: false,
+			putStatus: 500,
+		});
 		vi.stubGlobal("fetch", fetchMock);
 
 		render(<EmployeeRoster />);
@@ -317,7 +349,7 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 	});
 
 	it("cancels an inline edit and restores the read-only row", async () => {
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
+		vi.stubGlobal("fetch", createRosterFetchMock());
 
 		render(<EmployeeRoster />);
 
@@ -340,10 +372,9 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 			hired_date: "2024-01-01",
 			break_day: "Friday",
 		};
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(jsonResponse(employees))
-			.mockResolvedValueOnce(jsonResponse(updated));
+		const fetchMock = createRosterFetchMock({
+			putResponse: updated,
+		});
 		vi.stubGlobal("fetch", fetchMock);
 
 		render(<EmployeeRoster />);
@@ -381,8 +412,121 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 		expect(toast.success).toHaveBeenCalledWith("Employee record updated!");
 	});
 
+	it("displays linked system account badge when employee has user_uid", async () => {
+		const empWithUser = { ...emp, user_uid: "user-123" };
+		const mockUsers = [
+			{
+				uid: "user-123",
+				email: "alice@gamezone.com",
+				displayName: "Alice Staff",
+				role: "staff",
+			},
+		];
+		const fetchMock = createRosterFetchMock({
+			employeesList: [empWithUser, emp2],
+			usersList: mockUsers,
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		expect(screen.getByText("Account: alice@gamezone.com")).toBeInTheDocument();
+	});
+
+	it("allows linking a system account via edit mode", async () => {
+		const mockUsers = [
+			{
+				uid: "user-456",
+				email: "bob@gamezone.com",
+				displayName: "Bob User",
+				role: "cashier",
+			},
+		];
+		const fetchMock = createRosterFetchMock({
+			usersList: mockUsers,
+			putResponse: { ...emp, user_uid: "user-456" },
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Edit")[0]);
+
+		const linkedSelect = screen.getByLabelText(
+			"Linked System Account (Optional)",
+		);
+		fireEvent.change(linkedSelect, { target: { value: "user-456" } });
+
+		const reasonInput = screen.getByPlaceholderText(
+			"e.g. Salary adjustment / Promotion",
+		);
+		fireEvent.change(reasonInput, { target: { value: "Link user account" } });
+		fireEvent.click(screen.getByText("Save Changes"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("/api/employees/e1"),
+				expect.objectContaining({
+					method: "PUT",
+					body: expect.stringContaining('"user_uid":"user-456"'),
+				}),
+			);
+		});
+		expect(toast.success).toHaveBeenCalledWith("Employee record updated!");
+	});
+
+	it("disables already-linked users for other active employees in edit select", async () => {
+		const emp1 = { ...emp, id: "e1", user_uid: null };
+		const emp2WithUser = { ...emp2, id: "e2", user_uid: "user-other" };
+		const mockUsers = [
+			{
+				uid: "user-other",
+				email: "other@gamezone.com",
+				displayName: "Other User",
+				role: "staff",
+			},
+			{
+				uid: "user-free",
+				email: "free@gamezone.com",
+				displayName: "Free User",
+				role: "staff",
+			},
+		];
+		const fetchMock = createRosterFetchMock({
+			employeesList: [emp1, emp2WithUser],
+			usersList: mockUsers,
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<EmployeeRoster />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Edit")[0]);
+
+		const linkedSelect = screen.getByLabelText(
+			"Linked System Account (Optional)",
+		);
+		const otherOption = within(linkedSelect).getByRole("option", {
+			name: /Other User.*Already linked to Bob/i,
+		});
+		expect(otherOption).toHaveProperty("disabled", true);
+
+		const freeOption = within(linkedSelect).getByRole("option", {
+			name: /Free User/i,
+		});
+		expect(freeOption).toHaveProperty("disabled", false);
+	});
+
 	it("no longer hosts the hiring form (moved to Admin)", async () => {
-		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(employees)));
+		vi.stubGlobal("fetch", createRosterFetchMock());
 		render(<EmployeeRoster />);
 		await screen.findByText("Alice");
 		expect(screen.queryByText("Add Store Employee")).not.toBeInTheDocument();
