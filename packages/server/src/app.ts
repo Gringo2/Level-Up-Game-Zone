@@ -23,6 +23,9 @@ import { logger } from "./utils/logger.js";
 
 const app = express();
 
+// Trust reverse proxy (LiteSpeed, Cloudflare, Passenger) for rate limiting & IP resolution
+app.set("trust proxy", 1);
+
 app.use(
 	helmet({
 		crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },

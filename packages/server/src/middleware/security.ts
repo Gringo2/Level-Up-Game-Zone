@@ -49,6 +49,7 @@ export function buildApiRateLimit(
 		limit: config.max,
 		standardHeaders: "draft-7",
 		legacyHeaders: false,
+		validate: { xForwardedForHeader: false },
 		message: { error: "Too many requests, please try again later." },
 	});
 }
