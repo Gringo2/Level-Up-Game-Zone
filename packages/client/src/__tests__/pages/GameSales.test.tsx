@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { getShopEndOfDay, getShopStartOfDay } from "../../lib/dateUtils.js";
-import { GameSales } from "../../pages/GameSales.js";
+import { GameSales, parseSalesQuantityInput } from "../../pages/GameSales.js";
 
 vi.mock("../../firebase", () => ({
 	auth: {
@@ -212,6 +212,16 @@ describe("GameSales", () => {
 		});
 	});
 
+	it("parseSalesQuantityInput rejects NaN-holes and keeps positive decimals legal", () => {
+		expect(parseSalesQuantityInput("--1")).toBeNull();
+		expect(parseSalesQuantityInput("")).toBeNull();
+		expect(parseSalesQuantityInput("abc")).toBeNull();
+		expect(parseSalesQuantityInput("1e-")).toBeNull();
+		expect(parseSalesQuantityInput("0")).toBeNull();
+		expect(parseSalesQuantityInput("0.1")).toBe(0.1);
+		expect(parseSalesQuantityInput("2.5")).toBe(2.5);
+	});
+
 	it("computes the calculated total from rate and quantity", async () => {
 		mockFetch.mockImplementation((url: string) => {
 			if (url.endsWith("/api/rates")) {
@@ -261,7 +271,7 @@ describe("GameSales", () => {
 		expect(JSON.parse(String(init.body))).toEqual({
 			game_id: "rate-1",
 			game_name: "PS4",
-			quantity_sold: "2",
+			quantity_sold: 2,
 			rate_applied: 5,
 			calculated_total: 10,
 			date: expect.any(String),

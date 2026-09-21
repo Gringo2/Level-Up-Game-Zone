@@ -26,6 +26,14 @@ import {
 	historyPageBounds,
 } from "../lib/history";
 
+export const parseSalesQuantityInput = (raw: string): number | null => {
+	const trimmed = raw.trim();
+	if (trimmed === "") return null;
+	const parsed = Number(trimmed);
+	if (!Number.isFinite(parsed) || parsed <= 0) return null;
+	return parsed;
+};
+
 export function GameSales() {
 	const { user } = useAuth();
 	const [rates, setRates] = useState<GameRate[]>([]);
@@ -141,9 +149,10 @@ export function GameSales() {
 	}, [loadSalesLogs]);
 
 	const selectedRate = rates.find((r) => r.id === selectedRateId);
+	const parsedQuantity = quantity ? parseSalesQuantityInput(quantity) : null;
 	const calculatedTotal =
-		selectedRate && quantity
-			? selectedRate.price_per_unit * parseFloat(quantity)
+		selectedRate && parsedQuantity
+			? selectedRate.price_per_unit * parsedQuantity
 			: 0;
 
 	const handleEdit = (log: GameSalesLog) => {
@@ -259,6 +268,12 @@ export function GameSales() {
 		e.preventDefault();
 		if (!selectedRate || !quantity || !user) return;
 
+		const parsedQuantityValue = parseSalesQuantityInput(quantity);
+		if (parsedQuantityValue === null) {
+			toast.error("Please enter a valid quantity greater than 0.");
+			return;
+		}
+
 		setLoading(true);
 		try {
 			if (editingId) {
@@ -275,9 +290,9 @@ export function GameSales() {
 					body: JSON.stringify({
 						game_id: selectedRate.id,
 						game_name: selectedRate.game_name,
-						quantity_sold: quantity,
+						quantity_sold: parsedQuantityValue,
 						rate_applied: selectedRate.price_per_unit,
-						calculated_total: calculatedTotal,
+						calculated_total: selectedRate.price_per_unit * parsedQuantityValue,
 						editReason,
 					}),
 				});
@@ -298,9 +313,9 @@ export function GameSales() {
 					body: JSON.stringify({
 						game_id: selectedRate.id,
 						game_name: selectedRate.game_name,
-						quantity_sold: quantity,
+						quantity_sold: parsedQuantityValue,
 						rate_applied: selectedRate.price_per_unit,
-						calculated_total: calculatedTotal,
+						calculated_total: selectedRate.price_per_unit * parsedQuantityValue,
 						date: new Date(entryDate).toISOString(),
 					}),
 				});
