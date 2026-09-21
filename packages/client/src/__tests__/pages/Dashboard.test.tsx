@@ -28,6 +28,18 @@ vi.mock("../../contexts/ShiftContext.js", () => ({
 	useShift: vi.fn(),
 }));
 
+vi.mock("../../contexts/AuthContext.js", () => ({
+	useAuth: () => ({
+		user: {
+			uid: "u1",
+			email: "alice@example.com",
+			displayName: "Alice",
+			role: "manager",
+		},
+		loading: false,
+	}),
+}));
+
 const jsonResponse = (data: unknown, ok = true, status = 200) =>
 	new Response(JSON.stringify(data), {
 		status,
@@ -194,6 +206,9 @@ describe("Dashboard", () => {
 			.closest("form");
 		fireEvent.submit(form as HTMLFormElement);
 
+		expect(screen.getByText("Confirm Shift Closure")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Yes, Close Shift" }));
+
 		await waitFor(() =>
 			expect(mockFetch).toHaveBeenCalledWith(
 				expect.stringMatching(/\/api\/shifts\/shift-1\/close$/),
@@ -238,6 +253,9 @@ describe("Dashboard", () => {
 			.getByLabelText("Actual Cash Counted ($)")
 			.closest("form");
 		fireEvent.submit(form as HTMLFormElement);
+
+		expect(screen.getByText("Confirm Shift Closure")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Yes, Close Shift" }));
 
 		await waitFor(() =>
 			expect(toast.success).toHaveBeenCalledWith("Shift closed successfully!"),
@@ -355,7 +373,7 @@ describe("Dashboard", () => {
 			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
 		);
 		fireEvent.change(screen.getByLabelText("Actual Cash Counted ($)"), {
-			target: { value: "101" },
+			target: { value: "137.50" },
 		});
 
 		mockFetch.mockImplementationOnce(() => Promise.reject(new Error("fail")));
@@ -364,6 +382,9 @@ describe("Dashboard", () => {
 			.getByLabelText("Actual Cash Counted ($)")
 			.closest("form");
 		fireEvent.submit(form as HTMLFormElement);
+
+		expect(screen.getByText("Confirm Shift Closure")).toBeInTheDocument();
+		fireEvent.click(screen.getByRole("button", { name: "Yes, Close Shift" }));
 
 		await waitFor(() => expect(toast.error).toHaveBeenCalled());
 	});
@@ -381,5 +402,138 @@ describe("Dashboard", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Print Safe Slip" }));
 
 		expect(window.print).toHaveBeenCalled();
+	});
+
+	it("aborts shift closure when Cancel is clicked in ConfirmDialog", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
+		);
+		fireEvent.change(screen.getByLabelText("Actual Cash Counted ($)"), {
+			target: { value: "137.50" },
+		});
+		const form = screen
+			.getByLabelText("Actual Cash Counted ($)")
+			.closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		expect(screen.getByText("Confirm Shift Closure")).toBeInTheDocument();
+		const cancelButtons = screen.getAllByRole("button", { name: "Cancel" });
+		// Last cancel button is inside the ConfirmDialog
+		fireEvent.click(cancelButtons[cancelButtons.length - 1]);
+
+		expect(screen.queryByText("Confirm Shift Closure")).not.toBeInTheDocument();
+		expect(mockFetch).not.toHaveBeenCalledWith(
+			expect.stringMatching(/\/close$/),
+			expect.anything(),
+		);
+		expect(screen.getByLabelText("Actual Cash Counted ($)")).toHaveValue(137.5);
+	});
+
+	it("renders No Active Shift card and Start Shift button when activeShift is null", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			refetchShift: refetchShiftMock,
+		});
+		render(<Dashboard />);
+		expect(await screen.findByText("No Active Shift")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Start Shift" }),
+		).toBeInTheDocument();
+	});
+
+	it("opens start shift form and successfully starts a new shift", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			refetchShift: refetchShiftMock,
+		});
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/shifts") && !url.includes("/close")) {
+				return jsonResponse({
+					id: "shift-new",
+					opening_float: 150,
+					status: "OPEN",
+				});
+			}
+			return jsonResponse([]);
+		});
+		render(<Dashboard />);
+		await screen.findByText("No Active Shift");
+
+		fireEvent.click(screen.getByRole("button", { name: "Start Shift" }));
+		expect(
+			screen.getByLabelText("Opening Float Amount ($)"),
+		).toBeInTheDocument();
+
+		fireEvent.change(screen.getByLabelText("Opening Float Amount ($)"), {
+			target: { value: "150" },
+		});
+		fireEvent.click(
+			screen.getByRole("button", { name: "Confirm & Start Shift" }),
+		);
+
+		await waitFor(() =>
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringMatching(/\/api\/shifts$/),
+				expect.objectContaining({ method: "POST" }),
+			),
+		);
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Shift started successfully!"),
+		);
+		expect(refetchShiftMock).toHaveBeenCalled();
+	});
+
+	it("dismisses start shift form when Cancel is clicked", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			refetchShift: refetchShiftMock,
+		});
+		render(<Dashboard />);
+		await screen.findByText("No Active Shift");
+
+		fireEvent.click(screen.getByRole("button", { name: "Start Shift" }));
+		expect(
+			screen.getByLabelText("Opening Float Amount ($)"),
+		).toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+		expect(
+			screen.queryByLabelText("Opening Float Amount ($)"),
+		).not.toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Start Shift" }),
+		).toBeInTheDocument();
+	});
+
+	it("shows error toast when start shift POST fails", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			refetchShift: refetchShiftMock,
+		});
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/shifts")) {
+				return jsonResponse({ error: "Failed to create" }, false, 500);
+			}
+			return jsonResponse([]);
+		});
+		render(<Dashboard />);
+		await screen.findByText("No Active Shift");
+
+		fireEvent.click(screen.getByRole("button", { name: "Start Shift" }));
+		fireEvent.change(screen.getByLabelText("Opening Float Amount ($)"), {
+			target: { value: "50" },
+		});
+		fireEvent.click(
+			screen.getByRole("button", { name: "Confirm & Start Shift" }),
+		);
+
+		await waitFor(() => expect(toast.error).toHaveBeenCalled());
 	});
 });
