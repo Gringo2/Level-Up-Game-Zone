@@ -1,11 +1,12 @@
 import type { NextFunction, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 import type { AuthRequest } from "../middleware/auth.js";
-import { validateBody } from "../middleware/validate.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
 import {
 	CreateExpenseSchema,
 	CreateGameRateSchema,
 	CreateSaleSchema,
+	DateRangeQuerySchema,
 	UpdateRoleSchema,
 } from "../schemas/index.js";
 
@@ -124,5 +125,24 @@ describe("Domain-Driven Schema Validation Middleware", () => {
 			amount: 45.5,
 			category: "Supplies",
 		});
+	});
+
+	it("safely sets req.query even when req has a getter-only query property", () => {
+		const middleware = validateQuery(DateRangeQuerySchema);
+
+		const proto = {};
+		Object.defineProperty(proto, "query", {
+			get() {
+				return { startDate: "2026-09-20T21:00:00.000Z", limit: "50" };
+			},
+			configurable: true,
+		});
+		const req = Object.create(proto) as AuthRequest;
+		const res = makeRes();
+		const next = vi.fn() as unknown as NextFunction;
+
+		expect(() => middleware(req, res, next)).not.toThrow();
+		expect(next).toHaveBeenCalledOnce();
+		expect(req.query.limit).toBe(50);
 	});
 });

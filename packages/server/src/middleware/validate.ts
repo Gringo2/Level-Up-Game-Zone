@@ -31,7 +31,12 @@ export const validateQuery = (schema: z.ZodSchema): RequestHandler => {
 			return;
 		}
 
-		req.query = result.data;
+		Object.defineProperty(req, "query", {
+			value: result.data,
+			writable: true,
+			configurable: true,
+			enumerable: true,
+		});
 		next();
 	};
 };
