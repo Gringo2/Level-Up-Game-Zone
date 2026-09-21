@@ -269,7 +269,7 @@ describe("Keno", () => {
 		});
 		expect(screen.getByText("$75.00")).toBeInTheDocument();
 
-		const form = screen.getByText("Daily Keno Entry").closest("form");
+		const form = screen.getByText("New Entry").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
 
 		await waitFor(() =>
@@ -312,7 +312,7 @@ describe("Keno", () => {
 				target: { value: "75" },
 			});
 			fireEvent.submit(
-				screen.getByText("Daily Keno Entry").closest("form") as HTMLFormElement,
+				screen.getByText("New Entry").closest("form") as HTMLFormElement,
 			);
 			await screen.findByTestId("keno-history-row");
 			expect(screen.getByText("Net: $75.00")).toBeInTheDocument();
@@ -348,7 +348,7 @@ describe("Keno", () => {
 				target: { value: "75" },
 			});
 			fireEvent.submit(
-				screen.getByText("Daily Keno Entry").closest("form") as HTMLFormElement,
+				screen.getByText("New Entry").closest("form") as HTMLFormElement,
 			);
 			await waitFor(() =>
 				expect(toast.success).toHaveBeenCalledWith("Keno logged successfully!"),
@@ -413,7 +413,7 @@ describe("Keno", () => {
 		fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
 			target: { value: "55" },
 		});
-		const form = screen.getByText("Update Keno").closest("form");
+		const form = screen.getByText("Edit Entry").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
 
 		await waitFor(() =>
@@ -550,7 +550,7 @@ describe("Keno", () => {
 		fireEvent.change(screen.getByLabelText("Net Amount ($)"), {
 			target: { value: "75" },
 		});
-		const form = screen.getByText("Daily Keno Entry").closest("form");
+		const form = screen.getByText("New Entry").closest("form");
 		fireEvent.submit(form as HTMLFormElement);
 
 		await waitFor(() =>

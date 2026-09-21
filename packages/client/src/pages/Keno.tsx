@@ -323,9 +323,11 @@ export function Keno() {
 				<Card className="lg:col-span-1 h-fit">
 					<form onSubmit={handleSubmit}>
 						<CardHeader>
-							<CardTitle>Daily Keno Entry</CardTitle>
+							<CardTitle>{editingId ? "Edit Entry" : "New Entry"}</CardTitle>
 							<CardDescription>
-								Enter the net amount from the Keno software.
+								{editingId
+									? "Update the net amount for this log."
+									: "Enter the net amount from the Keno software."}
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">

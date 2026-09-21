@@ -1,41 +1,38 @@
 # CURRENT MISSION
 
 **Type:** Debt
-**Mission:** M-93 Filter-Aware History Updates
-**Status:** Locked
+**Mission:** M-94 Title Consistency Cleanup
+**Status:** Active
 
 ## 1. Objective
-Keep the active history list truthful after a successful create or edit operation by ensuring a record remains visible only when its persisted date falls within the currently selected range. This mission addresses the remaining client-side state mismatch behind C3 without broadening the scope to backend or shared-contract work.
+Align the Keno entry title with the existing Game Sales dynamic new/edit wording so the two pages present a consistent user experience while keeping the change limited to the title convention itself.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - Harden Game Sales update behavior against the active `rangeStart`/`rangeEnd` filter.
-  - Harden Keno update behavior against the active `rangeStart`/`rangeEnd` filter.
-  - Preserve backdated entry capability and shop-local date semantics.
-  - Add negative and positive mutation-range regression coverage.
+  - Standardize the Keno form title to match the Game Sales create/edit pattern.
+  - Keep the change limited to the entry-page presentation logic and rendered heading.
+  - Preserve all validation, submission, and range behavior.
+  - Run the focused page regression checks for the affected flow.
 - **Out of Scope:**
-  - Backend routes, controllers, schemas, or database changes
-  - Changing the allowed backdating capability
-  - Changes to Expenses or Credits history behavior
-  - Date-picker redesign, pagination, or row visual hierarchy
-  - New dependencies or shared state abstractions
-  - Unsupported date-edit semantics beyond the active-range invariant
+  - Broader UI copy cleanup beyond the title pattern.
+  - Backend, API, or schema changes.
+  - Date-filter or history logic changes.
+  - Shared UI redesign work or unrelated product polish.
 
 ## 4. Design Notes
-- Root cause: update mutation handlers replaced returned records without checking whether the persisted date still belongs to the active range.
-- Fix direction: use the existing filter state and `getShopDateString(new Date(record.date))`; keep only records whose shop-local date is inclusively within the active range, and remove out-of-range records from local state after successful mutations.
-- Blast radius: client state consistency in Game Sales and Keno; no API, shared contract, or server schema changes were introduced.
-- Acceptance criteria: in-range edits remain visible, out-of-range edits disappear, active filter values and backdating behavior remain unchanged, and no duplicate fetch or mutation is introduced.
+- Root cause: the Keno form uses a static title while Game Sales already renders a context-aware new/edit title.
+- Fix direction: mirror the Game Sales title convention using the existing page state instead of adding a new UI abstraction or changing page logic.
+- Blast radius: presentation-only; no backend, shared contract, or validation flow changes are expected.
+- Acceptance criteria: both entry pages keep a matching new/edit title convention, while behavior and state handling remain unchanged.
 
 ## 5. Testing Strategy
-- Page tests: Game Sales and Keno cover in-range and out-of-range updates.
-- Negative coverage: non-matching records are absent from the rendered list immediately after a successful edit.
-- Time determinism: tests use explicit fixed date inputs and no wall-clock assertions.
-- Validation criterion: focused tests, TypeScript, Biome, and mission lock gates pass.
+- Validate the affected Keno and Game Sales pages with focused client regression tests.
+- Confirm the rendered title changes correctly for create vs. edit state without disturbing validation or submission.
+- Keep assertions deterministic and avoid wall-clock-dependent tests.
 
 ## 6. Evidence Payload
-- [x] Functional Verification: focused page regression suite passed (70/70), and the repo-level AVP-001 lock gate was run with the mission in the required verified state.
-- [x] Architectural Verification (AVP-001): maintained Thin Client limits, preserved server-authoritative responses, and kept the fix local to the two client history pages.
-- [x] Dependency Graph Clean: no forbidden dependency propagation detected; blast-radius report recorded in `docs/reports/M-93_Blast_Radius_Report.md`.
-- [x] ADR Compliance: preserves Thin Client boundaries, shop-local date semantics, and the approved history filter invariant.
-- [x] User Approval: implementation approved and mission locked 2026-09-21
+- [ ] Functional Verification:
+- [ ] Architectural Verification (AVP-001):
+- [ ] Dependency Graph Clean:
+- [ ] ADR Compliance:
+- [ ] User Approval:
