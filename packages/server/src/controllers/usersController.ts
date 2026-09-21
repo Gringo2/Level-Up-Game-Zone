@@ -39,7 +39,7 @@ export const listUsers = async (_req: AuthRequest, res: Response) => {
 export const createUser = async (req: AuthRequest, res: Response) => {
 	const user = req.user;
 
-	const email = user.email;
+	const email = user.email?.toLowerCase();
 	if (!email)
 		return res.status(400).json({ error: "Email required from auth token" });
 
@@ -65,8 +65,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 		}
 
 		const data = {
-			email: user.email,
-			displayName: user.name || user.email?.split("@")[0] || "Unknown",
+			email,
+			displayName: user.name || email.split("@")[0] || "Unknown",
 			role: assignedRole,
 			created_at: new Date().toISOString(),
 		};
@@ -112,7 +112,10 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 export const inviteUser = async (req: AuthRequest, res: Response) => {
 	const adminUser = req.user;
 
-	const { email, role } = req.body;
+	const email = String(req.body.email ?? "")
+		.trim()
+		.toLowerCase();
+	const { role } = req.body;
 
 	try {
 		const adminDoc = await db
@@ -145,7 +148,7 @@ export const inviteUser = async (req: AuthRequest, res: Response) => {
 				const inviteData = {
 					email,
 					role,
-					invitedBy: adminUser.email,
+					invitedBy: adminUser.email?.toLowerCase(),
 					createdAt: new Date().toISOString(),
 				};
 

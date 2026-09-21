@@ -20,7 +20,7 @@ This is a governed backlog for technical debt. Instead of using inline comments 
 | TD-038 | **Employee and User are disconnected entities** — No `employee.user_uid` or `user.employee_id` foreign key. A person who works at the store (Employee: name, salary, position) and a person who logs into the system (User: email, role, auth UID) are two unrelated records. Cannot answer "which system user is which store employee." | HIGH — architectural gap | High | Architecture | Shift decision |
 | TD-040 | **Shifts reference users, not employees** — `shift.manager_id` stores `user.uid` (Firebase Auth UID). No way to connect a shift to an employee's salary information programmatically. Payroll cannot use shift data. (`shiftsController.ts:60`) | MEDIUM — payroll disconnect | Medium | Backend | Shift decision |
 
-| TD-049 | **Create/edit prepends row without range re-check** — backdated entry appears under a non-matching date filter until next refetch (documented in M-67 review). (Gap report C3) | LOW — transient inconsistency | Low | Frontend | PO decision |
+| TD-049 | **Create/edit prepends row without range re-check** — verified resolved under M-95 by re-checking the active range before retaining or prepending rows in the Game Sales and Keno history lists. This debt entry was left stale in the ledger and is now reconciled as part of M-96. | LOW — no remaining defect; governance cleanup only | Low | Frontend | M-96 |
 
 
 

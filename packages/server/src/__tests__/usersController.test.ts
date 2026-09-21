@@ -833,6 +833,64 @@ describe("Users Integration Tests", () => {
 			);
 		});
 
+		it("allows an invited user to register when the auth email casing differs from the invite", async () => {
+			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce({
+				uid: "invited-user-uid",
+				email: "NewStaff@Example.com",
+				name: "New Staff",
+			} as any);
+
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "user_invites") {
+					return {
+						doc: (id: string) => ({
+							id,
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ role: "staff" }),
+							}),
+							delete: vi.fn(),
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "users") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({ exists: false }),
+							set: vi.fn(),
+						}),
+
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return { doc: vi.fn().mockReturnThis() } as any;
+			});
+
+			vi.mocked(db.runTransaction).mockImplementationOnce(async (cb) => {
+				const mockTx = {
+					get: vi.fn().mockResolvedValue({ exists: false }),
+					set: vi.fn(),
+					update: vi.fn(),
+					delete: vi.fn(),
+				};
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				return await cb(mockTx as any);
+			});
+
+			const response = await request(app)
+				.post("/api/users")
+				.set("Authorization", authHeader)
+				.send({});
+
+			expect(response.status).toBe(201);
+			expect(response.body.email).toBe("newstaff@example.com");
+			expect(response.body.role).toBe("staff");
+		});
+
 		it("createUser should return 400 if the auth token carries no email", async () => {
 			vi.mocked(auth.verifyIdToken).mockResolvedValueOnce({
 				uid: "no-email-uid",
