@@ -1,9 +1,9 @@
 # Active Mission: M-99 Auto-Open Shift Integrity
 
 ## 1. Mission Context
-**Status:** Active
+**Status:** Locked
 **Type:** Feature / Debt
-**Phase:** Implementation
+**Phase:** Locked
 **Primary Owner:** AI Implementor
 **Authorising ACP:** ACP-011 (Option B, approved 2026-09-22)
 **Related Debt:** TD-030, TD-040
@@ -28,14 +28,14 @@ Remove the silent side-effect. The client ShiftContext stops silently creating s
   - Float prompt UI (OQ-1 — deferred to follow-on mission).
 
 ## 4. Execution Gates
-- [ ] Functional Verification
-- [ ] Architectural Verification (AVP-001)
-- [ ] Dependency Graph Clean
-- [ ] ADR Compliance
-- [ ] User Approval
+- [x] Functional Verification (All shifts tests pass).
+- [x] Architectural Verification (AVP-001: Express composition root, pure shared types).
+- [x] Dependency Graph Clean (Knip 0 issues).
+- [x] ADR Compliance (ACP-011 Option B).
+- [x] User Approval (Product owner approved).
 
 ## Evidence Payload
-- [ ] Functional Verification:
-- [ ] Architectural Verification (AVP-001):
-- [ ] Dependency Graph Clean:
-- [ ] ADR Compliance:
+- [x] Functional Verification: Shifts controller integration tests and ShiftContext tests green.
+- [x] Architectural Verification (AVP-001): Dedicated `POST /api/shifts/auto-open` endpoint replaces silent read side-effect.
+- [x] Dependency Graph Clean: Knip clean.
+- [x] ADR Compliance: ACP-011 Option B adhered to strictly.

@@ -63,11 +63,24 @@
 ## Phase 6 — Production Readiness (Planned)
 *   [x] **Mission 51:** RBAC Enforcement — `requireRole()` middleware, server-side role checks on all 20+ endpoints, staff blocked from manager/admin routes (TD-025/037/043) — completed via M-75/M-76-era work; verified closed in DEBT 2026-08-25
 *   [x] **Mission 52:** Data Integrity — server-side total verification (GameSales, Keno), credit `reason` type fix, editReason schema fix (TD-026/028/029/035) — completed via M-62/M-63/M-76; verified closed in DEBT 2026-08-25
-*   [x] **Mission 53:** Employee-User Boundary Decision — employees are roster/payroll records, while system users are auth/role records; managers/admins may also be employees, and any user↔employee linkage is an explicit bridge recorded only when the same person holds both roles. TD-038/039/040 remain deferred only for the explicit mapping policy between an employee record and a privileged auth account, not for the core rule that the identities are distinct unless intentionally bridged.
+*   [x] **Mission 53:** Employee-User Boundary Decision — employees are roster/payroll records, while system users are auth/role records; managers/admins may also be employees, and any user↔employee linkage is an explicit bridge recorded only when the same person holds both roles. Deferred mapping debt subsequently resolved under ACP-010 (TD-040 in M-101, TD-038 in M-102).
 *   [x] **Mission 54:** Security Hardening — CORS lockdown, helmet, rate limiting, error message sanitization (TD-010/011/012/014) — completed via M-65 (sanitization) + M-86 (transport hardening)
 *   [ ] **Mission 55:** Dependency & Transport Security — npm audit fix, Vite/react-router-dom updates, HTTPS default (TD-013/015; TD-017 resolved by removal in M-80) — non-breaking surface cleared in M-86; remaining risk is 3 moderate `qs` advisories in the Express 4 dependency range (TD-013, upstream update pending)
 *   [x] **Mission 56:** Deployment Infrastructure — Dockerfile, root build/start scripts, static file serving, Firebase config externalization (TD-016/018/019/021/022/023) — completed via M-87 (TD-016 untracked by PO in commit `a4603c4`). Deployment and build paths verified end-to-end.
-*   [x] **Mission 57:** Business Logic Fixes — Reports net profit, SalaryReport date filter, shift close audit log (TD-027/030/031) — implemented scope is closed: TD-027 and TD-031 are delivered and verified; TD-030 is parked under the deferred shift-identity decision and tracked separately in DEBT rather than as a code regression.
+*   [x] **Mission 57:** Business Logic Fixes — Reports net profit, SalaryReport date filter, shift close audit log (TD-027/030/031) — implemented scope is closed: TD-027 and TD-031 are delivered and verified; TD-030 closed under M-101.
 *   [x] **Mission 58:** Scalability — server-side date filtering, pagination, Firestore index definitions (TD-032/033/034) — TD-033/034 earlier; TD-032 via M-87
 *   [x] **Mission 59:** Observability — structured logger, admin email externalization (TD-020/024) — TD-020 earlier; TD-024 via M-87 (pino)
 *   [x] **Mission 60:** RBAC Test Coverage — E2E tests for staff API blocking, manager route restrictions, invite flow (TD-036) — shipped via M-87; TD-036 is explicitly closed in DEBT with the expanded RBAC E2E matrix.
+
+## Phase 7 — UX Modernization & Test Hardening
+*   [x] **Missions 61–74:** UX Polish & Feature Ergonomics — centralized `authFetch`, accessible confirmation modals, Keno & GameSales history parity, admin category management, hiring form relocation.
+*   [x] **Missions 75–88:** RBAC Hardening & Active Debt Sweep — anti-escalation security (M-75), server-authoritative sales totals (M-76), range guards (M-78), debt closure sweep (M-86), Firebase init & pagination (M-87), zero-lint restoration (M-88).
+*   [x] **Missions 89–98:** History Integrity & Auth Resilience — input validation (M-89), shop-local date defaults (M-90), scanability (M-91), filter-aware mutations (M-92/M-93/M-95), title cleanup (M-94), email normalization (M-96), auth popup resilience (M-97 / ACP-009), Knip config hygiene (M-98).
+
+## Phase 8 — Shift Operational Integrity & Identity Bridge
+*   [x] **Mission 99:** Auto-Open Shift Integrity — dedicated `POST /api/shifts/auto-open` endpoint resolving D1–D5 defects and removing silent read side-effects (ACP-011 Option B).
+*   [x] **Mission 100:** Shift Closure Safeguards & Manual Start Recovery — `ConfirmDialog` on shift close and manual `Start Shift` fallback card on empty active shift (ACP-012).
+*   [x] **Mission 101:** Shift-Employee Linkage Phase 1 & Shift Close Audit — atomic audit log on `closeShift` (TD-030) and automatic `employee_id` resolution on `startShift`/`autoOpenShift` (TD-040 / ACP-010 Phase 1).
+*   [x] **Mission 102:** Employee-User Linkage Phase 2 & Uniqueness Enforcement — 1-to-1 uniqueness validation on `user_uid` across active employees with HTTP 409 rejection, admin linkage selectors, and UI identity badges (TD-038 / ACP-010 Phase 2).
+*   [x] **Mission 103:** Governance Ledger & Roadmap Synchronization — execution ledger reconciliation, release checklist update, and roadmap alignment through M-102.
+
