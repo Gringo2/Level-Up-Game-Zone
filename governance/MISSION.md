@@ -1,37 +1,33 @@
 # CURRENT MISSION
 
-**Type:** Debt
-**Mission:** M-97 Auth Pop-up Resilience & Fallback Resolution
+**Type:** Hygiene
+**Mission:** M-98 Knip Configuration Hygiene
 **Status:** Locked
 
 ## 1. Objective
-Eliminate transient `auth/popup-blocked` errors and broken redirect states by disabling the Google sign-in button during in-flight sign-in requests in `Login.tsx` (preventing double-click races) and proactively handling `getRedirectResult(auth)` upon initialization in `AuthContext.tsx` to collect redirect credentials and surface errors.
+Clear Knip configuration hint by removing `server.js` from the `ignore` list in `knip.json`, ensuring zero configuration warnings or hints during dead-code scans.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - Add `isSubmitting` state and button disabled state in `packages/client/src/pages/Login.tsx`.
-  - Add `getRedirectResult(auth)` handling with error toast in `packages/client/src/contexts/AuthContext.tsx`.
-  - Add unit test coverage in `packages/client/src/__tests__/pages/Login.test.tsx` and `packages/client/src/__tests__/contexts/AuthContext.test.tsx`.
-  - Follow Red-Green testing requirements (Rule 28).
+  - Remove redundant `"server.js"` from `ignore` in `knip.json`.
+  - Verify Knip runs with zero hints and zero issues.
+  - Verify all standard repository gates (`biome`, `tsc`, `vitest`, `playwright`).
 - **Out of Scope:**
-  - Changes to server routes, schemas, database, or permissions.
-  - Redesign of the Login page UI beyond button submitting state.
-  - Upstream Firebase SDK changes.
+  - Any modifications to `server.js` runtime logic.
+  - Any server, client, or shared source code changes.
 
 ## 4. Design Notes
-- Root cause: rapid double-clicks trigger secondary popup attempts during window initialization, prompting browser popup blockers. In addition, when redirect fallback is triggered, credentials must be retrieved on boot via `getRedirectResult(auth)`.
-- Fix direction: disable button with `isSubmitting` in `Login.tsx`, and invoke `getRedirectResult(auth)` in `AuthContext.tsx`.
-- Blast radius: client-only, contained to `Login.tsx`, `AuthContext.tsx`, and their respective test suites.
+- Knip traverses workspace project files and flags redundant entries in `ignore` when they are not matched or needed. Removing `server.js` from `ignore` satisfies Knip's configuration validator without introducing any dead code or unused file warnings.
+- Blast radius: strictly limited to root `knip.json`.
 
 ## 5. Testing Strategy
-- Prove Red state on new tests for `isSubmitting` in `Login.test.tsx` and `getRedirectResult` in `AuthContext.test.tsx`.
-- Verify full unit test pass, Biome lint, and Playwright E2E.
+- Execute `npx knip` to verify zero configuration hints and zero issues found.
+- Execute full AVP-001 verification suite via `lock_mission.sh M-98`.
 
 ## 6. Evidence Payload
-- [x] Functional Verification: Unit tests passed (39 files, 577/577 tests), Red-Green gating verified on Login submitting state and AuthContext redirect failure, Playwright E2E passed (11/11 tests).
-- [x] Architectural Verification (AVP-001): Thin Client and Express backend boundaries preserved; no server schemas or API contracts altered.
-- [x] Dependency Graph Clean: No new external packages or cross-package dependencies added; blast radius contained to client auth layer (see `docs/reports/M-97_Blast_Radius_Report.md`).
-- [x] ADR Compliance: Aligned with ADR-001 (Thin Client composition) and ACP-009.
-- [x] User Approval: Plan approved by Product Owner on 2026-09-22.
-
+- [x] Functional Verification: Knip runs with zero hints and zero issues; full build and test suites green.
+- [x] Architectural Verification (AVP-001): Zero boundary violations; no package contracts touched.
+- [x] Dependency Graph Clean: No package dependencies modified.
+- [x] ADR Compliance: Conforms to ADR-006 (Knip Dead Code Advisory).
+- [x] User Approval: Explicitly requested by Product Owner ("2 then 3").
 
