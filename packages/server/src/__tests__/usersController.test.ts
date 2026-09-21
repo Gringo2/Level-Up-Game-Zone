@@ -838,6 +838,7 @@ describe("Users Integration Tests", () => {
 				uid: "invited-user-uid",
 				email: "NewStaff@Example.com",
 				name: "New Staff",
+				// biome-ignore lint/suspicious/noExplicitAny: Mocking auth token requires any
 			} as any);
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {

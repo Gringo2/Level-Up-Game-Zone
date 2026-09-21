@@ -1,11 +1,15 @@
-# CURRENT MISSION
+# Active Mission: M-97 Auth Pop-up Resilience & Fallback Resolution
 
-**Type:** Debt
-**Mission:** M-97 Auth Pop-up Resilience & Fallback Resolution
-**Status:** Locked
+## 1. Mission Context
+**Status:** Active  
+**Type:** Debt  
+**Phase:** Implementation  
+**Primary Owner:** AI Implementor  
 
-## 1. Objective
-Eliminate transient `auth/popup-blocked` errors and broken redirect states by disabling the Google sign-in button during in-flight sign-in requests in `Login.tsx` (preventing double-click races) and proactively handling `getRedirectResult(auth)` upon initialization in `AuthContext.tsx` to collect redirect credentials and surface errors.
+## 2. Objective
+Eliminate transient `auth/popup-blocked` errors and broken redirect states by:
+1. Disabling the Google sign-in button during in-flight sign-in requests in `Login.tsx` to prevent rapid double-click races.
+2. Handling `getRedirectResult(auth)` proactively upon initialization in `AuthContext.tsx` to ensure redirect-based sign-in resolves credentials and surfaces redirect errors.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
@@ -18,20 +22,17 @@ Eliminate transient `auth/popup-blocked` errors and broken redirect states by di
   - Redesign of the Login page UI beyond button submitting state.
   - Upstream Firebase SDK changes.
 
-## 4. Design Notes
-- Root cause: rapid double-clicks trigger secondary popup attempts during window initialization, prompting browser popup blockers. In addition, when redirect fallback is triggered, credentials must be retrieved on boot via `getRedirectResult(auth)`.
-- Fix direction: disable button with `isSubmitting` in `Login.tsx`, and invoke `getRedirectResult(auth)` in `AuthContext.tsx`.
-- Blast radius: client-only, contained to `Login.tsx`, `AuthContext.tsx`, and their respective test suites.
+## 4. Execution Gates
+- [x] Functional Verification
+- [x] Architectural Verification (AVP-001)
+- [x] Dependency Graph Clean
+- [x] ADR Compliance
+- [x] User Approval
 
-## 5. Testing Strategy
-- Prove Red state on new tests for `isSubmitting` in `Login.test.tsx` and `getRedirectResult` in `AuthContext.test.tsx`.
-- Verify full unit test pass, Biome lint, and Playwright E2E.
-
-## 6. Evidence Payload
+## Evidence Payload
 - [x] Functional Verification: Unit tests passed (39 files, 577/577 tests), Red-Green gating verified on Login submitting state and AuthContext redirect failure, Playwright E2E passed (11/11 tests).
 - [x] Architectural Verification (AVP-001): Thin Client and Express backend boundaries preserved; no server schemas or API contracts altered.
 - [x] Dependency Graph Clean: No new external packages or cross-package dependencies added; blast radius contained to client auth layer (see `docs/reports/M-97_Blast_Radius_Report.md`).
 - [x] ADR Compliance: Aligned with ADR-001 (Thin Client composition) and ACP-009.
 - [x] User Approval: Plan approved by Product Owner on 2026-09-22.
-
 

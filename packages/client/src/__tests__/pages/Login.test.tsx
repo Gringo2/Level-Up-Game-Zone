@@ -2,7 +2,13 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import { signInWithPopup, signInWithRedirect } from "firebase/auth";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Login } from "../../pages/Login.js";
@@ -81,5 +87,47 @@ describe("Login", () => {
 		await waitFor(() =>
 			expect(screen.getByText("Redirect failed")).toBeInTheDocument(),
 		);
+	});
+
+	it("disables the button while sign-in is in flight to prevent double-click races", async () => {
+		let resolveSignIn: () => void;
+		const signInPromise = new Promise((resolve) => {
+			resolveSignIn = resolve as () => void;
+		});
+		vi.mocked(signInWithPopup).mockReturnValue(signInPromise as never);
+
+		render(<Login />);
+		const button = screen.getByRole("button", { name: "Sign in with Google" });
+		expect(button).not.toBeDisabled();
+
+		fireEvent.click(button);
+
+		// Button should immediately be disabled with submitting state
+		expect(button).toBeDisabled();
+		expect(screen.getByText("Signing in…")).toBeInTheDocument();
+
+		await act(async () => {
+			resolveSignIn?.();
+		});
+		expect(button).not.toBeDisabled();
+	});
+
+	it("re-enables the button after sign-in fails", async () => {
+		vi.mocked(signInWithPopup).mockRejectedValue({
+			code: "auth/popup-cancelled",
+			message: "Cancelled",
+		});
+
+		render(<Login />);
+		const button = screen.getByRole("button", { name: "Sign in with Google" });
+		fireEvent.click(button);
+
+		await waitFor(() =>
+			expect(screen.getByText("Cancelled")).toBeInTheDocument(),
+		);
+		expect(button).not.toBeDisabled();
+		expect(
+			screen.getByRole("button", { name: "Sign in with Google" }),
+		).toBeInTheDocument();
 	});
 });

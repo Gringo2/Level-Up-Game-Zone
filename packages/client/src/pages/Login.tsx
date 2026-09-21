@@ -12,8 +12,11 @@ import { auth, googleProvider } from "../firebase";
 
 export function Login() {
 	const [error, setError] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const handleLogin = async () => {
+		if (isSubmitting) return;
+		setIsSubmitting(true);
 		try {
 			await signInWithPopup(auth, googleProvider);
 		} catch (err: unknown) {
@@ -28,6 +31,8 @@ export function Login() {
 				return;
 			}
 			setError(error.message || "Login failed");
+		} finally {
+			setIsSubmitting(false);
 		}
 	};
 
@@ -46,8 +51,12 @@ export function Login() {
 							{error}
 						</div>
 					)}
-					<Button className="w-full" onClick={handleLogin}>
-						Sign in with Google
+					<Button
+						className="w-full"
+						onClick={handleLogin}
+						disabled={isSubmitting}
+					>
+						{isSubmitting ? "Signing in…" : "Sign in with Google"}
 					</Button>
 				</CardContent>
 			</Card>

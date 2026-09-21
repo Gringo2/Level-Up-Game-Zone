@@ -3,7 +3,7 @@
  */
 import "@testing-library/jest-dom/vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "../../contexts/AuthContext.js";
@@ -18,6 +18,7 @@ const { firebaseUser } = vi.hoisted(() => ({
 }));
 
 vi.mock("firebase/auth", () => ({
+	getRedirectResult: vi.fn().mockResolvedValue(null),
 	onAuthStateChanged: vi.fn((_auth, callback) => {
 		// Simulate a signed-in user
 		callback(firebaseUser);
@@ -290,6 +291,24 @@ describe("AuthContext - Additional Paths", () => {
 
 		await waitFor(() => {
 			expect(screen.getByTestId("no-user")).toBeInTheDocument();
+		});
+	});
+
+	it("surfaces a toast error when getRedirectResult rejects on mount", async () => {
+		vi.mocked(getRedirectResult).mockRejectedValueOnce(
+			new Error("Redirect authorization failed"),
+		);
+
+		render(
+			<AuthProvider>
+				<TestComponent />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(toast.error).toHaveBeenCalledWith(
+				"Redirect sign-in error: Redirect authorization failed",
+			);
 		});
 	});
 });

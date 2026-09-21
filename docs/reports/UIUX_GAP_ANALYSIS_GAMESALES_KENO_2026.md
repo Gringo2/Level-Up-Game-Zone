@@ -2,7 +2,7 @@
 
 Date: 2026-08-22 | Method: full source read of both pages + schema/SDK empirical probes. Supplemental verification performed 2026-09-21. Every claim cites file:line or a probe result.
 
-**Implementation status (updated 2026-09-21):** M-68 delivered A1, B1, B2, C1, C2. M-69 resolved the E-section layout asymmetry. M-78 resolved B3 and B4. M-86 resolved D1 and structural findings F1-F2. M-87 resolved B5. M-89 resolved G1. M-90 resolved G3. M-91 resolved G5. Remaining open items are C3 and E-title-divergence.
+**Implementation status (updated 2026-09-22):** M-68 delivered A1, B1, B2, C1, C2. M-69 resolved the E-section layout asymmetry. M-78 resolved B3 and B4. M-86 resolved D1 and structural findings F1-F2. M-87 resolved B5. M-89 resolved G1. M-90 resolved G3. M-91 resolved G5. M-94 resolved the E-title-divergence. M-95 resolved C3. All findings in this audit are resolved.
 
 ## A. Data Integrity (verified by probe)
 | # | Finding | Evidence | Severity |
@@ -23,7 +23,7 @@ Date: 2026-08-22 | Method: full source read of both pages + schema/SDK empirical
 | :-- | :--- | :--- | :--- |
 | C1 | **[RESOLVED — M-68]** Row actions lack in-flight guards — Verify/Delete have no per-row pending flag; double-click fires duplicate DELETE (second 404s → spurious error toast). Edit-lock (`disabled={!!editingId}`) is correct | handleVerify/handleDelete Keno.tsx:96-121; GameSales.tsx:137-160 | MEDIUM |
 | C2 | **[RESOLVED — M-68]** Generic error toasts hide server reasons — catch paths toast fixed strings, real error only via console.error (proven in 2026-08-22 hotfix RCA where user could not see actual cause) | e.g., Keno.tsx:193-196 | MEDIUM |
-| C3 | **OPEN — M-92 proposed** Create/edit prepends row without range re-check — backdated entry appears under a non-matching filter until next refetch (pre-existing, documented in M-67 review) | GameSales.tsx and Keno.tsx create mutation paths | LOW |
+| C3 | **[RESOLVED — M-95]** Create/edit now validates active date range before retaining or prepending rows in GameSales and Keno | GameSales.tsx and Keno.tsx mutation handlers | LOW |
 
 ## D. Accessibility
 | # | Finding | Evidence | Severity |
@@ -32,7 +32,7 @@ Date: 2026-08-22 | Method: full source read of both pages + schema/SDK empirical
 | D2 | Positives verified: all inputs have Label htmlFor↔id pairs; destructive deletes require ConfirmDialog reason; edit mode locks sibling rows; live net preview color semantics; sm: responsive row stacking; visibilitychange refetch | throughout both files | — |
 
 ## E. Consistency Notes
-- **OPEN — title divergence:** Keno form title is static "Daily Keno Entry" while GameSales uses dynamic "New Entry"/"Edit Entry".
+- **[RESOLVED — M-94]:** Keno form title now dynamically renders "New Entry"/"Edit Entry" matching GameSales.
 - ~~Layout asymmetry~~ RESOLVED by M-69 — both pages now share the `lg:grid-cols-3` form/history grid.
 - Currency formatting uniform (`toFixed(2)` inline) across both pages and Reports.
 
@@ -65,8 +65,7 @@ These findings were validated from the live client implementation and are record
 | G4 | **[RESOLVED — M-78]** History fetches now provide loading feedback and prevent duplicate Apply actions | Keno/GameSales `listLoading` behavior | MEDIUM |
 | G5 | **[RESOLVED — M-91]** History rows now prioritize amount/game signals, group metadata/status, and isolate actions responsively | M-91 row-grid implementation and 375px/1280px E2E checks | MEDIUM |
 
-### Recommended next actions
-1. Address C3 by re-checking the active range after create/edit or refetching before prepending a saved row.
-2. Decide whether Keno and Game Sales should share a consistent new/edit form-title convention.
+### Status
+All identified presentation-layer gaps in this analysis (A1, B1–B5, C1–C3, D1, E, F1–F2, G1–G5) are now resolved and locked across Missions M-68 through M-95.
 
 **Artifact source:** [packages/client/src/pages/GameSales.tsx](../client/src/pages/GameSales.tsx), [packages/client/src/pages/Keno.tsx](../client/src/pages/Keno.tsx), [packages/client/src/layouts/Layout.tsx](../client/src/layouts/Layout.tsx)

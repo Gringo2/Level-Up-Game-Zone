@@ -1,5 +1,5 @@
 import type { AppUser } from "@level-up/shared";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
 import type React from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -27,6 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			setLoading(false);
 			return;
 		}
+
+		getRedirectResult(auth).catch((error: unknown) => {
+			const err = error as { message?: string };
+			console.error("Error fetching redirect result:", error);
+			toast.error(`Redirect sign-in error: ${err.message ?? "Unknown error"}`);
+		});
 
 		const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
 			if (firebaseUser) {
