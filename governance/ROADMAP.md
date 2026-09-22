@@ -83,4 +83,5 @@
 *   [x] **Mission 101:** Shift-Employee Linkage Phase 1 & Shift Close Audit — atomic audit log on `closeShift` (TD-030) and automatic `employee_id` resolution on `startShift`/`autoOpenShift` (TD-040 / ACP-010 Phase 1).
 *   [x] **Mission 102:** Employee-User Linkage Phase 2 & Uniqueness Enforcement — 1-to-1 uniqueness validation on `user_uid` across active employees with HTTP 409 rejection, admin linkage selectors, and UI identity badges (TD-038 / ACP-010 Phase 2).
 *   [x] **Mission 103:** Governance Ledger & Roadmap Synchronization — execution ledger reconciliation, release checklist update, and roadmap alignment through M-102.
+*   [x] **Mission 104:** Phase 8 Playwright E2E Suite Expansion — expanded browser test coverage for manual shift start recovery, shift close confirmation modal lifecycle, and employee-user account linkage with collision prevention.
 
