@@ -1,8 +1,8 @@
-import { COLLECTIONS } from "@level-up/shared";
 import type { NextFunction, Request, Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
-import { auth, db } from "../firebase.js";
+import { auth } from "../firebase.js";
 import { logger } from "../utils/logger.js";
+import { getUserRole } from "../utils/roleLookup.js";
 
 export interface AuthRequest extends Request {
 	user: DecodedIdToken;
@@ -25,6 +25,13 @@ export const makeRequireAuth =
 		res: Response,
 		next: NextFunction,
 	): Promise<void> => {
+		// Already verified by an earlier requireAuth in the chain (the
+		// mount-level operator gate in app.ts).
+		if (req.user) {
+			next();
+			return;
+		}
+
 		const authHeader = req.headers.authorization;
 		if (!authHeader?.startsWith("Bearer ")) {
 			res.status(401).json({ error: "Unauthorized: No token provided" });
@@ -60,11 +67,7 @@ export const requireRole = (allowedRoles: string[]) => {
 		}
 
 		try {
-			const userDoc = await db
-				.collection(COLLECTIONS.USERS)
-				.doc(req.user.uid)
-				.get();
-			const userRole = userDoc.exists ? userDoc.data()?.role : undefined;
+			const userRole = await getUserRole(req.user.uid);
 			if (!userRole || !allowedRoles.includes(userRole)) {
 				res
 					.status(403)

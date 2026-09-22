@@ -5,6 +5,7 @@ import app from "../app.js";
 import { shopDateString } from "../controllers/shiftsController.js";
 
 const { db } = await import("../firebase.js");
+const { getUserRole } = await import("../utils/roleLookup.js");
 
 describe("Shifts Integration Tests", () => {
 	const authHeader = "Bearer valid-mock-token";
@@ -203,6 +204,15 @@ describe("Shifts Integration Tests", () => {
 
 			expect(response.status).toBe(200);
 			expect(response.body).toHaveLength(2);
+		});
+
+		it("blocks staff accounts from shift operations (manager/admin only)", async () => {
+			vi.mocked(getUserRole).mockResolvedValueOnce("staff");
+			const response = await request(app)
+				.post("/api/shifts/abc/close")
+				.set("Authorization", authHeader)
+				.send({ closingCash: 100 });
+			expect(response.status).toBe(403);
 		});
 
 		it("shopDateString uses the shop timezone, not the host's", () => {

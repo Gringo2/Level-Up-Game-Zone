@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Role-Based Access Control (RBAC) Isolation", () => {
-	test("Staff role cannot access Admin page and is redirected home", async ({
+	test("Staff role sees the no-access screen instead of the app", async ({
 		page,
 	}) => {
 		await page.addInitScript(() => {
@@ -23,7 +23,9 @@ test.describe("Role-Based Access Control (RBAC) Isolation", () => {
 		});
 
 		await page.goto("/admin");
-		await expect(page).toHaveURL("http://localhost:3002/");
+		await expect(page.getByText("No access")).toBeVisible();
+		await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+		await expect(page.getByText("Admin Management")).toHaveCount(0);
 	});
 
 	test("Admin role can access Admin Management page", async ({ page }) => {

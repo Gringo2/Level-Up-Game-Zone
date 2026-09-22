@@ -781,7 +781,7 @@ describe("Game Rates Integration Tests", () => {
 	});
 
 	describe("Role-Based Access Control (RBAC)", () => {
-		it("allows staff role to GET /api/rates for the POS catalog", async () => {
+		it("blocks staff role from GET /api/rates (system is manager/admin only)", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
 					return {
@@ -819,9 +819,7 @@ describe("Game Rates Integration Tests", () => {
 				.get("/api/rates")
 				.set("Authorization", authHeader);
 
-			expect(response.status).toBe(200);
-			expect(response.body).toHaveLength(1);
-			expect(response.body[0].game_name).toBe("PS4");
+			expect(response.status).toBe(403);
 		});
 
 		it("allows manager role to GET /api/rates", async () => {

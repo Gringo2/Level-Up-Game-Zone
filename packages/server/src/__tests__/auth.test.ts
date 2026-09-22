@@ -7,7 +7,10 @@ vi.mock("../firebase.js", () => ({
 }));
 
 import type { AuthRequest } from "../middleware/auth.js";
-import { makeRequireAuth } from "../middleware/auth.js";
+import { makeRequireAuth, requireRole } from "../middleware/auth.js";
+import { getUserRole } from "../utils/roleLookup.js";
+
+const { db } = await import("../firebase.js");
 
 function makeRes() {
 	const res = {
@@ -90,5 +93,53 @@ describe("requireAuth middleware", () => {
 		expect(req.user).toEqual(fakeDecodedToken);
 		expect(next).toHaveBeenCalledOnce();
 		expect(res.status).not.toHaveBeenCalled();
+	});
+});
+
+describe("getUserRole / requireRole (real Firestore lookup)", () => {
+	const mockUserDoc = (snap: { exists: boolean; data?: () => unknown }) => {
+		vi.mocked(db.collection).mockReturnValue({
+			doc: () => ({ get: vi.fn().mockResolvedValue(snap) }),
+			// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+		} as any);
+	};
+
+	it("returns the stored role, or undefined when the profile is missing", async () => {
+		mockUserDoc({ exists: true, data: () => ({ role: "manager" }) });
+		expect(await getUserRole("u1")).toBe("manager");
+		mockUserDoc({ exists: false });
+		expect(await getUserRole("u1")).toBeUndefined();
+	});
+
+	it("rejects a staff account from the manager/admin operator gate", async () => {
+		mockUserDoc({ exists: true, data: () => ({ role: "staff" }) });
+		const req = { user: { uid: "u1" } } as unknown as AuthRequest;
+		const res = makeRes();
+		const next = vi.fn() as unknown as NextFunction;
+		await requireRole(["manager", "admin"])(req, res, next);
+		expect(res.status).toHaveBeenCalledWith(403);
+		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("lets a manager through the operator gate", async () => {
+		mockUserDoc({ exists: true, data: () => ({ role: "manager" }) });
+		const req = { user: { uid: "u1" } } as unknown as AuthRequest;
+		const next = vi.fn() as unknown as NextFunction;
+		await requireRole(["manager", "admin"])(req, makeRes(), next);
+		expect(next).toHaveBeenCalled();
+	});
+});
+
+describe("makeRequireAuth when a token was already verified upstream", () => {
+	it("skips re-verification and calls next", async () => {
+		const verifier = vi.fn();
+		const req = {
+			headers: {},
+			user: { uid: "u1" },
+		} as unknown as AuthRequest;
+		const next = vi.fn() as unknown as NextFunction;
+		await makeRequireAuth(verifier)(req, makeRes(), next);
+		expect(verifier).not.toHaveBeenCalled();
+		expect(next).toHaveBeenCalled();
 	});
 });

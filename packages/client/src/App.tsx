@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { NoAccess } from "./components/NoAccess";
 import { UserManagement } from "./components/UserManagement";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ShiftProvider } from "./contexts/ShiftContext";
@@ -34,6 +35,11 @@ function AppContent() {
 		return <Login />;
 	}
 
+	// Only managers and admins operate the system; the API rejects other roles.
+	if (user.role !== ROLES.MANAGER && user.role !== ROLES.ADMIN) {
+		return <NoAccess email={user.email} />;
+	}
+
 	return (
 		<ShiftProvider>
 			<BrowserRouter>
@@ -42,23 +48,13 @@ function AppContent() {
 					<Routes>
 						<Route path="/" element={<Dashboard />} />
 						<Route path="/games" element={<GameSales />} />
-
-						{/* Manager & Admin Routes */}
-						{(user.role === ROLES.MANAGER || user.role === ROLES.ADMIN) && (
-							<>
-								<Route path="/keno" element={<Keno />} />
-								<Route path="/credits" element={<Credits />} />
-								<Route path="/expenses" element={<Expenses />} />
-								<Route path="/salary-report" element={<SalaryReport />} />
-								<Route path="/reports" element={<Reports />} />
-								<Route path="/admin/employees" element={<EmployeeRoster />} />
-							</>
-						)}
-
-						{/* Manager & Admin Routes */}
-						{(user.role === ROLES.ADMIN || user.role === ROLES.MANAGER) && (
-							<Route path="/admin" element={<Admin />} />
-						)}
+						<Route path="/keno" element={<Keno />} />
+						<Route path="/credits" element={<Credits />} />
+						<Route path="/expenses" element={<Expenses />} />
+						<Route path="/salary-report" element={<SalaryReport />} />
+						<Route path="/reports" element={<Reports />} />
+						<Route path="/admin/employees" element={<EmployeeRoster />} />
+						<Route path="/admin" element={<Admin />} />
 
 						{/* Admin Only Routes */}
 						{user.role === ROLES.ADMIN && (

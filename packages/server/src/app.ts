@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import express, {
 	type NextFunction,
 	type Request,
+	type RequestHandler,
 	type Response,
 } from "express";
 import helmet from "helmet";
@@ -11,6 +12,8 @@ import { registerClientStatic } from "./staticHosting.js";
 
 dotenv.config();
 
+import { ROLES } from "@level-up/shared";
+import { requireAuth, requireRole } from "./middleware/auth.js";
 import {
 	API_RATE_LIMIT_MAX,
 	buildApiRateLimit,
@@ -86,16 +89,25 @@ app.get("/api/health", (_req, res) => {
 	res.json({ status: "ok", message: "Server is running properly!" });
 });
 
-app.use("/api/shifts", shiftRoutes);
-app.use("/api/sales", salesRoutes);
-app.use("/api/keno", kenoRoutes);
-app.use("/api/expenses", expensesRoutes);
-app.use("/api/expense-categories", expenseCategoriesRoutes);
-app.use("/api/rates", ratesRoutes);
-app.use("/api/credits", creditsRoutes);
+// Only managers and admins (owners) operate the shop system; staff-role
+// accounts get no access to operational data. /api/users stays outside this
+// gate so sign-in (GET /me) and invite registration (POST /) keep working;
+// its other routes are admin-only already.
+const operators = [
+	requireAuth as RequestHandler,
+	requireRole([ROLES.MANAGER, ROLES.ADMIN]) as RequestHandler,
+];
+
+app.use("/api/shifts", operators, shiftRoutes);
+app.use("/api/sales", operators, salesRoutes);
+app.use("/api/keno", operators, kenoRoutes);
+app.use("/api/expenses", operators, expensesRoutes);
+app.use("/api/expense-categories", operators, expenseCategoriesRoutes);
+app.use("/api/rates", operators, ratesRoutes);
+app.use("/api/credits", operators, creditsRoutes);
 app.use("/api/users", usersRoutes);
-app.use("/api/employees", employeesRoutes);
-app.use("/api/audit-logs", auditLogsRoutes);
+app.use("/api/employees", operators, employeesRoutes);
+app.use("/api/audit-logs", operators, auditLogsRoutes);
 
 // TD-019: unknown /api paths must answer JSON, never the SPA shell.
 app.use("/api", (_req: Request, res: Response) => {

@@ -31,6 +31,12 @@ vi.mock("react-router-dom", () => ({
 	),
 }));
 
+vi.mock("../components/NoAccess", () => ({
+	NoAccess: ({ email }: { email?: string }) => (
+		<div data-testid="no-access">{email}</div>
+	),
+}));
+
 vi.mock("../layouts/Layout", () => ({
 	Layout: ({ children }: { children: React.ReactNode }) => (
 		<div data-testid="layout">{children}</div>
@@ -108,14 +114,15 @@ describe("App", () => {
 		expect(screen.getByTestId("error-boundary")).toBeDefined();
 	});
 
-	it("renders routes for authenticated staff user", () => {
+	it("shows the no-access screen to staff instead of the app", () => {
 		mockUseAuth.mockReturnValue({
-			user: { role: "staff", displayName: "Staff" },
+			user: { role: "staff", displayName: "Staff", email: "s@example.com" },
 			loading: false,
 		});
 		render(<App />);
-		expect(screen.getByTestId("page-dashboard")).toBeDefined();
-		expect(screen.getByTestId("page-gamesales")).toBeDefined();
+		expect(screen.getByTestId("no-access")).toHaveTextContent("s@example.com");
+		expect(screen.queryByTestId("layout")).toBeNull();
+		expect(screen.queryByTestId("page-dashboard")).toBeNull();
 	});
 
 	it("renders manager routes for manager user", () => {
@@ -145,20 +152,20 @@ describe("App", () => {
 		expect(screen.getByTestId("page-usermanagement")).toBeDefined();
 	});
 
-	it("does not render admin routes for staff user", () => {
+	it("does not render admin-only routes for manager user", () => {
 		mockUseAuth.mockReturnValue({
-			user: { role: "staff", displayName: "Staff" },
+			user: { role: "manager", displayName: "Manager" },
 			loading: false,
 		});
 		render(<App />);
-		expect(screen.queryByTestId("page-admin")).toBeNull();
+		expect(screen.getByTestId("page-admin")).toBeDefined();
 		expect(screen.queryByTestId("page-auditlogs")).toBeNull();
 		expect(screen.queryByTestId("page-usermanagement")).toBeNull();
 	});
 
 	it("renders Layout and Toaster for authenticated user", () => {
 		mockUseAuth.mockReturnValue({
-			user: { role: "staff", displayName: "Staff" },
+			user: { role: "manager", displayName: "Manager" },
 			loading: false,
 		});
 		render(<App />);

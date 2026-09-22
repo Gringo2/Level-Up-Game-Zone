@@ -4,6 +4,7 @@ import "./setupTests.js";
 import app from "../app.js";
 
 const { db } = await import("../firebase.js");
+const { getUserRole } = await import("../utils/roleLookup.js");
 
 describe("Expenses Integration Tests", () => {
 	const authHeader = "Bearer valid-mock-token";
@@ -385,6 +386,7 @@ describe("Expenses Integration Tests", () => {
 			);
 		});
 		it("should return 400 when creating expense with negative amount (Zod)", async () => {
+			vi.mocked(getUserRole).mockResolvedValueOnce("manager");
 			const response = await request(app)
 				.post("/api/expenses")
 				.set("Authorization", authHeader)

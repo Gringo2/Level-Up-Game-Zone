@@ -51,3 +51,24 @@ vi.mock("../firebase.js", () => {
 		auth: mockAuth,
 	};
 });
+
+// Role lookup used by requireRole. Reads the role from whatever the test's
+// Firestore mock returns for users/{uid}; when a suite's ad-hoc mock carries
+// no role (most controller suites), fall back to admin so the manager/admin
+// operator gate in app.ts doesn't mask the behaviour under test. Suites that
+// exercise 403s set role: "staff" on the users mock as before. The real
+// lookup is covered in auth.test.ts.
+vi.mock("../utils/roleLookup.js", async () => {
+	const { db } = await import("../firebase.js");
+	return {
+		getUserRole: vi.fn(async (uid: string) => {
+			try {
+				const snap = await db.collection("users").doc(uid).get();
+				const role = snap?.exists ? snap.data?.()?.role : undefined;
+				return role ?? "admin";
+			} catch {
+				return "admin";
+			}
+		}),
+	};
+});
