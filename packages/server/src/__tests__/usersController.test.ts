@@ -63,7 +63,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/users/invite")
 				.set("Authorization", authHeader)
-				.send({ email: "newstaff@example.com", role: "staff" });
+				.send({ email: "newstaff@example.com", role: "manager" });
 
 			expect(response.status).toBe(201);
 		});
@@ -524,7 +524,7 @@ describe("Users Integration Tests", () => {
 				.send({ email: "new@example.com", role: "super_admin" });
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain(
-				"Role must be 'admin', 'manager', or 'staff'",
+				"Role must be 'admin' or 'manager'",
 			);
 		});
 
@@ -630,7 +630,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/users/invite")
 				.set("Authorization", authHeader)
-				.send({ email: "existing@x.com", role: "staff" });
+				.send({ email: "existing@x.com", role: "manager" });
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toBe("User is already registered");
@@ -681,7 +681,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/users/invite")
 				.set("Authorization", authHeader)
-				.send({ email: "dupe@x.com", role: "staff" });
+				.send({ email: "dupe@x.com", role: "manager" });
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toBe("User already invited");
@@ -709,7 +709,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/users/invite")
 				.set("Authorization", authHeader)
-				.send({ email: "new@x.com", role: "staff" });
+				.send({ email: "new@x.com", role: "manager" });
 
 			expect(response.status).toBe(403);
 			expect(response.body.error).toBe(
@@ -848,7 +848,7 @@ describe("Users Integration Tests", () => {
 							id,
 							get: vi.fn().mockResolvedValue({
 								exists: true,
-								data: () => ({ role: "staff" }),
+								data: () => ({ role: "manager" }),
 							}),
 							delete: vi.fn(),
 						}),
@@ -889,7 +889,7 @@ describe("Users Integration Tests", () => {
 
 			expect(response.status).toBe(201);
 			expect(response.body.email).toBe("newstaff@example.com");
-			expect(response.body.role).toBe("staff");
+			expect(response.body.role).toBe("manager");
 		});
 
 		it("createUser should return 400 if the auth token carries no email", async () => {
@@ -1217,7 +1217,7 @@ describe("Users Integration Tests", () => {
 			const response = await request(app)
 				.post("/api/users/invite")
 				.set("Authorization", authHeader)
-				.send({ email: "new@x.com", role: "staff" });
+				.send({ email: "new@x.com", role: "manager" });
 
 			expect(response.status).toBe(500);
 			expect(response.body.error).toBe("Internal server error");

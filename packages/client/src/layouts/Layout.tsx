@@ -1,4 +1,4 @@
-import { ROLES } from "@level-up/shared";
+import { ROLES, type Role } from "@level-up/shared";
 import { signOut } from "firebase/auth";
 import {
 	BarChart,
@@ -36,18 +36,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
 		}
 	}, [location.pathname]);
 
-	const navItems = [
+	const navItems: {
+		path: string;
+		label: string;
+		icon: typeof Settings;
+		roles: Role[];
+	}[] = [
 		{
 			path: "/",
 			label: "Dashboard",
 			icon: LayoutDashboard,
-			roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/games",
 			label: "Game Sales",
 			icon: Gamepad2,
-			roles: [ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF],
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{
 			path: "/keno",

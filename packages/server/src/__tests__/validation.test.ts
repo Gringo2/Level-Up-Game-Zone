@@ -78,7 +78,7 @@ describe("Domain-Driven Schema Validation Middleware", () => {
 
 		expect(res.status).toHaveBeenCalledWith(400);
 		expect(res.json).toHaveBeenCalledWith({
-			error: "Role must be 'admin', 'manager', or 'staff'",
+			error: "Role must be 'admin' or 'manager'",
 		});
 		expect(next).not.toHaveBeenCalled();
 	});

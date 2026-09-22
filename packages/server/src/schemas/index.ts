@@ -261,9 +261,11 @@ export const UpdateGameRateSchema = z.object({
 // User Schemas
 export const InviteUserSchema = z.object({
 	email: z.string().email("Invalid email address").toLowerCase(),
-	role: z.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {
+	// Only admins and managers use the system; staff are roster employees,
+	// not users, so "staff" can't be granted via invite or role change.
+	role: z.enum([ROLES.ADMIN, ROLES.MANAGER], {
 		errorMap: () => ({
-			message: "Role must be 'admin', 'manager', or 'staff'",
+			message: "Role must be 'admin' or 'manager'",
 		}),
 	}),
 });
@@ -271,9 +273,11 @@ export const InviteUserSchema = z.object({
 export const CreateUserSchema = z.object({});
 
 export const UpdateRoleSchema = z.object({
-	role: z.enum([ROLES.ADMIN, ROLES.MANAGER, ROLES.STAFF], {
+	// Only admins and managers use the system; staff are roster employees,
+	// not users, so "staff" can't be granted via invite or role change.
+	role: z.enum([ROLES.ADMIN, ROLES.MANAGER], {
 		errorMap: () => ({
-			message: "Role must be 'admin', 'manager', or 'staff'",
+			message: "Role must be 'admin' or 'manager'",
 		}),
 	}),
 	editReason: z

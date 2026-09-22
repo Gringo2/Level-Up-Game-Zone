@@ -220,7 +220,6 @@ export function UserManagement() {
 									</option>
 									<option value={ROLES.ADMIN}>Admin</option>
 									<option value={ROLES.MANAGER}>Manager</option>
-									<option value={ROLES.STAFF}>Staff</option>
 								</select>
 							</div>
 							<Button
@@ -284,7 +283,13 @@ export function UserManagement() {
 											>
 												<option value={ROLES.ADMIN}>Admin</option>
 												<option value={ROLES.MANAGER}>Manager</option>
-												<option value={ROLES.STAFF}>Staff</option>
+												{/* Legacy staff accounts: shown so the select reflects
+												    reality, but not assignable. */}
+												{user.role === ROLES.STAFF && (
+													<option value={ROLES.STAFF} disabled>
+														Staff (no access)
+													</option>
+												)}
 											</select>
 										</td>
 										<td className="px-4 py-3 text-sm text-zinc-500">

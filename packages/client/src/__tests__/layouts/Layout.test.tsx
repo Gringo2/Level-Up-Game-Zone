@@ -137,7 +137,7 @@ describe("Layout", () => {
 		expect(screen.getByText("Admin")).toBeDefined();
 	});
 
-	it("shows only Dashboard and Game Sales for staff role", () => {
+	it("shows no nav items for a legacy staff role (App shows No access)", () => {
 		mockUseAuth.mockReturnValue({
 			user: staffUser,
 			loading: false,
@@ -149,8 +149,8 @@ describe("Layout", () => {
 			</Layout>,
 		);
 
-		expect(screen.getByText("Dashboard")).toBeDefined();
-		expect(screen.getByText("Game Sales")).toBeDefined();
+		expect(screen.queryByText("Dashboard")).toBeNull();
+		expect(screen.queryByText("Game Sales")).toBeNull();
 		expect(screen.queryByText("Keno")).toBeNull();
 		expect(screen.queryByText("Credits (IOUs)")).toBeNull();
 		expect(screen.queryByText("Expenses")).toBeNull();
