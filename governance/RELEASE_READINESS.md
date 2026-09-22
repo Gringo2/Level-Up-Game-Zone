@@ -10,9 +10,9 @@
 
 | Gate | Status | Evidence |
 |------|--------|----------|
-| `npm run build` (shared + client + server) | ✅ PASS | Exit 0; vite 9.68s; tsc clean all workspaces |
+| `npm run build` (shared + client + server) | ✅ PASS | Exit 0; vite 7.51s; tsc clean all workspaces |
 | `tsc` type checking (packages/server, packages/client, packages/shared) | ✅ PASS | Zero type errors reported |
-| Biome lint/format | ✅ PASS | 157 files checked, 0 errors, 0 warnings |
+| Biome lint/format | ✅ PASS | 160 files checked, 0 errors, 0 warnings |
 
 ---
 
@@ -21,13 +21,13 @@
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | Total Test Files | — | 39 | ✅ PASS |
-| Total Tests | — | 620 | ✅ PASS |
+| Total Tests | — | 625 | ✅ PASS |
 | Statement Coverage | 80%+ | 92.13% | ✅ PASS |
 | Branch Coverage | 75%+ | 77.03% | ✅ PASS |
 | Function Coverage | 90%+ | 95.67% | ✅ PASS |
 | Line Coverage | 85%+ | 93.37% | ✅ PASS |
 
-**Test Exit Code:** 0 (all passed, no failures: 304 server, 316 client)
+**Test Exit Code:** 0 (all passed, no failures: 304 server, 321 client)
 
 ### Per-Area Coverage Details
 
@@ -47,7 +47,7 @@
 | Knip (dead code detection) | 0 unused exports | ✅ PASS | 0 issues found |
 | Dependency cruiser (cycles) | No cycles | ✅ PASS | No output |
 | Type coverage | 95%+ | ✅ PASS | All source typed |
-| ESLint/Biome violations | 0 | ✅ PASS | Clean linting (0 errors, 0 warnings across 159 files) |
+| ESLint/Biome violations | 0 | ✅ PASS | Clean linting (0 errors, 0 warnings across 160 files) |
 
 ---
 
@@ -61,6 +61,8 @@
 | Shift closure safeguards & manual start | ✅ PASS | `ConfirmDialog` modal on close; manual start recovery card on dashboard (M-100 / ACP-012) |
 | Auto-open shift integrity | ✅ PASS | Explicit `POST /api/shifts/auto-open` endpoint with D1–D5 fixes (M-99 / ACP-011) |
 | Multi-Device Responsive Containment | ✅ PASS | 0px overflow across all 11 routes and 4 viewports (M-108, M-109, M-110, M-111) |
+| Cross-Flow State Synchronization & Range Guards | ✅ PASS | Float update guard, expense filter containment, and From<=To date range inversion guards enforced (M-112 / ACP-020) |
+| Brand Identity, Typography & UI Polish | ✅ PASS | Document title, gaming SVG favicon, Inter font, Google logo, and contextual empty states enforced (M-113 / ACP-021) |
 | Server validation (Zod) | ✅ PASS | Comprehensive validation schemas across all 10 controllers |
 | DEBT artifact aligned | ✅ PASS | TD-030, TD-038, TD-040 marked resolved; 0 deferred items remaining |
 
@@ -88,7 +90,7 @@
 ## 🎯 Release Sign-Off Checklist
 
 - [x] Build compiles cleanly (tsc, vite)
-- [x] Full test suite passes (620/620 tests)
+- [x] Full test suite passes (625/625 tests)
 - [x] E2E browser test suite passes (20/20 tests across 6 suites)
 - [x] Coverage thresholds met (branches 77%+, statements 92%+)
 - [x] Linting clean (biome, knip, depcruise)
@@ -112,5 +114,5 @@ Git mutation remains strictly out of scope. Only the PO may execute version cont
 ---
 
 **Verified by:** AI Implementor  
-**Date:** 2026-09-02  
+**Date:** 2026-09-22  
 **Evidence:** Fresh build, test, and coverage runs with live terminal verification (no assumptions)
