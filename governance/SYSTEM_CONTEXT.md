@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 8 — Shift Operational Integrity & Identity Bridge
-**Current Mission:** M-104 Phase 8 Playwright E2E Suite Expansion
+**Current Mission:** M-105 Cash Reconciliation & Shift Drawer Analytics in Reports
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0

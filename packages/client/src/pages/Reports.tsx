@@ -190,6 +190,19 @@ export function Reports() {
 	);
 	const avgVariance =
 		closedShifts.length > 0 ? totalVariance / closedShifts.length : 0;
+	const balancedShiftsCount = closedShifts.filter(
+		(s) => (s.variance || 0) === 0,
+	).length;
+	const shortageShiftsCount = closedShifts.filter(
+		(s) => (s.variance || 0) < 0,
+	).length;
+	const overageShiftsCount = closedShifts.filter(
+		(s) => (s.variance || 0) > 0,
+	).length;
+	const totalActualCash = closedShifts.reduce(
+		(sum, s) => sum + (s.actual_cash_counted || 0),
+		0,
+	);
 
 	const pendingCredits = credits
 		.filter((c) => c.status === CREDIT_STATUSES.PENDING)
@@ -380,6 +393,60 @@ export function Reports() {
 						</Card>
 					</div>
 
+					{/* Cash Drawer Integrity Summary */}
+					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+						<Card>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-sm font-medium text-zinc-500">
+									Net Drawer Variance
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div
+									className={`text-2xl font-bold ${totalVariance < 0 ? "text-red-600" : totalVariance > 0 ? "text-emerald-600" : ""}`}
+								>
+									{totalVariance < 0 ? "-" : ""}$
+									{Math.abs(totalVariance).toFixed(2)}
+								</div>
+								<p className="text-xs text-zinc-400 mt-1">
+									Cumulative shift discrepancy
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-sm font-medium text-zinc-500">
+									Drawer Reconciliation
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold">
+									{balancedShiftsCount} / {closedShifts.length} Balanced
+								</div>
+								<p className="text-xs text-zinc-400 mt-1">
+									{shortageShiftsCount} shortage
+									{shortageShiftsCount !== 1 ? "s" : ""}, {overageShiftsCount}{" "}
+									overage{overageShiftsCount !== 1 ? "s" : ""}
+								</p>
+							</CardContent>
+						</Card>
+						<Card>
+							<CardHeader className="pb-2">
+								<CardTitle className="text-sm font-medium text-zinc-500">
+									Total Cash Processed
+								</CardTitle>
+							</CardHeader>
+							<CardContent>
+								<div className="text-2xl font-bold">
+									${totalActualCash.toFixed(2)}
+								</div>
+								<p className="text-xs text-zinc-400 mt-1">
+									Counted at shift closeouts
+								</p>
+							</CardContent>
+						</Card>
+					</div>
+
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print:block print:space-y-6">
 						{/* Revenue Mix */}
 						<Card className="print:break-inside-avoid">
@@ -558,6 +625,125 @@ export function Reports() {
 													</tr>
 												);
 											})}
+										</tbody>
+									</table>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+
+					{/* Shift Cash Reconciliation & Drawer Audit */}
+					<Card className="print:break-inside-avoid">
+						<CardHeader>
+							<CardTitle>Shift Cash Reconciliation & Drawer Audit</CardTitle>
+							<CardDescription>
+								Detailed ledger of cash drawer floats, calculated expectations,
+								actual counts, and discrepancies.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							{shifts.length === 0 ? (
+								<div className="text-center text-zinc-500 py-4">
+									No shifts recorded for this period.
+								</div>
+							) : (
+								<div className="overflow-x-auto">
+									<table className="w-full text-sm text-left">
+										<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
+											<tr>
+												<th className="px-4 py-3 font-medium">Shift Period</th>
+												<th className="px-4 py-3 font-medium">Cashier</th>
+												<th className="px-4 py-3 font-medium">Status</th>
+												<th className="px-4 py-3 font-medium text-right">
+													Opening Float
+												</th>
+												<th className="px-4 py-3 font-medium text-right">
+													Expected Cash
+												</th>
+												<th className="px-4 py-3 font-medium text-right">
+													Actual Counted
+												</th>
+												<th className="px-4 py-3 font-medium text-right">
+													Variance
+												</th>
+											</tr>
+										</thead>
+										<tbody>
+											{[...shifts]
+												.sort(
+													(a, b) =>
+														new Date(b.start_time).getTime() -
+														new Date(a.start_time).getTime(),
+												)
+												.map((s) => {
+													const isClosed = s.status === SHIFT_STATUSES.CLOSED;
+													const varVal = s.variance ?? 0;
+													return (
+														<tr key={s.id} className="border-b last:border-0">
+															<td className="px-4 py-3 text-xs text-zinc-600">
+																<div>
+																	{format(
+																		new Date(s.start_time),
+																		"MMM d, yyyy",
+																	)}
+																</div>
+																<div className="text-zinc-400">
+																	{format(new Date(s.start_time), "h:mm a")} –{" "}
+																	{s.end_time
+																		? format(new Date(s.end_time), "h:mm a")
+																		: "(Open)"}
+																</div>
+															</td>
+															<td className="px-4 py-3 font-medium text-zinc-900">
+																{s.manager_name}
+															</td>
+															<td className="px-4 py-3">
+																<span
+																	className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium ${
+																		s.status === SHIFT_STATUSES.CLOSED
+																			? "bg-emerald-100 text-emerald-800"
+																			: s.status === SHIFT_STATUSES.OPEN
+																				? "bg-blue-100 text-blue-800"
+																				: "bg-amber-100 text-amber-800"
+																	}`}
+																>
+																	{s.status}
+																</span>
+															</td>
+															<td className="px-4 py-3 text-right">
+																${(s.opening_float ?? 0).toFixed(2)}
+															</td>
+															<td className="px-4 py-3 text-right">
+																{s.expected_cash_calculated != null
+																	? `$${s.expected_cash_calculated.toFixed(2)}`
+																	: "—"}
+															</td>
+															<td className="px-4 py-3 text-right font-medium">
+																{s.actual_cash_counted != null
+																	? `$${s.actual_cash_counted.toFixed(2)}`
+																	: "—"}
+															</td>
+															<td
+																className={`px-4 py-3 text-right font-bold ${
+																	!isClosed || varVal === 0
+																		? "text-zinc-500"
+																		: varVal < 0
+																			? "text-red-600"
+																			: "text-emerald-600"
+																}`}
+															>
+																{isClosed
+																	? `${varVal < 0 ? "-" : ""}$${Math.abs(varVal).toFixed(2)}`
+																	: "—"}
+																{s.reason_for_shortage ? (
+																	<div className="text-xs font-normal text-zinc-500 mt-0.5">
+																		{s.reason_for_shortage}
+																	</div>
+																) : null}
+															</td>
+														</tr>
+													);
+												})}
 										</tbody>
 									</table>
 								</div>

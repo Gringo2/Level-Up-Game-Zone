@@ -167,7 +167,7 @@ describe("Reports", () => {
 		expect(screen.getByText("Total Expenses")).toBeDefined();
 		expect(screen.getByText("Avg Shift Variance")).toBeDefined();
 		expect(screen.getByText("Utilities")).toBeDefined();
-		expect(screen.getByText("Alice")).toBeDefined();
+		expect(screen.getAllByText("Alice").length).toBeGreaterThanOrEqual(1);
 	});
 
 	it("subtracts only pending credits from net profit", async () => {
@@ -339,5 +339,130 @@ describe("Reports", () => {
 		});
 		expect(screen.getByText("$75.00")).toBeDefined();
 		expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(2);
+	});
+
+	it("renders shift cash reconciliation & drawer audit table with full discrepancy breakdown", async () => {
+		const s1 = {
+			id: "s1",
+			manager_id: "u1",
+			manager_name: "Alice Manager",
+			start_time: "2026-08-01T10:00:00.000+03:00",
+			end_time: "2026-08-01T18:00:00.000+03:00",
+			opening_float: 100,
+			expected_cash_calculated: 250,
+			actual_cash_counted: 240,
+			status: "CLOSED" as const,
+			variance: -10,
+			reason_for_shortage: "Minor register shortage investigated",
+		};
+
+		const s2 = {
+			id: "s2",
+			manager_id: "u2",
+			manager_name: "Bob Cashier",
+			start_time: "2026-08-02T10:00:00.000+03:00",
+			end_time: "2026-08-02T18:00:00.000+03:00",
+			opening_float: 120,
+			expected_cash_calculated: 300,
+			actual_cash_counted: 300,
+			status: "CLOSED" as const,
+			variance: 0,
+		};
+
+		const s3 = {
+			id: "s3",
+			manager_id: "u1",
+			manager_name: "Alice Manager",
+			start_time: "2026-08-03T10:00:00.000+03:00",
+			opening_float: 150,
+			status: "OPEN" as const,
+		};
+
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([s1, s2, s3]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-31" } });
+		fireEvent.click(screen.getByText("Apply"));
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Shift Cash Reconciliation & Drawer Audit"),
+			).toBeDefined();
+		});
+
+		// Header & Drawer KPI metrics
+		expect(screen.getByText("Net Drawer Variance")).toBeDefined();
+		expect(screen.getByText("Total Cash Processed")).toBeDefined();
+
+		// Shift rows and values
+		expect(screen.getAllByText("Alice Manager").length).toBeGreaterThanOrEqual(
+			1,
+		);
+		expect(screen.getAllByText("Bob Cashier").length).toBeGreaterThanOrEqual(1);
+		expect(screen.getByText("$100.00")).toBeDefined();
+		expect(screen.getByText("$250.00")).toBeDefined();
+		expect(screen.getByText("$240.00")).toBeDefined();
+		expect(screen.getAllByText("-$10.00").length).toBeGreaterThanOrEqual(1);
+		expect(
+			screen.getByText("Minor register shortage investigated"),
+		).toBeDefined();
+
+		// Balanced shift
+		expect(screen.getByText("$120.00")).toBeDefined();
+		expect(screen.getAllByText("$300.00").length).toBeGreaterThanOrEqual(2);
+
+		// Open shift em-dashes
+		expect(screen.getByText("$150.00")).toBeDefined();
+		expect(screen.getByText("OPEN")).toBeDefined();
+	});
+
+	it("displays empty state message when no shifts exist in the selected period", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-31" } });
+		fireEvent.click(screen.getByText("Apply"));
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Shift Cash Reconciliation & Drawer Audit"),
+			).toBeDefined();
+		});
+
+		expect(
+			screen.getByText("No shifts recorded for this period."),
+		).toBeDefined();
 	});
 });
