@@ -1,45 +1,43 @@
 # CURRENT MISSION
 
-**Type:** UI / UX Polish  
-**Mission:** M-113 Brand Identity, Typography & UI Polish Hardening  
+**Type:** Governance / Documentation  
+**Mission:** M-114 Repository Prose Synchronization & Documentation Hygiene  
 **Status:** Locked  
-**Proposal:** ACP-021  
+**Proposal:** ACP-022  
 
 ## 1. Objective
-Modernize visual branding, typography, and empty state ergonomics across `@level-up/client`:
-1. `index.html`: Update document title from default `"My Google AI Studio App"` to `"Level-Up Game Zone"`, preconnect to Google Fonts, load the **Inter** font family, and link the game zone SVG favicon.
-2. `packages/client/public/favicon.svg`: Create a clean, modern SVG favicon depicting a gaming controller with brand accent colors.
-3. `packages/client/src/index.css`: Configure base `body` font family to Inter with fallback stack.
-4. `packages/client/src/pages/Login.tsx`: Add the official Google "G" logo SVG to the authentication button while preserving exact accessible naming (`"Sign in with Google"`).
-5. Empty states (`GameSales.tsx`, `Expenses.tsx`, `Keno.tsx`, `Credits.tsx`): Enhance empty table representations with contextual Lucide icons (`Gamepad2`, `Receipt`, `Coins`, `CreditCard`) while preserving all exact testable string assertions.
+Synchronize all documentation, user story summaries, system mechanisms, and architecture references across the repository to faithfully reflect the verified, implemented system state:
+1. Document the dedicated `POST /api/shifts/auto-open` endpoint and frontend invocation in `SYSTEM_MECHANISMS.md`, `UI_UX_BEHAVIORS.md`, `USER_STORIES_SUMMARY.md`, and `userstories.md`.
+2. Synchronize release and migration records in `CHANGELOG.md` and `monorepo_migration_state.md` to reflect Phase 8 delivery through M-113.
+3. Note historical context in `docs/adr/ADR-008_NonBlocking_Shifts_Backdated_Entry.md` referencing ACP-011.
 
 ## 2. Context
-Following the 12-flow operational stability audit and comprehensive UI/UX review in Phase 8, the Product Owner approved visual polish recommendations to bring the presentation layer to production-ready brand maturity without altering underlying business or backend contracts.
+Following the sweep of stale prose in the repository, discrepancies between early design specifications and the active Phase 8 implementation (notably M-99 / ACP-011 shift auto-open architecture) were identified and corrected. In accordance with AGENTS.md, all changes must belong to an approved, locked mission.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/client/index.html`
-  - `packages/client/public/favicon.svg`
-  - `packages/client/src/index.css`
-  - `packages/client/src/pages/Login.tsx`
-  - `packages/client/src/pages/GameSales.tsx`
-  - `packages/client/src/pages/Expenses.tsx`
-  - `packages/client/src/pages/Keno.tsx`
-  - `packages/client/src/pages/Credits.tsx`
-  - Governance artifacts (`ACP-021`, `M-113`, `MISSION.md`, `TASKS.md`, `ROADMAP.md`)
+  - `CHANGELOG.md`
+  - `SYSTEM_MECHANISMS.md`
+  - `UI_UX_BEHAVIORS.md`
+  - `USER_STORIES_SUMMARY.md`
+  - `docs/adr/ADR-008_NonBlocking_Shifts_Backdated_Entry.md`
+  - `governance/SYSTEM_CONTEXT.md`
+  - `governance/TASKS.md`
+  - `governance/ROADMAP.md`
+  - `governance/MISSION.md`
+  - `governance/proposals/ACP-022_Repository_Prose_Synchronization_And_Documentation_Hygiene.md`
+  - `governance/missions/M-114_REPOSITORY_PROSE_SYNCHRONIZATION.md`
+  - `monorepo_migration_state.md`
+  - `userstories.md`
 - **Out of Scope:**
-  - Server routes, database models, or backend controllers (zero changes to backend).
-  - Business calculation formulas or state mutation contracts.
+  - Runtime code modifications in `packages/client`, `packages/server`, or `packages/shared`.
+  - Database schemas, API routes, or test implementations.
 
 ## 4. Testing Strategy
-- Unit and component tests in Vitest verifying button accessibility, empty state text presence, and rendering.
-- Full Vitest suite: `npx vitest run`.
-- Full Playwright browser suite: `npx playwright test`.
 - Monorepo fitness gates: `npm run lint`, `npm run knip`, `npm run build`.
+- Verification of documentation accuracy against active server routes and client contexts.
 
 ## 5. Evidence Payload
-- [x] Functional Verification: Title, favicon, Inter font, Google logo, and empty state icons rendered cleanly.
-- [x] Regression Shield: All existing unit and E2E assertions pass without modification.
-- [x] Full Battery Health: Vitest unit suite (630/630) and Playwright E2E suite (20/20) 100% green.
-- [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings), Knip (0 issues), and monorepo build clean.
-- [x] Governance Synchronization: Mission locked upon completion.
+- [x] Functional Verification: Prose and documentation across all 9 targeted files strictly align with verified system behavior.
+- [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings), Knip (0 issues), and build clean.
+- [x] Governance Traceability: ACP-022 approved, M-114 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.

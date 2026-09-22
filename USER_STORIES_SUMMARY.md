@@ -20,29 +20,34 @@ To prevent conflating distinct engineering domains, the system analysis has been
 ## Executive Summary
 
 ### 1. End-User Business Capabilities ([userstories.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/userstories.md))
-- **26 Verified User Stories** across 8 operational modules:
+- **31 Verified User Stories** across 8 operational modules:
   - Authentication & Security (3 stories)
-  - Shift Management & Blind Count Closing (5 stories)
+  - Shift Management & Blind Count Closing (6 stories)
   - Game Sales Management & Audit Trail (4 stories)
   - Keno Management & Verification (3 stories)
   - Expense Tracking & Verification (3 stories)
   - Credit & IOU Management (3 stories)
-  - Reports, Analytics & Salary Deductions (3 stories)
-  - Admin Settings, Rate Management & User Roles (5 stories)
+  - Reports, Analytics & Cash Drawer Reconciliation (4 stories)
+  - Admin Settings, Rate Management, Employee Roster & Audit Logs (5 stories)
 
 ### 2. UI & UX Interactivity Specifications ([UI_UX_BEHAVIORS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/UI_UX_BEHAVIORS.md))
-- Frosted backdrop shift opening modal lockout (`backdrop-blur-sm z-50`).
+- Non-blocking shift navigation and backdated date selection across all entry pages.
+- Shift closure confirmation modal (`ConfirmDialog`) and manual shift start fallback card.
+- Collapsible mobile navigation drawer with high-contrast, WCAG-compliant links.
 - Dynamic sidebar role-permission menu item filtering (`staff`, `manager`, `admin`).
 - Surplus vs shortage dynamic cash variance color feedback (`text-emerald-400` vs `text-red-400`).
 - Thermal slip print view template with signature lines (`print:block`).
-- Activity log raw JSON payload snapshot tooltips (`title` attribute hover).
-- Inline rate editing transition with pre-filled inputs.
+- Activity log multi-filter toolbar (Action, Collection, Search) and raw JSON payload tooltips.
+- Date range inversion guards (`From <= To`) with disabled Apply button.
 - Real-time reactive form field calculations (Game Sales totals and Keno Net profit).
 - Universal Sonner toast notification feedback system (`top-center` richColors).
+- Brand identity with gaming SVG favicon, Inter typography, and contextual Lucide empty states.
 
 ### 3. System & Infrastructure Mechanisms ([SYSTEM_MECHANISMS.md](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/SYSTEM_MECHANISMS.md))
 - OAuth popup-blocked fallback mechanism (`signInWithPopup` → `signInWithRedirect`).
 - Profile auto-registration and admin bootstrap mechanism (`GET /api/users/me` 404 handler).
+- Explicit, transactional shift auto-open endpoint (`POST /api/shifts/auto-open`).
+- Automatic shift-employee linkage and 1-to-1 uniqueness validation on employee `user_uid`.
 - Atomic multi-collection Firestore audit transaction guarantees (`db.runTransaction()`).
 - Timezone-anchored operating day boundaries (`Africa/Addis_Ababa`, UTC+3).
 - Shift-framed financial metric isolation.

@@ -47,6 +47,11 @@ This document contains strictly **End-User Business Capabilities** (As a <Role>,
 - **As a staff member/manager**, I can print a formatted Safe Slip with Manager and Owner signature lines for shift closing.
 - **Frontend Verification:** [Dashboard.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Dashboard.tsx#L185-L221).
 
+### US-2.6: Manual Shift Start Recovery & Closure Confirmation Safeguard
+- **As a staff member/manager**, I can start a shift manually when no shift is currently open, and I am prompted with an explicit confirmation dialog modal before closing a shift to prevent accidental closure.
+- **Frontend Verification:** [Dashboard.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Dashboard.tsx) (`ConfirmDialog`, manual `Start Shift` card).
+- **Backend Verification:** [shiftsController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/shiftsController.ts) (`closeShift`, `startShift`).
+
 ---
 
 ## 3. Game Sales Management (Staff, Managers & Admins)
@@ -143,6 +148,11 @@ This document contains strictly **End-User Business Capabilities** (As a <Role>,
 - **As a manager/admin**, I can view total IOUs marked for salary deduction grouped by employee.
 - **Frontend Verification:** [SalaryReport.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/SalaryReport.tsx#L43-L72).
 
+### US-7.4: Cash Drawer Reconciliation & Shift Drawer Audit
+- **As a manager/admin**, I can inspect Drawer Integrity KPIs (Net Drawer Variance, Balanced Shifts count, Total Cash Processed) and an audit ledger of closed shifts with float, expected cash, actual cash, and variance breakdown.
+- **Frontend Verification:** [Reports.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Reports.tsx) (Shift Cash Reconciliation & Drawer Audit table).
+- **Backend Verification:** [shiftsController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/shiftsController.ts) (`getShifts`).
+
 ---
 
 ## 8. Administration & Governance (Admins Only)
@@ -171,3 +181,18 @@ This document contains strictly **End-User Business Capabilities** (As a <Role>,
 - **As an admin**, I can review an immutable log of all system changes, edits, and deletions.
 - **Frontend Verification:** [AuditLogs.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/AuditLogs.tsx#L27-L59).
 - **Backend Verification:** [auditLogsController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/auditLogsController.ts#L5-L20).
+
+### US-8.6: Employee Roster Management (Managers & Admins)
+- **As a manager/admin**, I can view, add, and edit employee store roster records (name, position, base salary, hired date, break day, active status) with audit tracking.
+- **Frontend Verification:** [EmployeeRoster.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/EmployeeRoster.tsx) & [Admin.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Admin.tsx).
+- **Backend Verification:** [employeesController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/employeesController.ts).
+
+### US-8.7: Employee-to-User Account Linkage with 1-to-1 Uniqueness (Admins Only)
+- **As an admin**, I can link an active employee record to a registered system user account with transactional 1-to-1 collision prevention (HTTP 409 rejection if already linked).
+- **Frontend Verification:** [EmployeeRoster.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/EmployeeRoster.tsx), [Admin.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Admin.tsx), [UserManagement.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/components/UserManagement.tsx).
+- **Backend Verification:** [employeesController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/employeesController.ts).
+
+### US-8.8: Multi-Filter Activity Log & Search (Admins Only)
+- **As an admin**, I can filter the immutable activity log by action type (CREATE, UPDATE, DELETE), collection/table, and full-text keyword search across operator UIDs, reasons, and payloads.
+- **Frontend Verification:** [AuditLogs.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/AuditLogs.tsx).
+- **Backend Verification:** [auditLogsController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/auditLogsController.ts).

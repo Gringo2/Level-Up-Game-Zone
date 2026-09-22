@@ -9,23 +9,39 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
-### Changed (2026-09-02 — M-87)
-- Completed deployment infrastructure, Firebase credential hardening, pagination, admin-gated employee deletion, structured logging, and RBAC verification.
+---
+
+## [1.0.0] — 2026-09-22
+
+### Added (Missions 99–113: Shift Operational Integrity, Identity Bridge & Enterprise UI Hardening)
+- **Shift Integrity & Safeguards (M-99, M-100, M-101):** Dedicated, authenticated `POST /api/shifts/auto-open` endpoint resolving D1–D5 defects; `<ConfirmDialog>` modal on shift close; manual `Start Shift` fallback card; atomic audit log on `closeShift` (TD-030); automatic `employee_id` attachment to shifts (TD-040).
+- **Employee-User Linkage Bridge (M-102):** Transactional 1-to-1 uniqueness enforcement on `user_uid` across active employees with HTTP 409 rejection; Admin and EmployeeRoster account link selectors; linked employee badges in UserManagement.
+- **Reporting & Cash Reconciliation (M-105):** Drawer Integrity KPIs (Net Drawer Variance, Balanced Shifts count, Total Cash Processed) and print-ready Shift Cash Reconciliation & Drawer Audit ledger table in Reports.
+- **Activity Log Multi-Filter & Search (M-107):** Administrative toolbar with Action (CREATE, UPDATE, DELETE) and Collection filters, full-text quick search, active results counter, and filter reset.
+- **Mobile UX & Responsive Containment (M-108, M-109, M-110, M-111):** Collapsible mobile navigation drawer with high-contrast, WCAG-compliant links and touch targets; responsive flex-wrapping on toolbars; horizontal scroll containment for wide tables across 320px–1280px viewports; resilient `formatSafeDate`.
+- **Cross-Flow State Synchronization (M-112):** Dashboard float update in-flight guard (`isSubmittingFloat`); filter-aware history mutation containment (`isWithinActiveRange`); date range inversion guards (`From <= To`) with disabled Apply button.
+- **Brand Identity & Polish (M-113):** Document title set to "Level-Up Game Zone"; gaming SVG favicon; Google Fonts Inter typography base; official Google "G" logo on login button; contextual Lucide icons in table empty states.
+- **Testing & Quality Shield:** 630 / 630 unit tests green (39 suites); 20 / 20 Playwright E2E browser tests green (6 suites); 0 lint errors/warnings (160 files); 0 knip issues; clean monorepo build.
+
+---
+
+## [0.33.0] — 2026-09-21
+
+### Added (Missions 88–98: History Integrity, Validation & Auth Resilience)
+- **Zero-Lint Restoration (M-88):** Cleaned mock annotations and unused imports, achieving 0 warnings across Biome checks.
+- **Input Validation & Formatting (M-89, M-90, M-91):** Strict numeric validation on sales; shop-local calendar date defaults (`Africa/Addis_Ababa`, UTC+3); visual hierarchy polish on history tables.
+- **Filter-Aware History Mutations (M-92, M-93, M-95):** Prevented out-of-range backdated Game Sales and Keno entries from polluting the active filtered view.
+- **Title Consistency & Normalization (M-94, M-96):** Unified page title conventions; normalized invite and user emails to lowercase for case-insensitive authentication.
+- **Auth Pop-up Resilience (M-97):** Added `isSubmitting` flight guard and seamless fallback from `signInWithPopup` to `signInWithRedirect` when popups are blocked.
+- **Knip Hygiene (M-98):** Removed redundant server.js ignore entry from knip.json.
+
+---
+
+## [0.32.1] — 2026-09-02
+
+### Changed (Mission 87: Deployment Infrastructure & Credential Hardening)
+- Completed deployment infrastructure, multi-tier Firebase credential resolution, cursor pagination, admin-gated employee deletion, structured Pino logging, and RBAC verification.
 - Upgraded `firebase-admin` to 14 and pinned the `uuid` override to 11.1.1; current audit leaves 3 moderate `qs` advisories in the Express 4 dependency range.
-
-### Added (Mission 33 — Backend Coverage Completion: Shifts & Users)
-- Expanded `shiftsController.test.ts` 8 -> 29 tests and `usersController.test.ts` 6 -> 29 tests (Rule-28 golden + negative + not-found + DB-crash paths).
-- Coverage: shifts 55.6% -> 93.1%, users 38.2% -> 91.7% statement coverage (both 100% funcs); all 9 Express controllers now >= 62.9%.
-- Closed TD-003/004/005 (DEBT.md); suite now 125 tests across 12 files.
-- Rule 28 red-green proven on the `updateFloat` non-OPEN guard.
-
-### Changed (2026-08-14 — AFR-002 M-32 re-verification)
-- Reopened and re-locked M-32 with corrected evidence: keno controller coverage 46.1% -> 92.1%; all in-scope controllers >= 62.9%.
-- Added 16 integration tests (deleteKeno, verifyKeno, staff-create, not-found contract, DB-crash fallback, unauthorized) proving Rule 28 red-green on the `verifyKeno` guard.
-- Corrected MISSION.md evidence payload (the original locked payload overstated coverage).
-- Synced SYSTEM_CONTEXT/ROADMAP/TASKS to missions 10-32; confirmed M-19 title "Governance Framework Maturation (.agents 10/10 MVP)" from lock commit `859a428`; verified M-11 has no lock commit anywhere (branches, reflog, dangling objects, full-text search).
-- Removed 6 unused `firestore.rules` helper functions; added deployable `firebase.json`.
-- Regenerated AVP-001 evidence packet for the re-verification.
 
 ---
 

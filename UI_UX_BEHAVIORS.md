@@ -15,7 +15,7 @@ This document specifies all **Frontend Interactive Behaviors, Visual Feedback St
 - **Behavior:** The left sidebar menu items are dynamically filtered against the active user's role (`user.role`).
 - **Role Permission Matrix:**
   - **Staff:** Dashboard (`/`), Game Sales (`/games`)
-  - **Manager:** Staff items + Keno (`/keno`), Credits (`/credits`), Expenses (`/expenses`), Salary Report (`/salary-report`), Reports (`/reports`), Admin Settings (`/admin`)
+  - **Manager:** Staff items + Keno (`/keno`), Credits (`/credits`), Expenses (`/expenses`), Salary Report (`/salary-report`), Reports (`/reports`), Employee Roster (`/admin/employees`), Admin Settings (`/admin`)
   - **Admin:** All Manager items + Activity Log (`/audit-logs`), User Management (`/admin/users`)
 - **Source Location:** [Layout.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/layouts/Layout.tsx#L74-L125).
 
@@ -37,9 +37,10 @@ This document specifies all **Frontend Interactive Behaviors, Visual Feedback St
 
 ---
 
-## 5. Audit Log JSON Snapshot Inspection Tooltip
+## 5. Audit Log JSON Snapshot Inspection Tooltip & Multi-Filter Search
 - **Behavior:** In the Activity Log table (`/audit-logs`), hovering over the "View changes" or "View deleted data" table cell displays a native browser tooltip (`title` attribute) containing the raw stringified JSON payload snapshot (`log.old_data` / `log.new_data`) of the record before mutation or deletion.
-- **Source Location:** [AuditLogs.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/AuditLogs.tsx#L127-L135).
+- **Administrative Toolbar:** Includes dedicated Action filters (CREATE, UPDATE, DELETE), Collection filters, full-text quick search, active filter count, and reset button.
+- **Source Location:** [AuditLogs.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/AuditLogs.tsx).
 
 ---
 
@@ -62,4 +63,28 @@ This document specifies all **Frontend Interactive Behaviors, Visual Feedback St
   - **Success:** Green toast with action confirmation message (e.g., `"Shift started!"`, `"Log deleted successfully!"`).
   - **Error:** Red toast displaying the exact backend error message string.
 - **Source Location:** [App.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/App.tsx#L38) (`<Toaster position="top-center" richColors />`).
+
+---
+
+## 9. Shift Closure Safeguards & Manual Start Fallback
+- **Behavior:** Clicking "Close Shift" launches an accessible `<ConfirmDialog>` modal requesting confirmation before executing the closure transaction to eliminate accidental closings. When no shift is open, a dedicated manual "Start Shift" card renders on the Dashboard, preventing dead-ends.
+- **Source Location:** [Dashboard.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Dashboard.tsx).
+
+---
+
+## 10. Collapsible Mobile Navigation Drawer
+- **Behavior:** On mobile viewports (<768px), the desktop permanent sidebar collapses into a compact top header with hamburger toggle. Clicking the toggle opens a slide-down navigation drawer with high-contrast text (`text-zinc-200` inactive, `text-white` active), WCAG-compliant touch targets (`py-3`), and an accessible sign-out button.
+- **Source Location:** [Layout.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/layouts/Layout.tsx).
+
+---
+
+## 11. Date Range Inversion Prevention & Flight Guards
+- **Behavior:** On Reports and Salary Report, selecting a "From" date later than "To" displays an inline warning banner (`From date cannot be after To date`) and disables the Apply button. During active data fetching, loading spinners indicate in-flight state and prevent duplicate submissions.
+- **Source Locations:** [Reports.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Reports.tsx), [SalaryReport.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/SalaryReport.tsx).
+
+---
+
+## 12. Brand Identity & Contextual Empty States
+- **Behavior:** Document title is branded as `Level-Up Game Zone` with a custom SVG controller favicon. Tables displaying empty query states render themed Lucide icons (`Gamepad2`, `Receipt`, `Coins`, `CreditCard`) with helpful contextual guidance.
+- **Source Locations:** [index.html](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/index.html), [GameSales.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/GameSales.tsx), [Expenses.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Expenses.tsx), [Keno.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Keno.tsx), [Credits.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Credits.tsx).
 

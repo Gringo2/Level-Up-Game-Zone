@@ -52,3 +52,28 @@ This document specifies all **System Architectures, Infrastructure Guarantees, a
 - **Mechanism:** Clicking "Sign Out" executes `signOut(auth)`. `onAuthStateChanged` receives `null`, which immediately clears the `user` context state and triggers an unauthenticated redirect (`<Login />`), unmounting all protected application routes.
 - **Source Location:** [Layout.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/layouts/Layout.tsx#L160-L168) & [AuthContext.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/contexts/AuthContext.tsx#L74-L78).
 
+---
+
+## 8. Explicit Shift Auto-Open Transaction Endpoint
+- **Mechanism:** Rather than executing silent, unauthenticated read side-effects during gap queries, shift auto-opening is isolated into an authenticated, transactional `POST /api/shifts/auto-open` endpoint.
+- **Guarantee:** Verifies that no OPEN shift exists for the current calendar day, resolves the carryover float from the previous shift or sets a default of 0, attaches a system audit entry, and atomically opens the new shift under the `System Auto-Open` identity.
+- **Source Location:** [shiftsController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/shiftsController.ts) (`autoOpenShift`).
+
+---
+
+## 9. Automatic Shift-Employee Linkage Resolution
+- **Mechanism:** When starting a shift (`startShift` or `autoOpenShift`), the backend automatically queries the `employees` collection matching the authenticated manager's `user.uid` where `isActive === true`. If found, `shift.employee_id` is automatically populated at creation time.
+- **Source Location:** [shiftsController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/shiftsController.ts).
+
+---
+
+## 10. 1-to-1 Employee-to-User Account Uniqueness Enforcement
+- **Mechanism:** Inside an atomic Firestore transaction during employee creation or update, the server checks if the provided `user_uid` is already linked to another active employee record. If a duplicate is detected, the transaction aborts with HTTP `409 Conflict` (`"User is already linked to another active employee"`), preventing account collisions.
+- **Source Location:** [employeesController.ts](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/server/src/controllers/employeesController.ts).
+
+---
+
+## 11. Filter-Aware History Mutation Invariant Guard
+- **Mechanism:** On Game Sales, Keno, and Expenses, history lists maintain an invariant that visible rows strictly fall within `[filterDateFrom, filterDateTo]`. When creating or editing entries, the client evaluates `isWithinActiveRange(dateStr)`: if the updated or created date falls outside the active query filter, it is excluded from the visible list rather than polluting the historical view.
+- **Source Locations:** [GameSales.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/GameSales.tsx), [Keno.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Keno.tsx), [Expenses.tsx](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/packages/client/src/pages/Expenses.tsx).
+
