@@ -144,8 +144,8 @@ describe("Dashboard", () => {
 		render(<Dashboard />);
 		expect(await screen.findByText("Active Shift: Alice")).toBeInTheDocument();
 		expect(
-			within(screen.getByTestId("kpi-game-sales")).getByText("$10.00"),
-		).toBeInTheDocument();
+			within(screen.getByTestId("kpi-game-sales")).getAllByText("$10.00"),
+		).toHaveLength(2);
 		expect(screen.getByText("$60.00")).toBeInTheDocument();
 		expect(screen.getByText("-$20.00")).toBeInTheDocument();
 		expect(screen.getByText("-$12.50")).toBeInTheDocument();
@@ -571,7 +571,7 @@ describe("Dashboard", () => {
 		);
 	});
 
-	it("ACP-024: renders itemized game sales breakdown table with aggregated quantities and subtotals", async () => {
+	it("ACP-025 / ACP-026: renders itemized game sales pills, quantities, subtotals, and distribution bar in top KPI card without redundant table", async () => {
 		const multiItemLogs = [
 			{
 				id: "s1",
@@ -618,19 +618,17 @@ describe("Dashboard", () => {
 		render(<Dashboard />);
 		await screen.findByText("Active Shift: Alice");
 
-		expect(screen.getByText("Shift Game Sales by Item")).toBeInTheDocument();
+		// ACP-026: Redundant table card is removed
+		expect(
+			screen.queryByTestId("shift-game-sales-items"),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("Shift Game Sales by Item"),
+		).not.toBeInTheDocument();
 
-		const itemsTable = screen.getByTestId("shift-game-sales-items");
-		expect(within(itemsTable).getByText("PS5")).toBeInTheDocument();
-		expect(within(itemsTable).getByText("3.5 hrs")).toBeInTheDocument();
-		expect(within(itemsTable).getByText("$175.00")).toBeInTheDocument();
-
-		expect(within(itemsTable).getByText("8-Ball Pool")).toBeInTheDocument();
-		expect(within(itemsTable).getByText("3 games")).toBeInTheDocument();
-		expect(within(itemsTable).getByText("$60.00")).toBeInTheDocument();
-
+		// ACP-027: Top card displays both authoritative total sum and granular item breakdown
 		const kpiCard = screen.getByTestId("kpi-game-sales");
-		// ACP-025 (Option B): Top card replaces aggregate currency with direct item pills & distribution bar
+		expect(within(kpiCard).getByText("$235.00")).toBeInTheDocument();
 		expect(within(kpiCard).getByText("PS5")).toBeInTheDocument();
 		expect(within(kpiCard).getByText("3.5 hrs")).toBeInTheDocument();
 		expect(within(kpiCard).getByText("$175.00")).toBeInTheDocument();
@@ -642,7 +640,7 @@ describe("Dashboard", () => {
 		).toBeInTheDocument();
 	});
 
-	it("ACP-024 / ACP-025: renders empty state when no game sales exist for the shift", async () => {
+	it("ACP-025 / ACP-026 / ACP-027: renders $0.00 and empty state badge in top card when no game sales exist", async () => {
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/api/sales")) {
 				return jsonResponse([]);
@@ -653,14 +651,14 @@ describe("Dashboard", () => {
 		render(<Dashboard />);
 		await screen.findByText("Active Shift: Alice");
 
-		// Table empty state
-		expect(screen.getByText("Shift Game Sales by Item")).toBeInTheDocument();
+		// ACP-026: Redundant table card is removed
 		expect(
-			screen.getByText("No game sales logged for this shift yet."),
-		).toBeInTheDocument();
+			screen.queryByTestId("shift-game-sales-items"),
+		).not.toBeInTheDocument();
 
-		// ACP-025: Top card empty state badge
+		// ACP-027: Top card displays $0.00 and empty state badge
 		const kpiCard = screen.getByTestId("kpi-game-sales");
+		expect(within(kpiCard).getByText("$0.00")).toBeInTheDocument();
 		expect(
 			within(kpiCard).getByText("No sales logged this shift"),
 		).toBeInTheDocument();

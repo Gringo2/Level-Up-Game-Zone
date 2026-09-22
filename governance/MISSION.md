@@ -1,27 +1,22 @@
 # CURRENT MISSION
 
-**Type:** Feature / UX  
-**Mission:** M-117 Dashboard Top Card Game Sales Item Granularity  
+**Type:** Feature / UX Polish  
+**Mission:** M-119 Dashboard Game Sales Sum & Item Integration  
 **Status:** Locked  
-**Proposal:** ACP-025  
+**Proposal:** ACP-027  
 
 ## 1. Objective
-Refactor the top Game Sales KPI card (`kpi-game-sales`) on the Dashboard (`Dashboard.tsx`) to display direct item-level granularity per Product Owner approved Option B:
-1. Replace scalar aggregate currency headline with compact itemized micro-rows and quantity badges.
-2. Render segmented distribution bar visualizing proportional revenue share per game.
-3. Provide clean empty state badge when zero shift game sales exist.
-4. Retain the dedicated "Shift Game Sales by Item" breakdown table card below for auditability.
-5. Provide comprehensive unit tests in `Dashboard.test.tsx` following ADR-006 Red-Green validation.
+Restore the authoritative total game sales aggregate sum (`$totalGameSales.toFixed(2)`) to the Dashboard top KPI card (`kpi-game-sales`) in prominent `text-2xl font-bold` typography, displayed directly above the item-level micro-breakdown (quantities, subtotals, and segmented distribution bar) introduced in M-117.
 
-## 2. Context
-In Mission M-116 (ACP-024), item-level granularity was provided in a table card below the KPI row, but the top card retained a scalar aggregate dollar amount. The Product Owner approved Option B to make the top card itself itemized, eliminating the aggregate-only headline from the top row.
+## 2. Context & Root Cause
+In M-117 (Option B), the top KPI card's scalar headline (`$totalGameSales.toFixed(2)`) was replaced with item pills and distribution bars. In M-118, the lower table card ("Shift Game Sales by Item") was removed to eliminate redundant table clutter. As a consequence, while operators could see individual item subtotals (e.g., PS5: $175.00, Pool: $60.00), the overall total sum (e.g., `$235.00`) was completely absent from the Dashboard. Mission M-119 integrates BOTH within `kpi-game-sales`.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
   - `packages/client/src/pages/Dashboard.tsx`
   - `packages/client/src/__tests__/pages/Dashboard.test.tsx`
-  - `governance/proposals/ACP-025_Dashboard_Top_Card_Item_Granularity.md`
-  - `governance/missions/M-117_DASHBOARD_TOP_CARD_ITEM_GRANULARITY.md`
+  - `governance/proposals/ACP-027_Dashboard_Game_Sales_Sum_And_Item_Integration.md`
+  - `governance/missions/M-119_DASHBOARD_GAME_SALES_SUM_AND_ITEM_INTEGRATION.md`
   - `governance/MISSION.md`
   - `governance/SYSTEM_CONTEXT.md`
   - `governance/TASKS.md`
@@ -29,6 +24,7 @@ In Mission M-116 (ACP-024), item-level granularity was provided in a table card 
 - **Out of Scope:**
   - Backend controllers, schemas, or database collections.
   - Other client pages.
+  - Re-adding the redundant lower table card.
   - Git mutating operations.
 
 ## 4. Testing Strategy
@@ -37,8 +33,8 @@ In Mission M-116 (ACP-024), item-level granularity was provided in a table card 
 - Local Playwright browser probe capturing rendered screenshot.
 
 ## 5. Evidence Payload
-- [x] Functional Verification: Top Game Sales KPI card renders item micro-rows, quantity pills, subtotal amounts, and segmented distribution bar.
-- [x] Red-Green Validation: Verified failing test state prior to implementation (2 failed, 20 passed), followed by 100% green state (22 passed in `Dashboard.test.tsx`).
-- [x] Visual Browser Verification: Local Playwright browser probe verified both active multi-item rendering and clean empty-state badge.
-- [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings across 160 files), Knip (0 issues), clean TypeScript build, and Vitest suite (633/633 tests passing across 39 files).
-- [x] Governance Traceability: ACP-025 approved, M-117 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.
+- [x] Functional Verification: Top card displays both authoritative total sum and granular item micro-breakdown; empty state displays $0.00 with badge.
+- [x] Red-Green Validation: Verified failing test state asserting `$235.00` and `$0.00` in `kpi-game-sales` before implementation (2 failed, 20 passed), followed by 100% green state (22/22 passed in `Dashboard.test.tsx`).
+- [x] Visual Browser Verification: Local Playwright browser probe verified rendered UI for active sales (`dashboard_local_streamlined.png`) and empty states (`dashboard_local_empty_state.png`).
+- [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings across 160 files), Knip (0 issues), clean TypeScript build, and full Vitest suite (633/633 passed across 39 files).
+- [x] Governance Traceability: ACP-027 approved, M-119 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.

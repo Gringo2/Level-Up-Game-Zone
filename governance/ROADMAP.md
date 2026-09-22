@@ -97,4 +97,7 @@
 *   [x] **Mission 115:** Repository Governance & Lifecycle Documentation Hygiene — synchronized advisory counts, lifecycle gate proposal reference, authentic subsystem examples, and constitution ADR reference (2026-09-22, Locked; ACP-023).
 *   [x] **Mission 116:** Dashboard Game Sales Item Granularity — itemized game sales aggregation by game name, unit type, quantity sold, and revenue on Dashboard, KPI item subtitle, and expanded Safe Slip printout (2026-09-22, Locked; ACP-024).
 *   [x] **Mission 117:** Dashboard Top Card Game Sales Item Granularity — refactor top Game Sales KPI card to display item-level breakdown with pills, quantities, subtotals, and mini distribution bar per Option B (2026-09-22, Locked; ACP-025).
+*   [x] **Mission 118:** Dashboard Streamline & Redundant Table Removal — remove redundant Shift Game Sales by Item table card from Dashboard.tsx while preserving top card itemization and Safe Slip printout (2026-09-22, Locked; ACP-026).
+*   [x] **Mission 119:** Dashboard Game Sales Sum & Item Integration — integrate prominent total game sales sum ($totalGameSales.toFixed(2)) and granular item breakdown within the top Game Sales KPI card (2026-09-22, Locked; ACP-027).
+
 
