@@ -1,8 +1,9 @@
 import type { AuditLog } from "@level-up/shared";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Filter, Loader2, RotateCcw, Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Button } from "../components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -10,13 +11,38 @@ import {
 	CardHeader,
 	CardTitle,
 } from "../components/ui/card";
+import { Input } from "../components/ui/input";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
+
+const KNOWN_TABLES = [
+	"shifts",
+	"game_sales",
+	"keno_tickets",
+	"expenses",
+	"credits",
+	"employees",
+	"users",
+	"game_rates",
+	"expense_categories",
+];
+
+export const getActionType = (log: AuditLog) => {
+	if (log.action) return log.action;
+	if (log.old_value && log.new_value) return "UPDATE";
+	if (log.old_value && !log.new_value) return "DELETE";
+	return "CREATE";
+};
 
 export function AuditLogs() {
 	const [logs, setLogs] = useState<AuditLog[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [loadingMore, setLoadingMore] = useState(false);
+
+	// Filtering state
+	const [actionFilter, setActionFilter] = useState<string>("ALL");
+	const [tableFilter, setTableFilter] = useState<string>("ALL");
+	const [searchQuery, setSearchQuery] = useState<string>("");
 
 	const fetchLogs = useCallback(async (cursor?: string) => {
 		try {
@@ -62,12 +88,69 @@ export function AuditLogs() {
 		setLoadingMore(false);
 	};
 
-	const getActionType = (log: AuditLog) => {
-		if (log.action) return log.action;
-		if (log.old_value && log.new_value) return "UPDATE";
-		if (log.old_value && !log.new_value) return "DELETE";
-		return "CREATE";
+	const availableTables = useMemo(() => {
+		const set = new Set<string>(KNOWN_TABLES);
+		logs.forEach((log) => {
+			if (log.table_affected) {
+				set.add(log.table_affected);
+			}
+		});
+		return Array.from(set).sort();
+	}, [logs]);
+
+	const hasActiveFilters =
+		actionFilter !== "ALL" ||
+		tableFilter !== "ALL" ||
+		searchQuery.trim() !== "";
+
+	const handleClearFilters = () => {
+		setActionFilter("ALL");
+		setTableFilter("ALL");
+		setSearchQuery("");
 	};
+
+	const filteredLogs = useMemo(() => {
+		const query = searchQuery.trim().toLowerCase();
+		return logs.filter((log) => {
+			// Action filter
+			if (actionFilter !== "ALL") {
+				const action = getActionType(log);
+				if (action !== actionFilter) return false;
+			}
+
+			// Table filter
+			if (tableFilter !== "ALL") {
+				if (log.table_affected !== tableFilter) return false;
+			}
+
+			// Search query
+			if (query) {
+				const userMatch = log.user_id?.toLowerCase().includes(query);
+				const reasonMatch = log.reason_for_change
+					?.toLowerCase()
+					.includes(query);
+				const tableMatch = log.table_affected?.toLowerCase().includes(query);
+				const payloadOldMatch = log.old_value
+					? JSON.stringify(log.old_value).toLowerCase().includes(query)
+					: false;
+				const payloadNewMatch = log.new_value
+					? JSON.stringify(log.new_value).toLowerCase().includes(query)
+					: false;
+
+				if (
+					!userMatch &&
+					!reasonMatch &&
+					!tableMatch &&
+					!payloadOldMatch &&
+					!payloadNewMatch
+				) {
+					return false;
+				}
+			}
+
+			return true;
+		});
+	}, [logs, actionFilter, tableFilter, searchQuery]);
 
 	if (loading)
 		return (
@@ -78,14 +161,117 @@ export function AuditLogs() {
 
 	return (
 		<div className="space-y-6 max-w-5xl mx-auto">
-			<h2 className="text-2xl font-bold tracking-tight">Activity Log</h2>
-			<Card>
-				<CardHeader>
-					<CardTitle>System Audit History</CardTitle>
-					<CardDescription>
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+				<div>
+					<h2 className="text-2xl font-bold tracking-tight">Activity Log</h2>
+					<p className="text-zinc-500 text-sm">
 						Immutable audit trail of all transactions, modifications, and
 						deletions.
+					</p>
+				</div>
+				<div className="text-xs text-zinc-500 font-medium">
+					Showing {filteredLogs.length} of {logs.length} activity logs
+				</div>
+			</div>
+
+			<Card>
+				<CardHeader className="pb-4">
+					<CardTitle>System Audit History</CardTitle>
+					<CardDescription>
+						Track who changed what, when, and why across all system collections.
 					</CardDescription>
+
+					{/* Filter & Search Toolbar */}
+					<div className="pt-4 flex flex-col md:flex-row gap-3 items-stretch md:items-end">
+						{/* Search Input */}
+						<div className="flex-1 space-y-1">
+							<label
+								htmlFor="audit-search"
+								className="text-xs font-medium text-zinc-600 block"
+							>
+								Search Audit Trail
+							</label>
+							<div className="relative">
+								<Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
+								<Input
+									id="audit-search"
+									type="text"
+									placeholder="Search by operator UID, reason, or payload..."
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									className="pl-9 pr-8 h-9 text-sm"
+								/>
+								{searchQuery && (
+									<button
+										type="button"
+										onClick={() => setSearchQuery("")}
+										className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600"
+										aria-label="Clear search text"
+									>
+										<X className="h-4 w-4" />
+									</button>
+								)}
+							</div>
+						</div>
+
+						{/* Action Filter */}
+						<div className="w-full md:w-44 space-y-1">
+							<label
+								htmlFor="filter-action"
+								className="text-xs font-medium text-zinc-600 block"
+							>
+								Action Filter
+							</label>
+							<select
+								id="filter-action"
+								value={actionFilter}
+								onChange={(e) => setActionFilter(e.target.value)}
+								className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+							>
+								<option value="ALL">All Actions</option>
+								<option value="CREATE">CREATE</option>
+								<option value="UPDATE">UPDATE</option>
+								<option value="DELETE">DELETE</option>
+							</select>
+						</div>
+
+						{/* Collection / Table Filter */}
+						<div className="w-full md:w-48 space-y-1">
+							<label
+								htmlFor="filter-table"
+								className="text-xs font-medium text-zinc-600 block"
+							>
+								Collection Filter
+							</label>
+							<select
+								id="filter-table"
+								value={tableFilter}
+								onChange={(e) => setTableFilter(e.target.value)}
+								className="h-9 w-full rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+							>
+								<option value="ALL">All Collections</option>
+								{availableTables.map((tbl) => (
+									<option key={tbl} value={tbl}>
+										{tbl.replace(/_/g, " ")}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{/* Clear Button */}
+						{hasActiveFilters && (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={handleClearFilters}
+								className="h-9 text-zinc-600 hover:text-zinc-900 shrink-0"
+							>
+								<RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+								Clear Filters
+							</Button>
+						)}
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="overflow-x-auto">
@@ -110,8 +296,31 @@ export function AuditLogs() {
 											No activity logs recorded.
 										</td>
 									</tr>
+								) : filteredLogs.length === 0 ? (
+									<tr>
+										<td colSpan={6} className="px-4 py-12 text-center">
+											<div className="flex flex-col items-center justify-center space-y-2">
+												<Filter className="h-8 w-8 text-zinc-400" />
+												<p className="text-sm font-medium text-zinc-700">
+													No activity logs match the selected filters.
+												</p>
+												<p className="text-xs text-zinc-400 max-w-sm">
+													Try adjusting your search terms, action type, or
+													collection filter.
+												</p>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={handleClearFilters}
+													className="mt-2 text-xs"
+												>
+													Clear filters
+												</Button>
+											</div>
+										</td>
+									</tr>
 								) : (
-									logs.map((log) => {
+									filteredLogs.map((log) => {
 										const action = getActionType(log);
 										return (
 											<tr key={log.id} className="hover:bg-zinc-50">

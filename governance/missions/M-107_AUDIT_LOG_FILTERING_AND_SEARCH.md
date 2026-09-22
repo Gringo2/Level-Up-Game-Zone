@@ -1,8 +1,8 @@
-# CURRENT MISSION
+# Mission M-107: Activity Audit Log Multi-Filter & Search
 
 **Type:** Feature / Observability  
-**Mission:** M-107 Activity Audit Log Multi-Filter & Search  
 **Status:** Locked  
+**Proposal Reference:** ACP-015  
 
 ## 1. Objective
 Enhance `packages/client/src/pages/AuditLogs.tsx` with robust, client-side filtering and full-text search:
@@ -26,16 +26,16 @@ Administrators frequently need to audit specific operations (e.g. shift closures
   - Server controllers or API changes (strictly Thin Client presentation).
   - Firestore schema or index mutations.
 
-## 4. Testing Strategy
-- Unit tests: `npx vitest run packages/client/src/__tests__/pages/AuditLogs.test.tsx`.
-- ADR-006 / AGENTS.md Rule 28 Red-Green protocol.
-- Full Vitest suite: `npx vitest run`.
-- Full Playwright battery: `npx playwright test`.
-- Hygiene checks: `npm run lint`, `npm run knip`, `npm run build`.
-
-## 5. Evidence Payload
-- [x] Functional Verification: AuditLogs unit tests passing (12/12 tests green).
-- [x] Test-Negative Validation: Red failure captured prior to green completion (5 failing tests on initial probe).
-- [x] Full Battery Health: All unit (615/615) and E2E (17/17) tests passing.
+## 4. Execution Gates
+- [x] Functional Verification: AuditLogs unit tests passing with filter/search assertions (12/12 passed).
+- [x] Test-Negative Validation: ADR-006 / Rule 28 Red failure captured prior to green completion (5 failing tests on initial probe).
+- [x] Full Battery Health: Vitest (615/615 tests across 39 files) and Playwright (17/17 tests across 7 files) green.
 - [x] Monorepo Hygiene: Biome (159 files checked, 0 errors, 0 warnings), Knip (0 issues), build clean across shared, client, and server.
+- [x] Governance Synchronization: Mission locked upon completion.
+
+## Evidence Payload
+- [x] Functional Verification: AuditLogs unit tests passing (12/12 tests green).
+- [x] Test-Negative Validation: Red failure captured prior to green completion.
+- [x] Full Battery Health: All unit (615) and E2E (17) tests passing.
+- [x] Monorepo Hygiene: Biome, Knip, and Lock Guard clean.
 - [x] Governance Synchronization: Mission locked upon completion.

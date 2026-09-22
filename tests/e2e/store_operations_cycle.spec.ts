@@ -363,8 +363,8 @@ test.describe("Full Store Operational Cycle (End-to-End)", () => {
 			page.getByRole("heading", { name: "Activity Log" }),
 		).toBeVisible();
 
-		await expect(page.locator("text=UPDATE").first()).toBeVisible();
-		await expect(page.locator("text=shifts").first()).toBeVisible();
+		await expect(page.getByRole("cell", { name: "UPDATE" })).toBeVisible();
+		await expect(page.getByRole("cell", { name: "shifts" })).toBeVisible();
 		await expect(
 			page.getByRole("cell", {
 				name: /Shift closed with variance/,
