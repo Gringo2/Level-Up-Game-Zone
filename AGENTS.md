@@ -129,7 +129,7 @@ This provides an audit trail for every change. If no source exists, the implemen
 
 ## 9. Architecture Decision Records (ADRs)
 
-Instead of silently evolving the architecture, every architectural decision is documented in `docs/adr/` (e.g., `ADR-001 Observation Graph`). The AI references ADRs rather than inventing new designs.
+Instead of silently evolving the architecture, every architectural decision is documented in `docs/adr/` (e.g., `ADR-001 Thin Client Composition Roots`). The AI references ADRs rather than inventing new designs.
 
 ## 10. No Silent TODOs
 

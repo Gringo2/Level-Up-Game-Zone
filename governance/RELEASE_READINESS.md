@@ -104,7 +104,7 @@
 ## 🔒 Handoff to Product Owner
 
 **Remaining PO Actions:**
-1. Review the remaining 3 moderate `qs` advisories in the Express 4 dependency range
+1. Review the remaining 6 moderate `qs` advisories in the Express 4 dependency range
 2. Review and approve the firebase-admin@14 and uuid@11.1.1 dependency state if not already approved
 3. Proceed to deployment when ready
 

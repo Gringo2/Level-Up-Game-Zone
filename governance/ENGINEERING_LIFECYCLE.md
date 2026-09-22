@@ -36,7 +36,7 @@ Release
 
 Every feature follows this pipeline.
 
-## Future Mission Lifecycle Gates (ACP-019)
+## Future Mission Lifecycle Gates (ACP-005)
 
 All future missions must pass five explicit gates before transitioning to `LOCKED` or `RELEASED`:
 1. **Proposal Gate:** Approved ACP/RFC defining architectural bounds.
@@ -72,8 +72,8 @@ This separation keeps architectural history clean: RFCs explore possibilities, A
 
 Not every feature should be governed equally.
 
-*   **Core / Stable:** Features like Observation Graph, Session Manager, Validation. Once approved, these are **LOCKED** and strictly governed by interface freezes.
-*   **Experimental:** Features like Canvas Analyzer, Animation Detector, AI Summarizer. These can evolve rapidly without strict interface governance until they are promoted to Stable.
+*   **Core / Stable:** Features like Thin Client Composition Roots, Shift Lifecycle & Cash Reconciliation, Domain Validation, Activity Audit Logging. Once approved, these are **LOCKED** and strictly governed by interface freezes.
+*   **Experimental:** Features like Custom Theme Designer, Batch Export Analytics, Real-Time WebSocket Sync. These can evolve rapidly without strict interface governance until they are promoted to Stable.
 
 ## Success Metrics
 
