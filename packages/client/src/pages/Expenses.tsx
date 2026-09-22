@@ -548,7 +548,7 @@ export function Expenses() {
 
 				<Card className="lg:col-span-2">
 					<CardHeader>
-						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+						<div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap sm:items-center sm:justify-between gap-2">
 							<div>
 								<CardTitle>Expenses</CardTitle>
 								<CardDescription>
@@ -557,7 +557,7 @@ export function Expenses() {
 										: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
 								</CardDescription>
 							</div>
-							<div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mt-2 sm:mt-0">
+							<div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
 								<div className="flex items-center gap-1 flex-1 sm:flex-initial">
 									<Label htmlFor="filterFrom" className="text-xs text-zinc-500">
 										From
@@ -567,7 +567,7 @@ export function Expenses() {
 										type="date"
 										value={filterDateFrom}
 										onChange={(e) => setFilterDateFrom(e.target.value)}
-										className="h-8 w-full sm:w-[150px] text-xs"
+										className="h-8 w-full min-[400px]:w-[135px] text-xs"
 									/>
 								</div>
 								<div className="flex items-center gap-1 flex-1 sm:flex-initial">
@@ -579,7 +579,7 @@ export function Expenses() {
 										type="date"
 										value={filterDateTo}
 										onChange={(e) => setFilterDateTo(e.target.value)}
-										className="h-8 w-full sm:w-[150px] text-xs"
+										className="h-8 w-full min-[400px]:w-[135px] text-xs"
 									/>
 								</div>
 								{listLoading && (

@@ -268,7 +268,7 @@ export function Reports() {
 
 	return (
 		<div className="space-y-6">
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 print:hidden">
 				<div>
 					<h2 className="text-2xl font-bold tracking-tight">
 						Historical Reports
@@ -277,7 +277,7 @@ export function Reports() {
 						Analyze revenue, expenses, and staff accountability.
 					</p>
 				</div>
-				<div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+				<div className="flex flex-col items-start lg:items-end gap-2 w-full lg:w-auto">
 					<div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0">
 						{presets.map((p) => (
 							<Button
@@ -300,25 +300,34 @@ export function Reports() {
 							</Button>
 						))}
 					</div>
-					<div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-						<div className="flex items-center gap-2 flex-1 sm:flex-initial">
+					<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+						<div className="flex flex-col min-[360px]:flex-row items-stretch min-[360px]:items-center gap-2 w-full sm:w-auto flex-1 sm:flex-initial">
 							<Input
 								type="date"
 								value={inputStartDate}
 								onChange={(e) => setInputStartDate(e.target.value)}
-								className="w-full sm:w-auto"
+								className="w-full min-[360px]:w-auto"
 							/>
-							<span className="text-zinc-500">to</span>
+							<span className="text-zinc-500 text-center">to</span>
 							<Input
 								type="date"
 								value={inputEndDate}
 								onChange={(e) => setInputEndDate(e.target.value)}
-								className="w-full sm:w-auto"
+								className="w-full min-[360px]:w-auto"
 							/>
 						</div>
-						<div className="flex gap-2">
-							<Button onClick={handleApply}>Apply</Button>
-							<Button variant="outline" onClick={() => window.print()}>
+						<div className="flex gap-2 w-full min-[360px]:w-auto">
+							<Button
+								onClick={handleApply}
+								className="flex-1 min-[360px]:flex-initial"
+							>
+								Apply
+							</Button>
+							<Button
+								variant="outline"
+								onClick={() => window.print()}
+								className="flex-1 min-[360px]:flex-initial"
+							>
 								Print
 							</Button>
 						</div>

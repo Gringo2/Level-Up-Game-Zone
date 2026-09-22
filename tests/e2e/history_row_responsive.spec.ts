@@ -255,3 +255,45 @@ test("UserManagement, SalaryReport, EmployeeRoster, and Admin maintain responsiv
 		).resolves.toBe(true);
 	}
 });
+
+test("Reports and Expenses maintain responsive containment across mobile and tablet viewports", async ({
+	page,
+}) => {
+	await prepareAuthenticatedPage(page);
+
+	for (const viewport of [
+		{ width: 320, height: 568 },
+		{ width: 375, height: 812 },
+		{ width: 768, height: 1024 },
+		{ width: 1280, height: 800 },
+	]) {
+		await page.setViewportSize(viewport);
+
+		// 1. Reports page header and date controls do not overflow
+		await page.goto("/reports");
+		await expect(
+			page.getByRole("heading", { name: "Historical Reports" }),
+		).toBeVisible();
+		const reportsNoOverflow = await page.evaluate(() => {
+			const main = document.querySelector("main");
+			return main ? main.scrollWidth <= main.clientWidth + 1 : true;
+		});
+		expect(reportsNoOverflow, `Reports overflowed at ${viewport.width}px`).toBe(
+			true,
+		);
+
+		// 2. Expenses history card header controls do not overflow
+		await page.goto("/expenses");
+		await expect(
+			page.getByRole("heading", { name: "Log Expenses" }),
+		).toBeVisible();
+		const expensesNoOverflow = await page.evaluate(() => {
+			const main = document.querySelector("main");
+			return main ? main.scrollWidth <= main.clientWidth + 1 : true;
+		});
+		expect(
+			expensesNoOverflow,
+			`Expenses overflowed at ${viewport.width}px`,
+		).toBe(true);
+	}
+});
