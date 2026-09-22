@@ -787,4 +787,132 @@ describe("Credits - Edit & Failure Paths", () => {
 			}),
 		).toBeNull();
 	});
+
+	it("toasts error when attempting to update credit without providing an editReason", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getAllByText("Bob").length).toBeGreaterThanOrEqual(1);
+		});
+
+		fireEvent.click(editButton());
+		const form = screen.getByText("Update Credit").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		expect(toast.error).toHaveBeenCalledWith(
+			"Please provide a reason for editing.",
+		);
+	});
+
+	it("removes updated credit from list if its employee_id no longer matches active employee filter", async () => {
+		const allEmployees = [
+			...employees,
+			{
+				id: "e2",
+				name: "Charlie",
+				position: "Staff",
+				base_salary: 400,
+				hired_date: "2025-01-01",
+				break_day: null,
+				isActive: true,
+				created_at: "",
+			},
+		];
+		const updatedToCharlie = {
+			...credit,
+			employee_id: "e2",
+			employee_name: "Charlie",
+		};
+		const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+			if (init?.method === "PUT") {
+				return Promise.resolve(jsonResponse(updatedToCharlie));
+			}
+			if (String(url).includes("/api/employees")) {
+				return Promise.resolve(jsonResponse(allEmployees));
+			}
+			return Promise.resolve(jsonResponse([credit]));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const view = render(<Credits />);
+		await waitFor(() => {
+			expect(within(view.container).getByText("Bob (Cashier)")).toBeDefined();
+		});
+
+		// Filter by Bob (e1)
+		const filterSelect = screen.getByDisplayValue("All Employees");
+		fireEvent.change(filterSelect, {
+			target: { value: "e1" },
+		});
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("employee_id=e1"),
+				expect.anything(),
+			);
+		});
+
+		// Edit credit and reassign employee to Charlie (e2)
+		fireEvent.click(editButton());
+		fireEvent.change(screen.getByLabelText("Employee Name"), {
+			target: { value: "e2" },
+		});
+		fireEvent.change(screen.getByLabelText("Reason for Edit (Required)"), {
+			target: { value: "Reassigned to Charlie" },
+		});
+		fireEvent.click(screen.getByText("Update Credit"));
+
+		await waitFor(() => {
+			expect(toast.success).toHaveBeenCalledWith(
+				"Credit updated successfully!",
+			);
+		});
+
+		const recentCreditsCard = screen
+			.getByText("Recent Credits")
+			.closest(".rounded-xl");
+		if (!(recentCreditsCard instanceof HTMLElement)) {
+			throw new Error("Recent Credits card not found");
+		}
+		expect(
+			within(recentCreditsCard).queryByText("Bob", {
+				selector: "div.font-medium",
+			}),
+		).toBeNull();
+	});
+
+	it("loads older credits when nextCursor is present and Load older is clicked", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				jsonResponse({ data: [credit], nextCursor: "cursor-credit-1" }),
+			)
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockResolvedValueOnce(
+				jsonResponse({ data: [credit2], nextCursor: null }),
+			);
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("load-older")).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByTestId("load-older"));
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith(
+				expect.stringContaining("cursor=cursor-credit-1"),
+				expect.anything(),
+			);
+		});
+	});
 });

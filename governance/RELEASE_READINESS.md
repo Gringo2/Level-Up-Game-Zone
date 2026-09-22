@@ -21,22 +21,22 @@
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | Total Test Files | — | 39 | ✅ PASS |
-| Total Tests | — | 626 | ✅ PASS |
-| Statement Coverage | 80%+ | 92.21% | ✅ PASS |
-| Branch Coverage | 75%+ | 78.79% | ✅ PASS |
-| Function Coverage | 90%+ | 95.40% | ✅ PASS |
-| Line Coverage | 85%+ | 93.55% | ✅ PASS |
+| Total Tests | — | 630 | ✅ PASS |
+| Statement Coverage | 80%+ | 93.47% | ✅ PASS |
+| Branch Coverage | 75%+ | 79.47% | ✅ PASS |
+| Function Coverage | 90%+ | 96.60% | ✅ PASS |
+| Line Coverage | 85%+ | 94.80% | ✅ PASS |
 
-**Test Exit Code:** 0 (all passed, no failures: 304 server, 322 client)
+**Test Exit Code:** 0 (all passed, no failures: 304 server, 326 client)
 
 ### Per-Area Coverage Details
 
 | Area | Statements | Branches | Functions | Status |
 |------|------------|----------|-----------|--------|
-| `packages/client/src/lib` | 100% | 94.73% | 100% | ✅ PASS |
-| `packages/client/src/contexts` | 100% | 92.85% | 91.66% | ✅ PASS |
-| `packages/client/src/components` | 96.9% | 75.47% | 95.83% | ✅ PASS |
-| `packages/client/src/pages` | 90.9% | 75.56% | 95.43% | ✅ PASS |
+| `packages/client/src/lib` | 100% | 94.28% | 100% | ✅ PASS |
+| `packages/client/src/contexts` | 100% | 84.09% | 92.85% | ✅ PASS |
+| `packages/client/src/components` | 97.16% | 76.11% | 96.15% | ✅ PASS |
+| `packages/client/src/pages` | 92.44% | 78.36% | 96.43% | ✅ PASS |
 
 ---
 
@@ -90,7 +90,7 @@
 ## 🎯 Release Sign-Off Checklist
 
 - [x] Build compiles cleanly (tsc, vite)
-- [x] Full test suite passes (626/626 tests)
+- [x] Full test suite passes (630/630 tests)
 - [x] E2E browser test suite passes (20/20 tests across 6 suites)
 - [x] Coverage thresholds met (branches 77%+, statements 92%+)
 - [x] Linting clean (biome, knip, depcruise)

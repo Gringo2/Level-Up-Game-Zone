@@ -531,4 +531,18 @@ describe("EmployeeRoster - Failure & Form Paths", () => {
 		await screen.findByText("Alice");
 		expect(screen.queryByText("Add Store Employee")).not.toBeInTheDocument();
 	});
+
+	it("toasts error if edit form is submitted with empty edit reason", async () => {
+		vi.stubGlobal("fetch", createRosterFetchMock());
+		render(<EmployeeRoster />);
+		await waitFor(() => {
+			expect(screen.getByText("Alice")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getAllByText("Edit")[0]);
+		const form = screen.getByText("Save Changes").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		expect(toast.error).toHaveBeenCalledWith("Edit reason is required.");
+	});
 });
