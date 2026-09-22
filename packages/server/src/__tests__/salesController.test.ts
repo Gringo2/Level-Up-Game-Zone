@@ -92,6 +92,56 @@ describe("Sales Integration Tests", () => {
 			expect(response.body.error).toBe("Invalid game");
 		});
 
+		it("returns 400 when the referenced game rate is deactivated", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ displayName: "Test User" }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_rates") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									game_name: "Pool",
+									price_per_unit: 2,
+									unit_type: "Game",
+									isActive: false,
+								}),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "x" }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			const response = await request(app)
+				.post("/api/sales")
+				.set("Authorization", authHeader)
+				.send({
+					game_id: "rate-pool",
+					game_name: "Pool",
+					quantity_sold: 2,
+					rate_applied: 2,
+				});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toBe("Game is inactive");
+			expect(db.runTransaction).not.toHaveBeenCalled();
+		});
+
 		it("TD-026/TD-035: returns 400 when game_id is missing (Zod)", async () => {
 			const response = await request(app)
 				.post("/api/sales")

@@ -2,6 +2,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { shopDateString } from "../controllers/shiftsController.js";
 
 const { db } = await import("../firebase.js");
 
@@ -204,6 +205,16 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body).toHaveLength(2);
 		});
 
+		it("shopDateString uses the shop timezone, not the host's", () => {
+			// 22:30 UTC is already the next day in Addis Ababa (UTC+3).
+			expect(shopDateString(new Date("2026-09-22T22:30:00Z"))).toBe(
+				"2026-09-23",
+			);
+			expect(shopDateString(new Date("2026-09-22T20:59:00Z"))).toBe(
+				"2026-09-22",
+			);
+		});
+
 		it("should auto-label a stale OPEN shift as MISSED during list (M-27 behavior)", async () => {
 			const staleShiftRef = { update: vi.fn().mockResolvedValue(true) };
 			const yesterday = new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -283,11 +294,8 @@ describe("Shifts Integration Tests", () => {
 			const expectedGaps: string[] = [];
 			const checkDate = new Date(lastShiftDate);
 			checkDate.setDate(checkDate.getDate() + 1);
-			while (
-				checkDate.toLocaleDateString("en-CA") <
-				new Date().toLocaleDateString("en-CA")
-			) {
-				expectedGaps.push(checkDate.toLocaleDateString("en-CA"));
+			while (shopDateString(checkDate) < shopDateString(new Date())) {
+				expectedGaps.push(shopDateString(checkDate));
 				checkDate.setDate(checkDate.getDate() + 1);
 			}
 

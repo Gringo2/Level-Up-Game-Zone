@@ -2,6 +2,7 @@ import {
 	COLLECTIONS,
 	CREDIT_STATUSES,
 	SHIFT_STATUSES,
+	SHOP_TIMEZONE,
 	SYSTEM_IDENTITY,
 	VARIANCE_THRESHOLD_FOR_EXPLANATION,
 } from "@level-up/shared";
@@ -43,6 +44,11 @@ export const listShifts = async (req: AuthRequest, res: Response) => {
 	}
 };
 
+// Shop-local calendar date (YYYY-MM-DD). Pinned to SHOP_TIMEZONE so day
+// boundaries don't depend on the host's timezone (cPanel/Vercel run UTC).
+export const shopDateString = (date: Date): string =>
+	date.toLocaleDateString("en-CA", { timeZone: SHOP_TIMEZONE });
+
 const autoLabelStaleShifts = async () => {
 	try {
 		const openShiftsSnap = await db
@@ -50,14 +56,12 @@ const autoLabelStaleShifts = async () => {
 			.where("status", "==", SHIFT_STATUSES.OPEN)
 			.get();
 		const now = new Date();
-		// Local calendar date (YYYY-MM-DD)
-		const todayDateString = now.toLocaleDateString("en-CA");
+		// Shop-local calendar date (YYYY-MM-DD)
+		const todayDateString = shopDateString(now);
 
 		for (const doc of openShiftsSnap.docs) {
 			const shift = doc.data();
-			const shiftStartDateString = new Date(
-				shift.start_time,
-			).toLocaleDateString("en-CA");
+			const shiftStartDateString = shopDateString(new Date(shift.start_time));
 			if (shiftStartDateString !== todayDateString) {
 				await doc.ref.update({ status: SHIFT_STATUSES.MISSED });
 			}
@@ -373,11 +377,8 @@ export const getMissedData = async (_req: AuthRequest, res: Response) => {
 			const checkDate = new Date(lastShiftDate);
 			checkDate.setDate(checkDate.getDate() + 1);
 
-			while (
-				checkDate.toLocaleDateString("en-CA") <
-				today.toLocaleDateString("en-CA")
-			) {
-				gapDates.push(checkDate.toLocaleDateString("en-CA"));
+			while (shopDateString(checkDate) < shopDateString(today)) {
+				gapDates.push(shopDateString(checkDate));
 				checkDate.setDate(checkDate.getDate() + 1);
 			}
 		}
@@ -439,13 +440,10 @@ export const autoOpenShift = async (req: AuthRequest, res: Response) => {
 			.where("start_time", ">=", oneDayAgo.toISOString())
 			.get();
 
-		const todayDateString = new Date().toLocaleDateString("en-CA");
+		const todayDateString = shopDateString(new Date());
 		const closedToday = recentClosedSnap.docs.some((doc) => {
 			const shift = doc.data() as { start_time: string };
-			return (
-				new Date(shift.start_time).toLocaleDateString("en-CA") ===
-				todayDateString
-			);
+			return shopDateString(new Date(shift.start_time)) === todayDateString;
 		});
 
 		if (closedToday) {

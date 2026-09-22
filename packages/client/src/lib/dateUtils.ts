@@ -1,7 +1,8 @@
+import { SHOP_TIMEZONE } from "@level-up/shared";
 import { endOfDay, format, isValid, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
-export const SHOP_TIMEZONE = "Africa/Addis_Ababa";
+export { SHOP_TIMEZONE };
 
 export const getShopDate = (date: Date = new Date()) => {
 	return toZonedTime(date, SHOP_TIMEZONE);

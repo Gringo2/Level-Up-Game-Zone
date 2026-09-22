@@ -21,8 +21,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		// E2E Test Mocking Hook
-		if (typeof window !== "undefined" && window.__E2E_USER__) {
+		// E2E Test Mocking Hook — dev builds only, matching authFetch's token
+		// shortcut, so production bundles can't be spoofed from the console.
+		if (
+			import.meta.env.DEV &&
+			typeof window !== "undefined" &&
+			window.__E2E_USER__
+		) {
 			setUser(window.__E2E_USER__);
 			setLoading(false);
 			return;

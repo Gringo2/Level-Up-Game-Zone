@@ -69,6 +69,11 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 			return res.status(400).json({ error: "Invalid game" });
 		}
 		const rateData = rateSnap.data();
+		// Deactivated rates are hidden in the client; enforce it server-side too.
+		// Legacy rate docs without the field remain sellable.
+		if (rateData?.isActive === false) {
+			return res.status(400).json({ error: "Game is inactive" });
+		}
 		const quantity = parseFloat(quantity_sold);
 		const price = parseFloat(rateData?.price_per_unit);
 

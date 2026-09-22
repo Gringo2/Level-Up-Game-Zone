@@ -81,6 +81,8 @@ npx vitest run
 
 ## Production Deployment (cPanel via Git)
 
+Before the first build on the server, create `packages/client/.env.local` with the `VITE_FIREBASE_*` values and `VITE_API_URL` set to the site's HTTPS origin (e.g. `https://levelup.froge.studio`). Vite bakes these in at build time; without `VITE_API_URL` the client refuses to start on a non-localhost host and shows a blank page (TD-015).
+
 When the repository is linked to cPanel via Git™ Version Control, deploy and activate updates directly via the cPanel Terminal:
 
 ```bash

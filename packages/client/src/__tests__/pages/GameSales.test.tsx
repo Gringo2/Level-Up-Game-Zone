@@ -196,6 +196,10 @@ describe("GameSales", () => {
 			}
 			return Promise.resolve(jsonResponse([]));
 		});
+		vi.mocked(useAuth).mockReturnValue({
+			user: { ...managerUser, role: "admin" as const },
+			loading: false,
+		});
 		render(<GameSales />);
 		expect(await screen.findByText("No games configured!")).toBeInTheDocument();
 
@@ -552,6 +556,18 @@ describe("GameSales", () => {
 		await waitFor(() => expect(toast.error).toHaveBeenCalledWith("fail"));
 	});
 
+	it("hides Add Default Games from non-admins (POST /api/rates is admin-only)", async () => {
+		mockFetch.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		render(<GameSales />);
+		expect(await screen.findByText("No games configured!")).toBeInTheDocument();
+		expect(
+			screen.getByText("Ask an admin to add game rates before logging sales."),
+		).toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: "+ Add Default Games" }),
+		).not.toBeInTheDocument();
+	});
+
 	it("shows error toast when Add Default Games fails", async () => {
 		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
 			if (url.endsWith("/api/rates")) {
@@ -564,6 +580,10 @@ describe("GameSales", () => {
 				return Promise.resolve(jsonResponse([]));
 			}
 			return Promise.resolve(jsonResponse([]));
+		});
+		vi.mocked(useAuth).mockReturnValue({
+			user: { ...managerUser, role: "admin" as const },
+			loading: false,
 		});
 		render(<GameSales />);
 		await screen.findByText("No games configured!");

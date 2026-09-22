@@ -70,6 +70,9 @@ export const ROOT_ADMIN_EMAILS: string[] = (() => {
 	return ["bezueyob3@gmail.com", "jobsbezu@gmail.com"];
 })();
 
+// ── Shop Timezone (business-day boundaries on client and server) ───────────
+export const SHOP_TIMEZONE = "Africa/Addis_Ababa";
+
 // ── Server Constants ─────────────────────────────────────────────────────────
 export const VARIANCE_THRESHOLD_FOR_EXPLANATION = 2;
 

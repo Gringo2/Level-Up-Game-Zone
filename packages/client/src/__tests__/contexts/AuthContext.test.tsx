@@ -163,6 +163,39 @@ describe("AuthContext - Additional Paths", () => {
 		expect(signOut).not.toHaveBeenCalled();
 	});
 
+	it("ignores window.__E2E_USER__ in production builds", async () => {
+		vi.stubEnv("DEV", false);
+		Object.defineProperty(window, "__E2E_USER__", {
+			value: {
+				uid: "e2e-user",
+				email: "e2e@test.com",
+				displayName: "E2E User",
+				role: "admin",
+			},
+			configurable: true,
+		});
+		const fetchMock = vi.fn().mockResolvedValue(
+			new Response(JSON.stringify({ uid: "test1234", role: "staff" }), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(
+			<AuthProvider>
+				<TestComponent />
+			</AuthProvider>,
+		);
+
+		// The real Firebase user is resolved via the backend instead.
+		await waitFor(() => {
+			expect(screen.getByTestId("user")).toHaveTextContent("staff");
+		});
+		expect(fetchMock).toHaveBeenCalled();
+		vi.unstubAllEnvs();
+	});
+
 	it("creates the user profile on 404 and toasts a successful login", async () => {
 		global.fetch = vi.fn().mockImplementation((url: string) => {
 			if (url.includes("/api/users/me")) {
