@@ -1,8 +1,8 @@
-# CURRENT MISSION
+# Mission M-106: Multi-Page Operational Cycle E2E Test Suite
 
 **Type:** Test / Quality Assurance  
-**Mission:** M-106 Multi-Page Operational Cycle E2E Test Suite  
 **Status:** Locked  
+**Proposal Reference:** ACP-014  
 
 ## 1. Objective
 Build an end-to-end browser test suite (`tests/e2e/store_operations_cycle.spec.ts`) that executes and verifies the complete store operational day across multiple pages:
@@ -13,26 +13,22 @@ Build an end-to-end browser test suite (`tests/e2e/store_operations_cycle.spec.t
 5. Admin reviews shift reconciliation and drawer integrity metrics on Reports (`/reports`).
 6. Admin verifies the immutable transaction audit entry on Activity Log (`/audit-logs`).
 
-## 2. Context
-Comprehensive cross-page E2E test verifying manager shift start, operational logging, drawer closing, financial reports reconciliation, and immutable audit logs.
+## 2. Architectural Boundaries
+- Conforms to ADR-001 (Thin Client Composition Roots).
+- Conforms to ADR-006 / AGENTS.md Rule 28 (Test-Negative Validation):
+  Must prove an empirical Red failure state before achieving Green pass.
+- Conforms to TD-055 (E2E Hermeticity): Hermetic route mocking, zero external network or database leakage.
 
-## 3. Scope & Boundaries
+## 3. Scope
 - **In Scope:**
   - `tests/e2e/store_operations_cycle.spec.ts`
   - `governance/proposals/ACP-014_Multi_Page_Operational_Cycle_E2E_Suite.md`
   - `governance/missions/M-106_OPERATIONAL_CYCLE_E2E_SUITE.md`
   - `governance/MISSION.md`
 - **Out of Scope:**
-  - Application source mutations (pure test expansion).
+  - Modifying existing application components or server controllers (pure verification mission).
 
-## 4. Testing Strategy
-- Playwright Chromium runner: `npx playwright test tests/e2e/store_operations_cycle.spec.ts`.
-- ADR-006 / AGENTS.md Rule 28 Red-Green protocol.
-- Full Playwright battery verification: `npx playwright test`.
-- Full Vitest suite: `npx vitest run`.
-- Hygiene checks: `npm run lint`, `npm run knip`, `npm run build`.
-
-## 5. Evidence Payload
+## 4. Evidence Payload Requirements
 - [x] Test-Negative Validation: Red failure captured prior to green completion (failing probe assertion captured in task-3272).
 - [x] Green Suite Verification: New test passing in Chromium browser (`store_operations_cycle.spec.ts` passed in 5.6s).
 - [x] Full Battery Health: 17/17 Playwright E2E tests passing, 610/610 Vitest tests passing.
