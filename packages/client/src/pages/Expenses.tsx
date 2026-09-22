@@ -557,8 +557,8 @@ export function Expenses() {
 										: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
 								</CardDescription>
 							</div>
-							<div className="flex items-center gap-2">
-								<div className="flex items-center gap-1">
+							<div className="flex flex-wrap sm:flex-nowrap items-center gap-2 mt-2 sm:mt-0">
+								<div className="flex items-center gap-1 flex-1 sm:flex-initial">
 									<Label htmlFor="filterFrom" className="text-xs text-zinc-500">
 										From
 									</Label>
@@ -567,10 +567,10 @@ export function Expenses() {
 										type="date"
 										value={filterDateFrom}
 										onChange={(e) => setFilterDateFrom(e.target.value)}
-										className="h-8 w-[150px] text-xs"
+										className="h-8 w-full sm:w-[150px] text-xs"
 									/>
 								</div>
-								<div className="flex items-center gap-1">
+								<div className="flex items-center gap-1 flex-1 sm:flex-initial">
 									<Label htmlFor="filterTo" className="text-xs text-zinc-500">
 										To
 									</Label>
@@ -579,7 +579,7 @@ export function Expenses() {
 										type="date"
 										value={filterDateTo}
 										onChange={(e) => setFilterDateTo(e.target.value)}
-										className="h-8 w-[150px] text-xs"
+										className="h-8 w-full sm:w-[150px] text-xs"
 									/>
 								</div>
 								{listLoading && (

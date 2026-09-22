@@ -19,7 +19,7 @@ import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { useShift } from "../contexts/ShiftContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
-import { getShopStartOfDay } from "../lib/dateUtils";
+import { formatSafeDate, getShopStartOfDay } from "../lib/dateUtils";
 
 export function Dashboard() {
 	const { user } = useAuth();
@@ -259,9 +259,7 @@ export function Dashboard() {
 					</p>
 					<p>
 						<strong>Shift Start:</strong>{" "}
-						{activeShift
-							? format(new Date(activeShift.start_time), "h:mm a")
-							: ""}
+						{formatSafeDate(activeShift?.start_time, "h:mm a", "")}
 					</p>
 				</div>
 				<h2 className="text-xl font-bold mt-6 border-b pb-2">Revenue</h2>
@@ -347,7 +345,8 @@ export function Dashboard() {
 						<CardHeader>
 							<CardTitle>Active Shift: {activeShift.manager_name}</CardTitle>
 							<CardDescription className="text-zinc-400">
-								Started at {format(new Date(activeShift.start_time), "h:mm a")}
+								Started at{" "}
+								{formatSafeDate(activeShift.start_time, "h:mm a", "recently")}
 							</CardDescription>
 						</CardHeader>
 						<CardContent>

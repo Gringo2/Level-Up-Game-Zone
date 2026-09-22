@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+	formatSafeDate,
 	getShopDate,
 	getShopDateString,
 	getShopEndOfDay,
@@ -49,5 +50,21 @@ describe("dateUtils (Africa/Addis_Ababa)", () => {
 		expect(shopDateToInstant("2026-01-02").toISOString()).toBe(
 			"2026-01-01T21:00:00.000Z",
 		);
+	});
+
+	it("formats valid date string and Date instances safely", () => {
+		expect(formatSafeDate("2026-09-22T08:00:00.000Z", "yyyy-MM-dd")).toBe(
+			"2026-09-22",
+		);
+		expect(
+			formatSafeDate(new Date("2026-09-22T08:00:00.000Z"), "yyyy-MM-dd"),
+		).toBe("2026-09-22");
+	});
+
+	it("returns fallback for invalid, null, or undefined dates without throwing", () => {
+		expect(formatSafeDate(null, "yyyy-MM-dd")).toBe("—");
+		expect(formatSafeDate(undefined, "yyyy-MM-dd")).toBe("—");
+		expect(formatSafeDate("not-a-date", "yyyy-MM-dd")).toBe("—");
+		expect(formatSafeDate("", "yyyy-MM-dd", "N/A")).toBe("N/A");
 	});
 });

@@ -347,7 +347,9 @@ test.describe("Full Store Operational Cycle (End-to-End)", () => {
 				name: "Shift Cash Reconciliation & Drawer Audit",
 			}),
 		).toBeVisible();
-		await expect(page.locator("text=Admin Operator").first()).toBeVisible();
+		await expect(
+			page.getByRole("cell", { name: "Admin Operator" }).first(),
+		).toBeVisible();
 		await expect(page.locator("text=CLOSED").first()).toBeVisible();
 		await expect(page.locator("text=$100.00").first()).toBeVisible();
 		await expect(page.locator("text=$115.00").first()).toBeVisible();

@@ -558,8 +558,8 @@ export function GameSales() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<div className="flex gap-2 items-end mb-4">
-							<div className="space-y-1">
+						<div className="flex flex-wrap sm:flex-nowrap gap-2 items-end mb-4">
+							<div className="space-y-1 flex-1 min-w-[130px]">
 								<Label htmlFor="salesRangeStart">From</Label>
 								<Input
 									id="salesRangeStart"
@@ -568,7 +568,7 @@ export function GameSales() {
 									onChange={(e) => setRangeStart(e.target.value)}
 								/>
 							</div>
-							<div className="space-y-1">
+							<div className="space-y-1 flex-1 min-w-[130px]">
 								<Label htmlFor="salesRangeEnd">To</Label>
 								<Input
 									id="salesRangeEnd"
@@ -577,31 +577,33 @@ export function GameSales() {
 									onChange={(e) => setRangeEnd(e.target.value)}
 								/>
 							</div>
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => void loadSalesLogs()}
-								disabled={rangeStart > rangeEnd || listLoading}
-							>
-								{listLoading && (
-									<Loader2
-										data-testid="history-loading"
-										className="mr-1 h-4 w-4 animate-spin"
-									/>
-								)}
-								Apply
-							</Button>
-							<Button
-								type="button"
-								variant="ghost"
-								onClick={() => {
-									setRangeStart(todayStr);
-									setRangeEnd(todayStr);
-								}}
-								disabled={listLoading}
-							>
-								Today
-							</Button>
+							<div className="flex gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => void loadSalesLogs()}
+									disabled={rangeStart > rangeEnd || listLoading}
+								>
+									{listLoading && (
+										<Loader2
+											data-testid="history-loading"
+											className="mr-1 h-4 w-4 animate-spin"
+										/>
+									)}
+									Apply
+								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => {
+										setRangeStart(todayStr);
+										setRangeEnd(todayStr);
+									}}
+									disabled={listLoading}
+								>
+									Today
+								</Button>
+							</div>
 						</div>
 						{rangeStart > rangeEnd && (
 							<p className="text-xs text-red-500 mb-2">

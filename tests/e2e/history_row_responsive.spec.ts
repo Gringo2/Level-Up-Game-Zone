@@ -26,6 +26,7 @@ const kenoLog = {
 
 async function prepareAuthenticatedPage(page: Page) {
 	await page.addInitScript(() => {
+		// @ts-expect-error E2E test mock injection
 		window.__E2E_USER__ = {
 			uid: "manager123",
 			email: "manager@example.com",
@@ -104,3 +105,35 @@ for (const viewport of [
 		).resolves.toBe(true);
 	});
 }
+
+test("mobile navigation collapses and opens via hamburger toggle on mobile", async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 375, height: 800 });
+	await prepareAuthenticatedPage(page);
+
+	await page.goto("/games");
+	const toggleBtn = page.getByRole("button", {
+		name: "Toggle navigation menu",
+	});
+	await expect(toggleBtn).toBeVisible();
+
+	// Mobile drawer is initially closed
+	await expect(page.getByTestId("mobile-nav-drawer")).toHaveCount(0);
+	await page.screenshot({
+		path: "/home/gringo2/.gemini/antigravity-ide/brain/b18e8a86-1f46-481f-a96f-9a5958eff1a3/screenshots/mobile_header_collapsed_m108.png",
+	});
+
+	// Click to open drawer
+	await toggleBtn.click();
+	const drawer = page.getByTestId("mobile-nav-drawer");
+	await expect(drawer).toBeVisible();
+	await page.screenshot({
+		path: "/home/gringo2/.gemini/antigravity-ide/brain/b18e8a86-1f46-481f-a96f-9a5958eff1a3/screenshots/mobile_drawer_open_m108.png",
+	});
+
+	// Click nav link to navigate and auto-close drawer
+	await drawer.getByRole("link", { name: "Keno" }).click();
+	await expect(page).toHaveURL(/.*\/keno/);
+	await expect(page.getByTestId("mobile-nav-drawer")).toHaveCount(0);
+});

@@ -1,41 +1,49 @@
 # CURRENT MISSION
 
-**Type:** Feature / Observability  
-**Mission:** M-107 Activity Audit Log Multi-Filter & Search  
+**Type:** UX / Refactoring  
+**Mission:** M-108 Mobile UX Modernization & Responsive Layout Hardening  
 **Status:** Locked  
+**Proposal:** ACP-016  
 
 ## 1. Objective
-Enhance `packages/client/src/pages/AuditLogs.tsx` with robust, client-side filtering and full-text search:
-1. Action selector (`ALL`, `CREATE`, `UPDATE`, `DELETE`).
-2. Collection / Table selector (`ALL`, `shifts`, `game_sales`, `keno_tickets`, `expenses`, `credits`, `employees`, `users`, `game_rates`, `expense_categories`).
-3. Full-text search input covering operator UID, reason for change, table affected, and JSON payload values.
-4. Active results count banner and "Clear Filters" button.
-5. Filter empty state banner when no logs match the active query.
+Modernize mobile navigation and harden responsive layouts across `@level-up/client`:
+1. Implement a collapsible mobile navigation drawer and compact header in `Layout.tsx`.
+2. Implement resilient date formatting in `dateUtils.ts` and apply to `Dashboard.tsx` to eliminate `RangeError: Invalid time value` crashes.
+3. Make date filter rows wrap responsively across `GameSales.tsx`, `Keno.tsx`, and `Expenses.tsx`.
+4. Wrap `Reports.tsx` date range presets in a horizontal scroll container on mobile.
 
 ## 2. Context
-Administrators frequently need to audit specific operations (e.g. shift closures, salary adjustments, or role promotions). Multi-filtering and quick search make activity logs actionable and transparent without requiring server-side Firestore composite indexes.
+Empirical multi-device testing revealed that `<aside>` in `Layout.tsx` stacks 11 navigation links vertically at the top on viewports `< 768px`, taking up ~450px of vertical space before page content begins. In addition, date filter toolbars on small devices clip the `Apply` action buttons, and invalid shift dates can trigger unhandled formatting crashes in `Dashboard.tsx`.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/client/src/pages/AuditLogs.tsx`
-  - `packages/client/src/__tests__/pages/AuditLogs.test.tsx`
-  - `governance/proposals/ACP-015_Audit_Log_Filtering_And_Quick_Search.md`
-  - `governance/missions/M-107_AUDIT_LOG_FILTERING_AND_SEARCH.md`
+  - `packages/client/src/layouts/Layout.tsx`
+  - `packages/client/src/__tests__/layouts/Layout.test.tsx`
+  - `packages/client/src/lib/dateUtils.ts`
+  - `packages/client/src/__tests__/lib/dateUtils.test.ts`
+  - `packages/client/src/pages/Dashboard.tsx`
+  - `packages/client/src/pages/GameSales.tsx`
+  - `packages/client/src/pages/Keno.tsx`
+  - `packages/client/src/pages/Expenses.tsx`
+  - `packages/client/src/pages/Reports.tsx`
+  - `tests/e2e/history_row_responsive.spec.ts`
+  - `tests/e2e/store_operations_cycle.spec.ts`
+  - `governance/proposals/ACP-016_Mobile_UX_And_Responsive_Layout.md`
+  - `governance/missions/M-108_MOBILE_UX_AND_RESPONSIVE_LAYOUT.md`
   - `governance/MISSION.md`
 - **Out of Scope:**
-  - Server controllers or API changes (strictly Thin Client presentation).
-  - Firestore schema or index mutations.
+  - Server endpoints or database schemas (strictly client presentation layer).
 
 ## 4. Testing Strategy
-- Unit tests: `npx vitest run packages/client/src/__tests__/pages/AuditLogs.test.tsx`.
+- Unit tests: `npx vitest run packages/client/src/__tests__/layouts/Layout.test.tsx` and `dateUtils.test.ts`.
 - ADR-006 / AGENTS.md Rule 28 Red-Green protocol.
 - Full Vitest suite: `npx vitest run`.
 - Full Playwright battery: `npx playwright test`.
 - Hygiene checks: `npm run lint`, `npm run knip`, `npm run build`.
 
 ## 5. Evidence Payload
-- [x] Functional Verification: AuditLogs unit tests passing (12/12 tests green).
-- [x] Test-Negative Validation: Red failure captured prior to green completion (5 failing tests on initial probe).
-- [x] Full Battery Health: All unit (615/615) and E2E (17/17) tests passing.
-- [x] Monorepo Hygiene: Biome (159 files checked, 0 errors, 0 warnings), Knip (0 issues), build clean across shared, client, and server.
+- [x] Functional Verification: Mobile navigation drawer and responsive date filter bars verified across mobile and desktop.
+- [x] Test-Negative Validation: Red failure captured prior to green completion.
+- [x] Full Battery Health: All unit (619/619) and E2E (18/18) tests passing.
+- [x] Monorepo Hygiene: Biome (159 files checked, 0 errors, 0 warnings), Knip (0 issues), and build clean across shared, client, and server.
 - [x] Governance Synchronization: Mission locked upon completion.

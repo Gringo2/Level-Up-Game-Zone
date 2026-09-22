@@ -26,12 +26,14 @@ vi.mock("react-router-dom", () => ({
 		to,
 		children,
 		className,
+		onClick,
 	}: {
 		to: string;
 		children: React.ReactNode;
 		className?: string;
+		onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 	}) => (
-		<a href={to} className={className}>
+		<a href={to} className={className} onClick={onClick}>
 			{children}
 		</a>
 	),
@@ -89,8 +91,10 @@ describe("Layout", () => {
 			</Layout>,
 		);
 
-		expect(screen.getByText("Game Zone")).toBeDefined();
-		expect(screen.getByText("Admin User (admin)")).toBeDefined();
+		expect(screen.getAllByText("Game Zone").length).toBeGreaterThanOrEqual(1);
+		expect(
+			screen.getAllByText("Admin User (admin)").length,
+		).toBeGreaterThanOrEqual(1);
 	});
 
 	it("renders children content", () => {
@@ -253,5 +257,52 @@ describe("Layout", () => {
 		const adminLink = screen.getByText("Admin").closest("a");
 		expect(adminLink?.className).toContain("bg-zinc-800");
 		expect(adminLink?.className).toContain("text-white");
+	});
+
+	it("renders mobile header with hamburger toggle button", () => {
+		mockUseAuth.mockReturnValue({
+			user: adminUser,
+			loading: false,
+		});
+
+		render(
+			<Layout>
+				<div>Mobile content</div>
+			</Layout>,
+		);
+
+		const toggleBtn = screen.getByRole("button", {
+			name: "Toggle navigation menu",
+		});
+		expect(toggleBtn).toBeInTheDocument();
+	});
+
+	it("opens mobile drawer when hamburger toggle is clicked and closes on link click", async () => {
+		mockUseAuth.mockReturnValue({
+			user: adminUser,
+			loading: false,
+		});
+
+		render(
+			<Layout>
+				<div>Mobile content</div>
+			</Layout>,
+		);
+
+		const toggleBtn = screen.getByRole("button", {
+			name: "Toggle navigation menu",
+		});
+		expect(screen.queryByTestId("mobile-nav-drawer")).toBeNull();
+
+		fireEvent.click(toggleBtn);
+		const drawer = screen.getByTestId("mobile-nav-drawer");
+		expect(drawer).toBeInTheDocument();
+
+		// Clicking a nav link inside drawer closes drawer
+		const mobileDashboardLink = drawer.querySelector(
+			'a[href="/"]',
+		) as HTMLElement;
+		fireEvent.click(mobileDashboardLink);
+		expect(screen.queryByTestId("mobile-nav-drawer")).toBeNull();
 	});
 });

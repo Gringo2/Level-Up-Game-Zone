@@ -277,12 +277,13 @@ export function Reports() {
 						Analyze revenue, expenses, and staff accountability.
 					</p>
 				</div>
-				<div className="flex flex-col items-end gap-2">
-					<div className="flex flex-wrap gap-1">
+				<div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+					<div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0">
 						{presets.map((p) => (
 							<Button
 								key={p.label}
 								size="sm"
+								className="whitespace-nowrap flex-shrink-0"
 								variant={
 									inputStartDate === p.from && inputEndDate === p.to
 										? "default"
@@ -299,24 +300,28 @@ export function Reports() {
 							</Button>
 						))}
 					</div>
-					<div className="flex items-center gap-2">
-						<Input
-							type="date"
-							value={inputStartDate}
-							onChange={(e) => setInputStartDate(e.target.value)}
-							className="w-auto"
-						/>
-						<span className="text-zinc-500">to</span>
-						<Input
-							type="date"
-							value={inputEndDate}
-							onChange={(e) => setInputEndDate(e.target.value)}
-							className="w-auto"
-						/>
-						<Button onClick={handleApply}>Apply</Button>
-						<Button variant="outline" onClick={() => window.print()}>
-							Print
-						</Button>
+					<div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+						<div className="flex items-center gap-2 flex-1 sm:flex-initial">
+							<Input
+								type="date"
+								value={inputStartDate}
+								onChange={(e) => setInputStartDate(e.target.value)}
+								className="w-full sm:w-auto"
+							/>
+							<span className="text-zinc-500">to</span>
+							<Input
+								type="date"
+								value={inputEndDate}
+								onChange={(e) => setInputEndDate(e.target.value)}
+								className="w-full sm:w-auto"
+							/>
+						</div>
+						<div className="flex gap-2">
+							<Button onClick={handleApply}>Apply</Button>
+							<Button variant="outline" onClick={() => window.print()}>
+								Print
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>

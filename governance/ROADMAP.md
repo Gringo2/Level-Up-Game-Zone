@@ -87,4 +87,5 @@
 *   [x] **Mission 105:** Cash Reconciliation & Shift Drawer Analytics in Reports — enhanced Reports.tsx with Drawer Integrity KPIs and Shift Cash Reconciliation & Drawer Audit ledger table (ACP-013).
 *   [x] **Mission 106:** Multi-Page Operational Cycle E2E Test Suite — comprehensive Playwright test covering full store business day across Dashboard, Game Sales, Credits, Reports, and Activity Logs (ACP-014).
 *   [x] **Mission 107:** Activity Audit Log Multi-Filter & Search — enhanced AuditLogs.tsx with Action, Collection, and keyword search filters, active results count, and empty state handling (ACP-015).
+*   [x] **Mission 108:** Mobile UX Modernization & Responsive Layout Hardening — collapsible mobile navigation drawer, safe date formatting, responsive filter toolbars, and scrollable reports presets (ACP-016).
 

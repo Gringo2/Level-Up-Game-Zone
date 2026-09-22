@@ -1,4 +1,4 @@
-import { endOfDay, format, startOfDay } from "date-fns";
+import { endOfDay, format, isValid, startOfDay } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
 export const SHOP_TIMEZONE = "Africa/Addis_Ababa";
@@ -21,4 +21,17 @@ export const getShopStartOfDay = (date: Date = new Date()) => {
 
 export const getShopEndOfDay = (date: Date = new Date()) => {
 	return endOfDay(getShopDate(date));
+};
+
+export const formatSafeDate = (
+	date: unknown,
+	formatStr: string,
+	fallback = "—",
+): string => {
+	if (!date) return fallback;
+	const d = date instanceof Date ? date : new Date(date as string | number);
+	if (!isValid(d) || Number.isNaN(d.getTime())) {
+		return fallback;
+	}
+	return format(d, formatStr);
 };
