@@ -238,9 +238,13 @@ export function Credits() {
 					);
 				const updated = await safeJson<Credit>(response);
 				toast.success("Credit updated successfully!");
-				setCredits((prev) =>
-					prev.map((c) => (c.id === editingId ? updated : c)),
-				);
+				if (!filterEmployeeId || updated.employee_id === filterEmployeeId) {
+					setCredits((prev) =>
+						prev.map((c) => (c.id === editingId ? updated : c)),
+					);
+				} else {
+					setCredits((prev) => prev.filter((c) => c.id !== editingId));
+				}
 				cancelEdit();
 			} else {
 				const response = await authFetch(`${API_BASE}/api/credits`, {
@@ -261,7 +265,9 @@ export function Credits() {
 						(await safeJson(response)).error || "Failed to log credit",
 					);
 				const newCredit = await safeJson<Credit>(response);
-				setCredits((prev) => [newCredit, ...prev]);
+				if (!filterEmployeeId || newCredit.employee_id === filterEmployeeId) {
+					setCredits((prev) => [newCredit, ...prev]);
+				}
 				setEmployeeId("");
 				setEmployeeName("");
 				setAmount("");

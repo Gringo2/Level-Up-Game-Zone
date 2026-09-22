@@ -170,7 +170,13 @@ export function Reports() {
 		};
 	}, [appliedStartDate, appliedEndDate, user]);
 
+	const isRangeValid = inputStartDate <= inputEndDate;
+
 	const handleApply = () => {
+		if (!isRangeValid) {
+			toast.error("From date must be on or before To date");
+			return;
+		}
 		setAppliedStartDate(inputStartDate);
 		setAppliedEndDate(inputEndDate);
 	};
@@ -319,6 +325,7 @@ export function Reports() {
 						<div className="flex gap-2 w-full min-[360px]:w-auto">
 							<Button
 								onClick={handleApply}
+								disabled={!isRangeValid}
 								className="flex-1 min-[360px]:flex-initial"
 							>
 								Apply
@@ -332,6 +339,11 @@ export function Reports() {
 							</Button>
 						</div>
 					</div>
+					{!isRangeValid && (
+						<p className="text-xs text-amber-500">
+							From date must be on or before To date
+						</p>
+					)}
 				</div>
 			</div>
 

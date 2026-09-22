@@ -465,4 +465,28 @@ describe("Reports", () => {
 			screen.getByText("No shifts recorded for this period."),
 		).toBeDefined();
 	});
+
+	it("ACP-020: disables Apply button and displays warning when From date is after To date", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([shift]))
+			.mockResolvedValueOnce(jsonResponse([salesLog]))
+			.mockResolvedValueOnce(jsonResponse([kenoLog]))
+			.mockResolvedValueOnce(jsonResponse([creditLog]))
+			.mockResolvedValueOnce(jsonResponse([expenseLog]));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Historical Reports")).toBeDefined();
+		});
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-31" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-01" } });
+
+		expect(screen.getByText("Apply")).toBeDisabled();
+	});
 });

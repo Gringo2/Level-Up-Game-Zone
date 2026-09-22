@@ -31,6 +31,7 @@ export function Dashboard() {
 	const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 	const [isSubmittingClose, setIsSubmittingClose] = useState(false);
 	const [isUpdatingFloat, setIsUpdatingFloat] = useState(false);
+	const [isSubmittingFloat, setIsSubmittingFloat] = useState(false);
 	const [newFloat, setNewFloat] = useState("");
 	const [isStarting, setIsStarting] = useState(false);
 	const [startFloat, setStartFloat] = useState("");
@@ -214,7 +215,13 @@ export function Dashboard() {
 
 	const handleUpdateFloat = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!activeShift || !newFloat) return;
+		if (!activeShift) return;
+		const parsedFloat = parseFloat(newFloat);
+		if (!newFloat || Number.isNaN(parsedFloat) || parsedFloat < 0) {
+			toast.error("Please provide a valid non-negative float amount");
+			return;
+		}
+		setIsSubmittingFloat(true);
 		try {
 			const response = await authFetch(
 				`${API_BASE}/api/shifts/${activeShift.id}/float`,
@@ -223,7 +230,7 @@ export function Dashboard() {
 					headers: {
 						"Content-Type": "application/json",
 					},
-					body: JSON.stringify({ floatAmount: parseFloat(newFloat) }),
+					body: JSON.stringify({ floatAmount: parsedFloat }),
 				},
 			);
 			if (!response.ok) throw new Error("Failed to update float");
@@ -235,6 +242,8 @@ export function Dashboard() {
 		} catch (err) {
 			console.error(err);
 			toast.error("Failed to update float");
+		} finally {
+			setIsSubmittingFloat(false);
 		}
 	};
 
@@ -396,13 +405,15 @@ export function Dashboard() {
 											<Button
 												type="submit"
 												className="bg-emerald-600 hover:bg-emerald-700 text-white"
+												disabled={isSubmittingFloat}
 											>
-												Save
+												{isSubmittingFloat ? "Saving..." : "Save"}
 											</Button>
 											<Button
 												type="button"
 												variant="ghost"
 												onClick={() => setIsUpdatingFloat(false)}
+												disabled={isSubmittingFloat}
 												className="text-zinc-400 hover:text-white hover:bg-zinc-700"
 											>
 												Cancel

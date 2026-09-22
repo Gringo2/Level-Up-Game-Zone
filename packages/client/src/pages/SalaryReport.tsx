@@ -82,7 +82,13 @@ export function SalaryReport() {
 		};
 	}, [appliedStartDate, appliedEndDate]);
 
+	const isRangeValid = inputStartDate <= inputEndDate;
+
 	const handleApply = () => {
+		if (!isRangeValid) {
+			toast.error("From date must be on or before To date");
+			return;
+		}
 		setAppliedStartDate(inputStartDate);
 		setAppliedEndDate(inputEndDate);
 	};
@@ -174,11 +180,18 @@ export function SalaryReport() {
 						/>
 					</div>
 					<div className="flex items-center gap-2">
-						<Button onClick={handleApply}>Apply</Button>
+						<Button onClick={handleApply} disabled={!isRangeValid}>
+							Apply
+						</Button>
 						<Button variant="outline" onClick={() => window.print()}>
 							<Printer className="mr-2 h-4 w-4" /> Print
 						</Button>
 					</div>
+					{!isRangeValid && (
+						<p className="text-xs text-amber-500 w-full text-left sm:text-right">
+							From date must be on or before To date
+						</p>
+					)}
 				</div>
 			</div>
 

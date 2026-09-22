@@ -536,4 +536,35 @@ describe("Dashboard", () => {
 
 		await waitFor(() => expect(toast.error).toHaveBeenCalled());
 	});
+
+	it("ACP-020: disables Save button during float update submission", async () => {
+		let resolvePut: (value: Response) => void;
+		const putPromise = new Promise<Response>((resolve) => {
+			resolvePut = resolve;
+		});
+
+		mockFetch.mockImplementation((_url: string, init?: RequestInit) => {
+			if (init?.method === "PUT") {
+				return putPromise;
+			}
+			return Promise.resolve(jsonResponse([]));
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(screen.getByRole("button", { name: "Update Float" }));
+		fireEvent.change(screen.getByLabelText("New Float Amount ($)"), {
+			target: { value: "150" },
+		});
+		const form = screen.getByLabelText("New Float Amount ($)").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		expect(screen.getByRole("button", { name: "Saving..." })).toBeDisabled();
+
+		resolvePut?.(jsonResponse({ id: "shift-1", opening_float: 150 }));
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Float updated successfully!"),
+		);
+	});
 });

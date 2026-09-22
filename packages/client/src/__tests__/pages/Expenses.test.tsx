@@ -811,4 +811,48 @@ describe("Expenses", () => {
 
 		expect(await screen.findByText("Stapler")).toBeInTheDocument();
 	});
+
+	it("ACP-020: does not prepend newly created expense when date is outside active filter range", async () => {
+		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+			if (String(url).includes("expense-categories")) {
+				return jsonResponse([{ name: "Supplies", isActive: true }]);
+			}
+			if (init?.method === "POST") {
+				return jsonResponse({
+					...expense,
+					id: "exp-backdated",
+					item_name: "Backdated Oil",
+					description: "Old oil",
+					date: "2024-01-01T10:00:00.000Z",
+				});
+			}
+			return jsonResponse([expense]);
+		});
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		fireEvent.change(screen.getByLabelText("Item Name"), {
+			target: { value: "Backdated Oil" },
+		});
+		fireEvent.change(
+			screen.getByLabelText("Description (e.g., Cleaning supplies)"),
+			{
+				target: { value: "Old oil" },
+			},
+		);
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "15" },
+		});
+		const form = screen.getByText("New Expense").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith(
+				"Expense logged successfully!",
+			),
+		);
+
+		// With ACP-020, out-of-range backdated expense must NOT be prepended to the filtered list
+		expect(screen.queryByText("Backdated Oil")).toBeNull();
+	});
 });

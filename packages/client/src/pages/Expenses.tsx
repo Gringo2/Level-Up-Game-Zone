@@ -312,9 +312,17 @@ export function Expenses() {
 					);
 				const updated = await safeJson<Expense>(response);
 				toast.success("Expense updated successfully!");
-				setExpenses((prev) =>
-					prev.map((e) => (e.id === editingId ? updated : e)),
-				);
+				const isWithinActiveRange = (dateStr: string) => {
+					const shopDate = getShopDateString(new Date(dateStr));
+					return shopDate >= filterDateFrom && shopDate <= filterDateTo;
+				};
+				if (isWithinActiveRange(updated.date)) {
+					setExpenses((prev) =>
+						prev.map((e) => (e.id === editingId ? updated : e)),
+					);
+				} else {
+					setExpenses((prev) => prev.filter((e) => e.id !== editingId));
+				}
 				cancelEdit();
 			} else {
 				const body: Record<string, unknown> = {
@@ -340,7 +348,13 @@ export function Expenses() {
 						(await safeJson(response)).error || "Failed to log expense",
 					);
 				const newExpense = await safeJson<Expense>(response);
-				setExpenses((prev) => [newExpense, ...prev]);
+				const isWithinActiveRange = (dateStr: string) => {
+					const shopDate = getShopDateString(new Date(dateStr));
+					return shopDate >= filterDateFrom && shopDate <= filterDateTo;
+				};
+				if (isWithinActiveRange(newExpense.date)) {
+					setExpenses((prev) => [newExpense, ...prev]);
+				}
 				setItemName("");
 				setDescription("");
 				setAmount("");

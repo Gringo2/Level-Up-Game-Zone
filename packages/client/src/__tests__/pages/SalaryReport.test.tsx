@@ -278,4 +278,29 @@ describe("SalaryReport", () => {
 		});
 		expect(screen.getByText("No IOUs deducted this period.")).toBeDefined();
 	});
+
+	it("ACP-020: disables Apply button when From date is after To date", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi
+				.fn()
+				.mockResolvedValueOnce(jsonResponse([deductedCredit]))
+				.mockResolvedValueOnce(jsonResponse([employee])),
+		);
+
+		render(<SalaryReport />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Bob")).toBeDefined();
+		});
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-31" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-01" } });
+
+		expect(screen.getByText("Apply")).toBeDisabled();
+		expect(
+			screen.getByText("From date must be on or before To date"),
+		).toBeInTheDocument();
+	});
 });

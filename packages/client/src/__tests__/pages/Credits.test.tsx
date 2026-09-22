@@ -709,4 +709,82 @@ describe("Credits - Edit & Failure Paths", () => {
 			),
 		);
 	});
+	it("ACP-020: does not prepend new credit for another employee when filtered to specific employee", async () => {
+		const allEmployees = [
+			...employees,
+			{
+				id: "e2",
+				name: "Charlie",
+				position: "Staff",
+				base_salary: 400,
+				hired_date: "2025-01-01",
+				break_day: null,
+				isActive: true,
+				created_at: "",
+			},
+		];
+		const mockFetch = vi.fn((url: string, init?: RequestInit) => {
+			if (init?.method === "POST") {
+				return Promise.resolve(
+					jsonResponse({
+						id: "c-charlie",
+						employee_id: "e2",
+						employee_name: "Charlie",
+						amount: 50,
+						status: "Pending",
+						user_id: "u1",
+						date: new Date().toISOString(),
+					}),
+				);
+			}
+			if (String(url).includes("/api/employees")) {
+				return Promise.resolve(jsonResponse(allEmployees));
+			}
+			return Promise.resolve(jsonResponse([credit]));
+		});
+		vi.stubGlobal("fetch", mockFetch);
+
+		const view = render(<Credits />);
+		await waitFor(() => {
+			expect(within(view.container).getByText("Bob (Cashier)")).toBeDefined();
+		});
+
+		// Filter by Bob (e1)
+		const filterSelect = screen.getByDisplayValue("All Employees");
+		fireEvent.change(filterSelect, {
+			target: { value: "e1" },
+		});
+		await waitFor(() => {
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringContaining("employee_id=e1"),
+				expect.anything(),
+			);
+		});
+
+		// Submit credit for Charlie (e2)
+		fireEvent.change(screen.getByLabelText("Employee Name"), {
+			target: { value: "e2" },
+		});
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "50" },
+		});
+		const form = screen.getByText("Log Credit").closest("form");
+		fireEvent.submit(form as HTMLFormElement);
+
+		await waitFor(() =>
+			expect(toast.success).toHaveBeenCalledWith("Credit logged successfully!"),
+		);
+
+		const recentCreditsCard = screen
+			.getByText("Recent Credits")
+			.closest(".rounded-xl");
+		if (!(recentCreditsCard instanceof HTMLElement)) {
+			throw new Error("Recent Credits card not found");
+		}
+		expect(
+			within(recentCreditsCard).queryByText("Charlie", {
+				selector: "div.font-medium",
+			}),
+		).toBeNull();
+	});
 });
