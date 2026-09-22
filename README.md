@@ -78,3 +78,19 @@ Run the client typecheck and repository tests:
 npx tsc -p packages/client/tsconfig.json --noEmit
 npx vitest run
 ```
+
+## Production Deployment (cPanel via Git)
+
+When the repository is linked to cPanel via Git™ Version Control, deploy and activate updates directly via the cPanel Terminal:
+
+```bash
+cd ~/levelup.froge.studio
+git pull origin main
+npm run build
+mkdir -p tmp && touch tmp/restart.txt
+```
+
+### What This Does:
+1. `git pull origin main` — Pulls the latest production commits directly from GitHub.
+2. `npm run build` — Compiles `@level-up/shared`, client assets with Vite into `packages/client/dist/`, and backend TypeScript into `packages/server/dist/`.
+3. `mkdir -p tmp && touch tmp/restart.txt` — Signals Phusion Passenger / cPanel Node.js App to gracefully reload the server process without downtime.
