@@ -305,4 +305,34 @@ describe("Layout", () => {
 		fireEvent.click(mobileDashboardLink);
 		expect(screen.queryByTestId("mobile-nav-drawer")).toBeNull();
 	});
+
+	it("renders mobile drawer items with explicit high-contrast text and touch target classes", () => {
+		mockUseAuth.mockReturnValue({
+			user: adminUser,
+			loading: false,
+		});
+
+		render(
+			<Layout>
+				<div>Mobile content</div>
+			</Layout>,
+		);
+
+		const toggleBtn = screen.getByRole("button", {
+			name: "Toggle navigation menu",
+		});
+		fireEvent.click(toggleBtn);
+		const drawer = screen.getByTestId("mobile-nav-drawer");
+		expect(drawer.className).toContain("text-zinc-100");
+
+		// Inactive link in drawer has explicit text-zinc-200 and py-3 classes
+		const inactiveLink = drawer.querySelector('a[href="/games"]');
+		expect(inactiveLink).not.toBeNull();
+		expect(inactiveLink?.className).toContain("text-zinc-200");
+		expect(inactiveLink?.className).toContain("py-3");
+
+		// Sign out button in drawer has explicit text-zinc-200 class
+		const signOutBtn = drawer.querySelector("button");
+		expect(signOutBtn?.className).toContain("text-zinc-200");
+	});
 });

@@ -175,8 +175,15 @@ test("mobile navigation collapses and opens via hamburger toggle on mobile", asy
 	await toggleBtn.click();
 	const drawer = page.getByTestId("mobile-nav-drawer");
 	await expect(drawer).toBeVisible();
+
+	// Verify mobile drawer link legibility and high contrast classes
+	const kenoLink = drawer.getByRole("link", { name: "Keno" });
+	await expect(kenoLink).toBeVisible();
+	await expect(kenoLink).toHaveClass(/text-zinc-200/);
+	await expect(kenoLink).toHaveClass(/py-3/);
+
 	await page.screenshot({
-		path: "/home/gringo2/.gemini/antigravity-ide/brain/b18e8a86-1f46-481f-a96f-9a5958eff1a3/screenshots/mobile_drawer_open_m108.png",
+		path: "/home/gringo2/.gemini/antigravity-ide/brain/b18e8a86-1f46-481f-a96f-9a5958eff1a3/screenshots/mobile_drawer_open_m110.png",
 	});
 
 	// Click nav link to navigate and auto-close drawer

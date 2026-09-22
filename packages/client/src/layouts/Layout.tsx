@@ -130,10 +130,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 								className={`flex items-center space-x-3 px-3 py-2 rounded-md transition-colors ${
 									isActive
 										? "bg-zinc-800 text-white"
-										: "hover:bg-zinc-800 hover:text-white"
+										: "text-zinc-300 hover:bg-zinc-800 hover:text-white"
 								}`}
 							>
-								<Icon size={18} />
+								<Icon
+									size={18}
+									className={isActive ? "text-indigo-400" : "text-zinc-400"}
+								/>
 								<span className="text-sm font-medium">{item.label}</span>
 							</Link>
 						);
@@ -176,9 +179,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			{isMobileMenuOpen && (
 				<div
 					data-testid="mobile-nav-drawer"
-					className="order-first md:order-none md:hidden fixed inset-0 top-[57px] z-40 bg-zinc-900/95 backdrop-blur-sm flex flex-col border-b border-zinc-800"
+					className="order-first md:order-none md:hidden fixed inset-0 top-[57px] z-40 bg-zinc-900/95 text-zinc-100 backdrop-blur-sm flex flex-col border-b border-zinc-800"
 				>
-					<nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+					<nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
 						{visibleNavItems.map((item) => {
 							const Icon = item.icon;
 							const isActive = location.pathname === item.path;
@@ -187,13 +190,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 									key={item.path}
 									to={item.path}
 									onClick={() => setIsMobileMenuOpen(false)}
-									className={`flex items-center space-x-3 px-3 py-2.5 rounded-md transition-colors ${
+									className={`flex items-center space-x-3.5 px-3.5 py-3 rounded-lg transition-colors ${
 										isActive
-											? "bg-zinc-800 text-white"
-											: "hover:bg-zinc-800 hover:text-white"
+											? "bg-zinc-800 text-white font-semibold shadow-sm ring-1 ring-zinc-700/60"
+											: "text-zinc-200 hover:bg-zinc-800/80 hover:text-white"
 									}`}
 								>
-									<Icon size={18} />
+									<Icon
+										size={20}
+										className={isActive ? "text-indigo-400" : "text-zinc-400"}
+									/>
 									<span className="text-sm font-medium">{item.label}</span>
 								</Link>
 							);
@@ -202,13 +208,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 					<div className="p-4 border-t border-zinc-800">
 						<Button
 							variant="ghost"
-							className="w-full justify-start text-zinc-400 hover:text-white hover:bg-zinc-800"
+							className="w-full justify-start text-zinc-200 hover:text-white hover:bg-zinc-800 py-3"
 							onClick={() => {
 								setIsMobileMenuOpen(false);
 								setShowSignOutConfirm(true);
 							}}
 						>
-							<LogOut size={18} className="mr-3" />
+							<LogOut size={18} className="mr-3 text-zinc-400" />
 							Sign Out
 						</Button>
 					</div>

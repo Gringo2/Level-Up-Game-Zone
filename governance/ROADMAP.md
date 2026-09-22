@@ -89,4 +89,4 @@
 *   [x] **Mission 107:** Activity Audit Log Multi-Filter & Search — enhanced AuditLogs.tsx with Action, Collection, and keyword search filters, active results count, and empty state handling (ACP-015).
 *   [x] **Mission 108:** Mobile UX Modernization & Responsive Layout Hardening — collapsible mobile navigation drawer, safe date formatting, responsive filter toolbars, and scrollable reports presets (ACP-016).
 *   [x] **Mission 109:** Multi-Device Responsive Overflow Hardening — encapsulated UserManagement table in horizontal scroll container, responsive date filter wrapping in SalaryReport, flex-wrapped staff badge header in EmployeeRoster, and responsive row stacking in Admin (ACP-017).
-
+*   [x] **Mission 110:** Mobile Navigation Drawer Link Legibility & Contrast Hardening — eliminate low-contrast ambient dark-on-dark inheritance in the mobile navigation drawer with explicit text-zinc-100 container foreground, text-zinc-200 inactive links, text-white active links, distinct icon contrast tokens, and WCAG-compliant py-3 touch targets (ACP-018).
