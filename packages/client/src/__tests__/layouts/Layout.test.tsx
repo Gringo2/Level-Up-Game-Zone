@@ -335,4 +335,33 @@ describe("Layout", () => {
 		const signOutBtn = drawer.querySelector("button");
 		expect(signOutBtn?.className).toContain("text-zinc-200");
 	});
+
+	it("opens sign out confirmation dialog and closes drawer when mobile sign out button is clicked", async () => {
+		mockUseAuth.mockReturnValue({
+			user: adminUser,
+			loading: false,
+		});
+
+		render(
+			<Layout>
+				<div>Mobile content</div>
+			</Layout>,
+		);
+
+		const toggleBtn = screen.getByRole("button", {
+			name: "Toggle navigation menu",
+		});
+		fireEvent.click(toggleBtn);
+		const drawer = screen.getByTestId("mobile-nav-drawer");
+
+		const mobileSignOutBtn = drawer.querySelector("button") as HTMLElement;
+		fireEvent.click(mobileSignOutBtn);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Are you sure you want to sign out?"),
+			).toBeInTheDocument();
+		});
+		expect(screen.queryByTestId("mobile-nav-drawer")).toBeNull();
+	});
 });
