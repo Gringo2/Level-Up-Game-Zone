@@ -88,4 +88,5 @@
 *   [x] **Mission 106:** Multi-Page Operational Cycle E2E Test Suite — comprehensive Playwright test covering full store business day across Dashboard, Game Sales, Credits, Reports, and Activity Logs (ACP-014).
 *   [x] **Mission 107:** Activity Audit Log Multi-Filter & Search — enhanced AuditLogs.tsx with Action, Collection, and keyword search filters, active results count, and empty state handling (ACP-015).
 *   [x] **Mission 108:** Mobile UX Modernization & Responsive Layout Hardening — collapsible mobile navigation drawer, safe date formatting, responsive filter toolbars, and scrollable reports presets (ACP-016).
+*   [x] **Mission 109:** Multi-Device Responsive Overflow Hardening — encapsulated UserManagement table in horizontal scroll container, responsive date filter wrapping in SalaryReport, flex-wrapped staff badge header in EmployeeRoster, and responsive row stacking in Admin (ACP-017).
 

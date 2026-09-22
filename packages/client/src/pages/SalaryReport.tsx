@@ -148,7 +148,7 @@ export function SalaryReport() {
 				</p>
 			</div>
 
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
+			<div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 print:hidden">
 				<div>
 					<h2 className="text-2xl font-bold tracking-tight">
 						Payroll & Salary Payout Report
@@ -157,24 +157,28 @@ export function SalaryReport() {
 						Net salary calculations and itemized IOU deductions for store staff.
 					</p>
 				</div>
-				<div className="flex items-center gap-2">
-					<Input
-						type="date"
-						value={inputStartDate}
-						onChange={(e) => setInputStartDate(e.target.value)}
-						className="w-auto"
-					/>
-					<span className="text-zinc-500">to</span>
-					<Input
-						type="date"
-						value={inputEndDate}
-						onChange={(e) => setInputEndDate(e.target.value)}
-						className="w-auto"
-					/>
-					<Button onClick={handleApply}>Apply</Button>
-					<Button variant="outline" onClick={() => window.print()}>
-						<Printer className="mr-2 h-4 w-4" /> Print
-					</Button>
+				<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+					<div className="flex items-center gap-2 w-full sm:w-auto flex-1 sm:flex-none">
+						<Input
+							type="date"
+							value={inputStartDate}
+							onChange={(e) => setInputStartDate(e.target.value)}
+							className="w-full sm:w-auto min-w-[130px]"
+						/>
+						<span className="text-zinc-500">to</span>
+						<Input
+							type="date"
+							value={inputEndDate}
+							onChange={(e) => setInputEndDate(e.target.value)}
+							className="w-full sm:w-auto min-w-[130px]"
+						/>
+					</div>
+					<div className="flex items-center gap-2">
+						<Button onClick={handleApply}>Apply</Button>
+						<Button variant="outline" onClick={() => window.print()}>
+							<Printer className="mr-2 h-4 w-4" /> Print
+						</Button>
+					</div>
 				</div>
 			</div>
 

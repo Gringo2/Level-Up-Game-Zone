@@ -24,16 +24,16 @@ const kenoLog = {
 	verified: false,
 };
 
-async function prepareAuthenticatedPage(page: Page) {
-	await page.addInitScript(() => {
+async function prepareAuthenticatedPage(page: Page, role = "admin") {
+	await page.addInitScript((userRole) => {
 		// @ts-expect-error E2E test mock injection
 		window.__E2E_USER__ = {
-			uid: "manager123",
-			email: "manager@example.com",
-			displayName: "Manager User",
-			role: "manager",
+			uid: "admin123",
+			email: "admin@example.com",
+			displayName: "Admin User",
+			role: userRole,
 		};
-	});
+	}, role);
 
 	await page.route("**/api/**", async (route) => {
 		const path = new URL(route.request().url()).pathname;
@@ -47,11 +47,58 @@ async function prepareAuthenticatedPage(page: Page) {
 						isActive: true,
 					},
 				]
-			: path.includes("/sales")
-				? [salesLog]
-				: path.includes("/keno")
-					? [kenoLog]
-					: [];
+			: path.endsWith("/users")
+				? [
+						{
+							uid: "admin123",
+							email: "admin@example.com",
+							displayName: "Admin User",
+							role: "admin",
+							createdAt: "2026-01-01T00:00:00.000Z",
+						},
+						{
+							uid: "cashier456",
+							email: "cashier.alexander@levelup-gaming.example.com",
+							displayName: "Jonathan Alexander Smith",
+							role: "staff",
+							createdAt: "2026-01-15T00:00:00.000Z",
+						},
+					]
+				: path.endsWith("/employees")
+					? [
+							{
+								id: "emp-1",
+								name: "Jonathan Alexander Smith",
+								position: "Senior Console Game Operator",
+								base_salary: 800,
+								hired_date: "2026-01-15",
+								break_day: "Wednesday",
+								user_uid: "cashier456",
+								isActive: true,
+								created_at: "2026-01-15T08:00:00.000Z",
+							},
+						]
+					: path.endsWith("/credits")
+						? {
+								credits: [
+									{
+										id: "cred-1",
+										employee_name: "Jonathan Alexander Smith",
+										employee_id: "emp-1",
+										amount: 45.0,
+										reason: "Emergency transit allowance advance",
+										status: "deducted",
+										user_name: "Admin User",
+										user_id: "admin123",
+										date: "2026-09-22T02:00:00.000Z",
+									},
+								],
+							}
+						: path.includes("/sales")
+							? [salesLog]
+							: path.includes("/keno")
+								? [kenoLog]
+								: [];
 		await route.fulfill({
 			status: 200,
 			contentType: "application/json",
@@ -136,4 +183,68 @@ test("mobile navigation collapses and opens via hamburger toggle on mobile", asy
 	await drawer.getByRole("link", { name: "Keno" }).click();
 	await expect(page).toHaveURL(/.*\/keno/);
 	await expect(page.getByTestId("mobile-nav-drawer")).toHaveCount(0);
+});
+
+test("UserManagement, SalaryReport, EmployeeRoster, and Admin maintain responsive containment without overflow", async ({
+	page,
+}) => {
+	await prepareAuthenticatedPage(page);
+
+	for (const viewport of [
+		{ width: 375, height: 812 },
+		{ width: 768, height: 1024 },
+	]) {
+		await page.setViewportSize(viewport);
+
+		// 1. UserManagement table is encapsulated in overflow-x-auto and main has no horizontal overflow
+		await page.goto("/admin/users");
+		const staffCard = page.locator(".rounded-xl", {
+			hasText: "Staff Accounts",
+		});
+		await expect(staffCard).toBeVisible();
+		const tableWrapper = staffCard.locator(".overflow-x-auto");
+		await expect(tableWrapper).toBeVisible();
+		await expect(
+			page.evaluate(() => {
+				const main = document.querySelector("main");
+				return main ? main.scrollWidth <= main.clientWidth + 1 : true;
+			}),
+		).resolves.toBe(true);
+
+		// 2. SalaryReport date controls wrap without blowing out main container
+		await page.goto("/salary-report");
+		await expect(
+			page.getByRole("heading", { name: "Payroll & Salary Payout Report" }),
+		).toBeVisible();
+		await expect(
+			page.evaluate(() => {
+				const main = document.querySelector("main");
+				return main ? main.scrollWidth <= main.clientWidth + 1 : true;
+			}),
+		).resolves.toBe(true);
+
+		// 3. EmployeeRoster staff card wraps cleanly without horizontal overflow
+		await page.goto("/admin/employees");
+		await expect(
+			page.getByRole("heading", { name: "Employee Roster" }),
+		).toBeVisible();
+		await expect(
+			page.evaluate(() => {
+				const main = document.querySelector("main");
+				return main ? main.scrollWidth <= main.clientWidth + 1 : true;
+			}),
+		).resolves.toBe(true);
+
+		// 4. Admin rate rows remain contained within viewport
+		await page.goto("/admin");
+		await expect(
+			page.getByRole("heading", { name: "Admin Settings" }),
+		).toBeVisible();
+		await expect(
+			page.evaluate(() => {
+				const main = document.querySelector("main");
+				return main ? main.scrollWidth <= main.clientWidth + 1 : true;
+			}),
+		).resolves.toBe(true);
+	}
 });

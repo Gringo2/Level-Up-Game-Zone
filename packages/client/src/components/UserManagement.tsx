@@ -242,74 +242,76 @@ export function UserManagement() {
 					<CardTitle>Staff Accounts</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<table className="w-full text-sm text-left">
-						<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
-							<tr>
-								<th className="px-4 py-3 font-medium">Name</th>
-								<th className="px-4 py-3 font-medium">Email</th>
-								<th className="px-4 py-3 font-medium">Role</th>
-								<th className="px-4 py-3 font-medium">Joined</th>
-								<th className="px-4 py-3 font-medium text-right">Actions</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y">
-							{users.map((user) => (
-								<tr key={user.uid} className="border-b last:border-0">
-									<td className="px-4 py-3">
-										<div>{user.displayName}</div>
-										{(() => {
-											const linkedEmp = employees.find(
-												(e) => e.isActive && e.user_uid === user.uid,
-											);
-											return linkedEmp ? (
-												<span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium mt-0.5">
-													Linked: {linkedEmp.name}
-												</span>
-											) : null;
-										})()}
-									</td>
-									<td className="px-4 py-3">{user.email}</td>
-									<td className="px-4 py-3">
-										<select
-											value={user.role}
-											onChange={(e) => {
-												// biome-ignore lint/suspicious/noExplicitAny: DOM event value
-												const newRole = e.target.value as any;
-												if (newRole !== user.role) {
-													setRoleChangeTarget({ user, newRole });
-												}
-											}}
-											className="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-										>
-											<option value={ROLES.ADMIN}>Admin</option>
-											<option value={ROLES.MANAGER}>Manager</option>
-											<option value={ROLES.STAFF}>Staff</option>
-										</select>
-									</td>
-									<td className="px-4 py-3 text-sm text-zinc-500">
-										{user.created_at
-											? format(new Date(user.created_at), "MMM d, yyyy")
-											: "N/A"}
-									</td>
-									<td className="px-4 py-3 text-right">
-										<Button
-											variant="ghost"
-											size="sm"
-											className="text-red-600 hover:text-red-800"
-											onClick={() => {
-												setDeletingUser(user);
-												setDeleteReason("");
-											}}
-											title="Delete user account"
-											aria-label="Delete user"
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
-									</td>
+					<div className="overflow-x-auto">
+						<table className="w-full text-sm text-left min-w-[560px]">
+							<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
+								<tr>
+									<th className="px-4 py-3 font-medium">Name</th>
+									<th className="px-4 py-3 font-medium">Email</th>
+									<th className="px-4 py-3 font-medium">Role</th>
+									<th className="px-4 py-3 font-medium">Joined</th>
+									<th className="px-4 py-3 font-medium text-right">Actions</th>
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+							<tbody className="divide-y">
+								{users.map((user) => (
+									<tr key={user.uid} className="border-b last:border-0">
+										<td className="px-4 py-3">
+											<div>{user.displayName}</div>
+											{(() => {
+												const linkedEmp = employees.find(
+													(e) => e.isActive && e.user_uid === user.uid,
+												);
+												return linkedEmp ? (
+													<span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium mt-0.5">
+														Linked: {linkedEmp.name}
+													</span>
+												) : null;
+											})()}
+										</td>
+										<td className="px-4 py-3">{user.email}</td>
+										<td className="px-4 py-3">
+											<select
+												value={user.role}
+												onChange={(e) => {
+													// biome-ignore lint/suspicious/noExplicitAny: DOM event value
+													const newRole = e.target.value as any;
+													if (newRole !== user.role) {
+														setRoleChangeTarget({ user, newRole });
+													}
+												}}
+												className="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+											>
+												<option value={ROLES.ADMIN}>Admin</option>
+												<option value={ROLES.MANAGER}>Manager</option>
+												<option value={ROLES.STAFF}>Staff</option>
+											</select>
+										</td>
+										<td className="px-4 py-3 text-sm text-zinc-500">
+											{user.created_at
+												? format(new Date(user.created_at), "MMM d, yyyy")
+												: "N/A"}
+										</td>
+										<td className="px-4 py-3 text-right">
+											<Button
+												variant="ghost"
+												size="sm"
+												className="text-red-600 hover:text-red-800"
+												onClick={() => {
+													setDeletingUser(user);
+													setDeleteReason("");
+												}}
+												title="Delete user account"
+												aria-label="Delete user"
+											>
+												<Trash2 className="h-4 w-4" />
+											</Button>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
 				</CardContent>
 			</Card>
 

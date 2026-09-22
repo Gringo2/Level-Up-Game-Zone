@@ -377,8 +377,8 @@ export function EmployeeRoster() {
 								) : (
 									/* Read-Only Row */
 									<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-md bg-white gap-3">
-										<div>
-											<div className="flex items-center gap-2">
+										<div className="min-w-0 flex-1">
+											<div className="flex flex-wrap items-center gap-2">
 												<span className="font-medium text-lg">{emp.name}</span>
 												<span className="text-xs px-2 py-0.5 rounded-full bg-zinc-100 font-medium">
 													{emp.position}
@@ -393,7 +393,10 @@ export function EmployeeRoster() {
 													{emp.isActive ? "Active" : "Inactive"}
 												</span>
 												{emp.user_uid && (
-													<span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+													<span
+														className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium truncate max-w-[14rem] sm:max-w-xs"
+														title={`Account: ${users.find((u) => u.uid === emp.user_uid)?.email || emp.user_uid}`}
+													>
 														Account:{" "}
 														{users.find((u) => u.uid === emp.user_uid)?.email ||
 															emp.user_uid}
@@ -416,7 +419,7 @@ export function EmployeeRoster() {
 											</div>
 										</div>
 										{user?.role === ROLES.ADMIN && (
-											<div className="flex gap-2">
+											<div className="flex gap-2 shrink-0">
 												<Button
 													variant="outline"
 													size="sm"

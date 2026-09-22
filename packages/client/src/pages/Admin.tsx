@@ -633,14 +633,14 @@ export function Admin() {
 									</form>
 								) : (
 									/* ── Read-Only Row ── */
-									<div className="flex justify-between items-center p-4 border rounded-md">
-										<div>
+									<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border rounded-md gap-3">
+										<div className="min-w-0 flex-1">
 											<div className="font-medium">{rate.game_name}</div>
 											<div className="text-sm text-zinc-500">
 												${rate.price_per_unit.toFixed(2)} / {rate.unit_type}
 											</div>
 										</div>
-										<div className="flex gap-2">
+										<div className="flex gap-2 shrink-0">
 											<Button
 												variant="outline"
 												size="sm"
@@ -708,7 +708,7 @@ export function Admin() {
 							allCategories.map((cat) => (
 								<div
 									key={cat.id}
-									className="flex items-center gap-2 p-2 border rounded-md bg-white"
+									className="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-white"
 								>
 									{editingCategoryId === cat.id ? (
 										<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
@@ -753,7 +753,9 @@ export function Admin() {
 										</div>
 									) : (
 										<>
-											<span className="flex-1 text-sm">{cat.name}</span>
+											<span className="flex-1 min-w-[120px] text-sm">
+												{cat.name}
+											</span>
 											{cat.created_at && (
 												<span className="text-xs text-zinc-400">
 													{format(new Date(cat.created_at), "MMM d, yyyy")}
