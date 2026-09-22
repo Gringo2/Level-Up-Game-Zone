@@ -8,6 +8,7 @@ import {
 	render,
 	screen,
 	waitFor,
+	within,
 } from "@testing-library/react";
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -142,7 +143,9 @@ describe("Dashboard", () => {
 	it("renders dashboard totals and the active shift card", async () => {
 		render(<Dashboard />);
 		expect(await screen.findByText("Active Shift: Alice")).toBeInTheDocument();
-		expect(screen.getByText("$10.00")).toBeInTheDocument();
+		expect(
+			within(screen.getByTestId("kpi-game-sales")).getByText("$10.00"),
+		).toBeInTheDocument();
 		expect(screen.getByText("$60.00")).toBeInTheDocument();
 		expect(screen.getByText("-$20.00")).toBeInTheDocument();
 		expect(screen.getByText("-$12.50")).toBeInTheDocument();
@@ -566,5 +569,115 @@ describe("Dashboard", () => {
 		await waitFor(() =>
 			expect(toast.success).toHaveBeenCalledWith("Float updated successfully!"),
 		);
+	});
+
+	it("ACP-024: renders itemized game sales breakdown table with aggregated quantities and subtotals", async () => {
+		const multiItemLogs = [
+			{
+				id: "s1",
+				game_id: "g1",
+				game_name: "PS5",
+				quantity_sold: 2,
+				rate_applied: 50,
+				calculated_total: 100,
+				unit_type: "Hour",
+				user_id: "u1",
+				date: new Date().toISOString(),
+			},
+			{
+				id: "s2",
+				game_id: "g1",
+				game_name: "PS5",
+				quantity_sold: 1.5,
+				rate_applied: 50,
+				calculated_total: 75,
+				unit_type: "Hour",
+				user_id: "u1",
+				date: new Date().toISOString(),
+			},
+			{
+				id: "s3",
+				game_id: "g2",
+				game_name: "8-Ball Pool",
+				quantity_sold: 3,
+				rate_applied: 20,
+				calculated_total: 60,
+				unit_type: "Game",
+				user_id: "u1",
+				date: new Date().toISOString(),
+			},
+		];
+
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sales")) {
+				return jsonResponse(multiItemLogs);
+			}
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		expect(screen.getByText("Shift Game Sales by Item")).toBeInTheDocument();
+
+		expect(screen.getByText("PS5")).toBeInTheDocument();
+		expect(screen.getByText("3.5 hrs")).toBeInTheDocument();
+		expect(screen.getByText("$175.00")).toBeInTheDocument();
+
+		expect(screen.getByText("8-Ball Pool")).toBeInTheDocument();
+		expect(screen.getByText("3 games")).toBeInTheDocument();
+		expect(screen.getByText("$60.00")).toBeInTheDocument();
+
+		const kpiCard = screen.getByTestId("kpi-game-sales");
+		expect(kpiCard).toHaveTextContent("$235.00");
+		expect(kpiCard).toHaveTextContent(/2 game types/i);
+	});
+
+	it("ACP-024: renders empty state when no game sales exist for the shift", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sales")) {
+				return jsonResponse([]);
+			}
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		expect(screen.getByText("Shift Game Sales by Item")).toBeInTheDocument();
+		expect(
+			screen.getByText("No game sales logged for this shift yet."),
+		).toBeInTheDocument();
+	});
+
+	it("ACP-024: renders itemized breakdown in printable Safe Slip (Z-Report)", async () => {
+		const slipLogs = [
+			{
+				id: "s1",
+				game_id: "g1",
+				game_name: "PS5",
+				quantity_sold: 2,
+				rate_applied: 50,
+				calculated_total: 100,
+				unit_type: "Hour",
+				user_id: "u1",
+				date: new Date().toISOString(),
+			},
+		];
+
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sales")) {
+				return jsonResponse(slipLogs);
+			}
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		const safeSlip = document.querySelector(".print\\:block");
+		expect(safeSlip).toBeInTheDocument();
+		expect(safeSlip).toHaveTextContent("Games Total: $100.00");
+		expect(safeSlip).toHaveTextContent("PS5 (2 hrs): $100.00");
 	});
 });

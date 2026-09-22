@@ -113,6 +113,41 @@ export function Dashboard() {
 		(sum, log) => sum + log.calculated_total,
 		0,
 	);
+	const gameSalesByItem = Object.values(
+		gameSales.reduce(
+			(acc, log) => {
+				const key = log.game_name || "Unknown Game";
+				if (!acc[key]) {
+					acc[key] = {
+						gameName: key,
+						totalQuantity: 0,
+						totalRevenue: 0,
+						unitType: log.unit_type || "Hour",
+						count: 0,
+					};
+				}
+				acc[key].totalQuantity += Number(log.quantity_sold) || 0;
+				acc[key].totalRevenue += Number(log.calculated_total) || 0;
+				acc[key].count += 1;
+				return acc;
+			},
+			{} as Record<
+				string,
+				{
+					gameName: string;
+					totalQuantity: number;
+					totalRevenue: number;
+					unitType: string;
+					count: number;
+				}
+			>,
+		),
+	).sort((a, b) => b.totalRevenue - a.totalRevenue);
+
+	const totalItemsSold = gameSalesByItem.reduce(
+		(sum, item) => sum + item.totalQuantity,
+		0,
+	);
 	const totalKenoNet = kenoLogs.reduce((sum, log) => sum + log.net_profit, 0);
 	const pendingCredits = credits
 		.filter((c) => c.status === CREDIT_STATUSES.PENDING)
@@ -274,6 +309,26 @@ export function Dashboard() {
 				<h2 className="text-xl font-bold mt-6 border-b pb-2">Revenue</h2>
 				<p>Keno Net: ${totalKenoNet.toFixed(2)}</p>
 				<p>Games Total: ${totalGameSales.toFixed(2)}</p>
+				{gameSalesByItem.length > 0 && (
+					<ul className="ml-4 text-sm list-disc">
+						{gameSalesByItem.map((item) => {
+							const unitLabel =
+								item.unitType.toLowerCase() === "hour"
+									? item.totalQuantity === 1
+										? "hr"
+										: "hrs"
+									: item.totalQuantity === 1
+										? "game"
+										: "games";
+							return (
+								<li key={item.gameName}>
+									{item.gameName} ({item.totalQuantity} {unitLabel}): $
+									{item.totalRevenue.toFixed(2)}
+								</li>
+							);
+						})}
+					</ul>
+				)}
 				<h2 className="text-xl font-bold mt-6 border-b pb-2">Cash Movements</h2>
 				<p>Expenses: ${totalExpenses.toFixed(2)}</p>
 				<p>Pending Credits: ${pendingCredits.toFixed(2)}</p>
@@ -297,7 +352,7 @@ export function Dashboard() {
 				<h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
 
 				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-					<Card>
+					<Card data-testid="kpi-game-sales">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Game Sales</CardTitle>
 							<Gamepad2 className="h-4 w-4 text-zinc-500" />
@@ -306,6 +361,11 @@ export function Dashboard() {
 							<div className="text-2xl font-bold">
 								${totalGameSales.toFixed(2)}
 							</div>
+							<p className="text-xs text-zinc-500 mt-1">
+								{gameSalesByItem.length === 0
+									? "No sales logged"
+									: `${totalItemsSold} ${totalItemsSold === 1 ? "unit" : "units"} across ${gameSalesByItem.length} ${gameSalesByItem.length === 1 ? "game type" : "game types"}`}
+							</p>
 						</CardContent>
 					</Card>
 					<Card>
@@ -344,6 +404,120 @@ export function Dashboard() {
 						</CardContent>
 					</Card>
 				</div>
+
+				<Card data-testid="shift-game-sales-items">
+					<CardHeader className="pb-3">
+						<div className="flex items-center justify-between">
+							<div>
+								<CardTitle className="text-lg font-semibold flex items-center gap-2">
+									<Gamepad2 className="h-5 w-5 text-zinc-600" />
+									Shift Game Sales by Item
+								</CardTitle>
+								<CardDescription>
+									Itemized breakdown of game sales logged during this shift
+								</CardDescription>
+							</div>
+							{gameSalesByItem.length > 0 && (
+								<div className="text-right">
+									<div className="text-xs text-zinc-500">Shift Total</div>
+									<div className="text-lg font-bold text-zinc-900">
+										${totalGameSales.toFixed(2)}
+									</div>
+								</div>
+							)}
+						</div>
+					</CardHeader>
+					<CardContent>
+						{gameSalesByItem.length === 0 ? (
+							<div className="text-center py-8 text-zinc-500">
+								<Gamepad2 className="h-8 w-8 mx-auto mb-2 text-zinc-300 stroke-1" />
+								<p className="text-sm font-medium">
+									No game sales logged for this shift yet.
+								</p>
+								<p className="text-xs text-zinc-400 mt-1">
+									Sales logged from the Game Sales page will appear here
+									itemized.
+								</p>
+							</div>
+						) : (
+							<div className="overflow-x-auto">
+								<table className="w-full text-sm text-left">
+									<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
+										<tr>
+											<th className="px-4 py-2.5 font-medium">Game / Item</th>
+											<th className="px-4 py-2.5 font-medium">Unit Type</th>
+											<th className="px-4 py-2.5 font-medium text-right">
+												Quantity Sold
+											</th>
+											<th className="px-4 py-2.5 font-medium text-right">
+												Subtotal
+											</th>
+											<th className="px-4 py-2.5 font-medium text-right">
+												Share
+											</th>
+										</tr>
+									</thead>
+									<tbody className="divide-y divide-zinc-100">
+										{gameSalesByItem.map((item) => {
+											const unitLabel =
+												item.unitType.toLowerCase() === "hour"
+													? item.totalQuantity === 1
+														? "hr"
+														: "hrs"
+													: item.totalQuantity === 1
+														? "game"
+														: "games";
+											const sharePercent =
+												totalGameSales > 0
+													? (item.totalRevenue / totalGameSales) * 100
+													: 0;
+
+											return (
+												<tr key={item.gameName} className="hover:bg-zinc-50/50">
+													<td className="px-4 py-2.5 font-medium text-zinc-900 flex items-center gap-2">
+														<Gamepad2 className="h-4 w-4 text-zinc-400" />
+														<span>{item.gameName}</span>
+													</td>
+													<td className="px-4 py-2.5 text-zinc-600">
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800">
+															{item.unitType}
+														</span>
+													</td>
+													<td className="px-4 py-2.5 text-right font-medium text-zinc-700">
+														{item.totalQuantity} {unitLabel}
+													</td>
+													<td className="px-4 py-2.5 text-right font-semibold text-zinc-900">
+														${item.totalRevenue.toFixed(2)}
+													</td>
+													<td className="px-4 py-2.5 text-right text-xs text-zinc-500">
+														{sharePercent.toFixed(1)}%
+													</td>
+												</tr>
+											);
+										})}
+									</tbody>
+									<tfoot className="border-t bg-zinc-50/60 font-medium text-zinc-900">
+										<tr>
+											<td className="px-4 py-2.5" colSpan={2}>
+												Total ({gameSalesByItem.length}{" "}
+												{gameSalesByItem.length === 1 ? "game" : "games"})
+											</td>
+											<td className="px-4 py-2.5 text-right font-medium">
+												{totalItemsSold} total
+											</td>
+											<td className="px-4 py-2.5 text-right font-bold">
+												${totalGameSales.toFixed(2)}
+											</td>
+											<td className="px-4 py-2.5 text-right text-xs text-zinc-500">
+												100.0%
+											</td>
+										</tr>
+									</tfoot>
+								</table>
+							</div>
+						)}
+					</CardContent>
+				</Card>
 
 				<h2 className="text-xl font-bold tracking-tight mt-8">
 					Shift Management

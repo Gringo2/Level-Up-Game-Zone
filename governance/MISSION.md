@@ -1,42 +1,43 @@
 # CURRENT MISSION
 
-**Type:** Governance / Documentation  
-**Mission:** M-115 Repository Governance & Lifecycle Documentation Hygiene  
+**Type:** Feature / UX  
+**Mission:** M-116 Dashboard Game Sales Item Granularity  
 **Status:** Locked  
-**Proposal:** ACP-023  
+**Proposal:** ACP-024  
 
 ## 1. Objective
-Synchronize and correct identified documentation anomalies across repository governance and lifecycle specifications following the post-M-114 line-by-line audit:
-1. Correct `RELEASE_READINESS.md` line 107 to reflect 6 moderate `qs` advisories per `npm audit` and `DEBT.md`.
-2. Correct `ENGINEERING_LIFECYCLE.md` line 39 proposal pointer from ACP-019 to ACP-005.
-3. Replace alien subsystem examples (`Observation Graph`, `Session Manager`, `Canvas Analyzer`, `Animation Detector`, `AI Summarizer`) in `ENGINEERING_LIFECYCLE.md` lines 75–76 with genuine Level-Up Game Zone subsystems.
-4. Correct `AGENTS.md` line 132 ADR-001 reference from `Observation Graph` to `Thin Client Composition Roots` per Product Owner approval.
-5. Update `SYSTEM_CONTEXT.md` current mission pointer to M-115.
+Implement item-level granularity for Game Sales on the Dashboard (`Dashboard.tsx`):
+1. Compute itemized sales aggregation (`gameSalesByItem`) grouping shift sales by game name, unit type, quantity sold, and total revenue.
+2. Enhance the Game Sales KPI summary card with item metrics and scoped testid.
+3. Introduce a dedicated responsive "Shift Game Sales by Item" breakdown card with formatted table and empty state.
+4. Itemize game sales in the printable Safe Slip (Z-Report) for physical store auditability.
+5. Provide comprehensive unit tests in `Dashboard.test.tsx` following ADR-006 Red-Green validation.
 
 ## 2. Context
-Following the sweep of stale prose in the repository after M-114, subtle discrepancies were catalogued in governance and lifecycle documents. Per the repository constitution (`AGENTS.md`), all changes must be traceable to an approved mission (M-115) and proposal (ACP-023).
+User reported: "dashboard granurality issues game sales doesnt show items". The existing Dashboard aggregated all shift game sales into a single numeric total, depriving operators of item-level visibility. This mission provides client-side itemized granularity with zero backend mutations.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `governance/RELEASE_READINESS.md`
-  - `governance/ENGINEERING_LIFECYCLE.md`
+  - `packages/client/src/pages/Dashboard.tsx`
+  - `packages/client/src/__tests__/pages/Dashboard.test.tsx`
+  - `governance/proposals/ACP-024_Dashboard_Game_Sales_Item_Granularity.md`
+  - `governance/missions/M-116_DASHBOARD_GAME_SALES_GRANULARITY.md`
+  - `governance/MISSION.md`
   - `governance/SYSTEM_CONTEXT.md`
-  - `AGENTS.md`
   - `governance/TASKS.md`
   - `governance/ROADMAP.md`
-  - `governance/MISSION.md`
-  - `governance/proposals/ACP-023_Governance_Lifecycle_Documentation_Hygiene.md`
-  - `governance/missions/M-115_GOVERNANCE_LIFECYCLE_HYGIENE.md`
+  - `docs/reports/M-116_BLAST_RADIUS_AND_CORRECTNESS_REPORT.md`
 - **Out of Scope:**
-  - Runtime code modifications in `packages/client`, `packages/server`, or `packages/shared`.
-  - Database schemas, API routes, or test implementations.
+  - Backend controllers, schemas, or database collections.
+  - Other client pages.
   - Git mutating operations.
 
 ## 4. Testing Strategy
-- Monorepo fitness gates: `npm run lint`, `npm run knip`, `npm run build`, `npx vitest run`.
-- Verification of documentation accuracy against active architecture documents and CLI audits.
+- Vitest unit tests in `Dashboard.test.tsx` with Red-Green gating (ADR-006).
+- Fitness gates: `npm run lint`, `npm run knip`, `npm run build`, `npx vitest run`.
 
 ## 5. Evidence Payload
-- [x] Functional Verification: All targeted files strictly align with verified repository architecture and CLI audit output.
-- [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings across 160 files), Knip (0 issues), TypeScript build clean, and Vitest suite (630/630 tests passing across 39 files).
-- [x] Governance Traceability: ACP-023 approved, M-115 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.
+- [x] Functional Verification: Itemized breakdown table, KPI subtitle, and Safe Slip render accurate data with sum conservation.
+- [x] Red-Green Validation: Negative test execution recorded prior to implementation (3 failed, 19 passed; post-implementation 22 passed).
+- [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings across 160 files), Knip (0 issues), clean TypeScript build, and Vitest suite (633/633 tests passing across 39 files).
+- [x] Governance Traceability: ACP-024 approved, M-116 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.
