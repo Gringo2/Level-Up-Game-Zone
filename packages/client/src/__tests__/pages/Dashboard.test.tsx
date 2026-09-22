@@ -620,20 +620,29 @@ describe("Dashboard", () => {
 
 		expect(screen.getByText("Shift Game Sales by Item")).toBeInTheDocument();
 
-		expect(screen.getByText("PS5")).toBeInTheDocument();
-		expect(screen.getByText("3.5 hrs")).toBeInTheDocument();
-		expect(screen.getByText("$175.00")).toBeInTheDocument();
+		const itemsTable = screen.getByTestId("shift-game-sales-items");
+		expect(within(itemsTable).getByText("PS5")).toBeInTheDocument();
+		expect(within(itemsTable).getByText("3.5 hrs")).toBeInTheDocument();
+		expect(within(itemsTable).getByText("$175.00")).toBeInTheDocument();
 
-		expect(screen.getByText("8-Ball Pool")).toBeInTheDocument();
-		expect(screen.getByText("3 games")).toBeInTheDocument();
-		expect(screen.getByText("$60.00")).toBeInTheDocument();
+		expect(within(itemsTable).getByText("8-Ball Pool")).toBeInTheDocument();
+		expect(within(itemsTable).getByText("3 games")).toBeInTheDocument();
+		expect(within(itemsTable).getByText("$60.00")).toBeInTheDocument();
 
 		const kpiCard = screen.getByTestId("kpi-game-sales");
-		expect(kpiCard).toHaveTextContent("$235.00");
-		expect(kpiCard).toHaveTextContent(/2 game types/i);
+		// ACP-025 (Option B): Top card replaces aggregate currency with direct item pills & distribution bar
+		expect(within(kpiCard).getByText("PS5")).toBeInTheDocument();
+		expect(within(kpiCard).getByText("3.5 hrs")).toBeInTheDocument();
+		expect(within(kpiCard).getByText("$175.00")).toBeInTheDocument();
+		expect(within(kpiCard).getByText("8-Ball Pool")).toBeInTheDocument();
+		expect(within(kpiCard).getByText("3 games")).toBeInTheDocument();
+		expect(within(kpiCard).getByText("$60.00")).toBeInTheDocument();
+		expect(
+			within(kpiCard).getByTestId("game-sales-distribution-bar"),
+		).toBeInTheDocument();
 	});
 
-	it("ACP-024: renders empty state when no game sales exist for the shift", async () => {
+	it("ACP-024 / ACP-025: renders empty state when no game sales exist for the shift", async () => {
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/api/sales")) {
 				return jsonResponse([]);
@@ -644,9 +653,16 @@ describe("Dashboard", () => {
 		render(<Dashboard />);
 		await screen.findByText("Active Shift: Alice");
 
+		// Table empty state
 		expect(screen.getByText("Shift Game Sales by Item")).toBeInTheDocument();
 		expect(
 			screen.getByText("No game sales logged for this shift yet."),
+		).toBeInTheDocument();
+
+		// ACP-025: Top card empty state badge
+		const kpiCard = screen.getByTestId("kpi-game-sales");
+		expect(
+			within(kpiCard).getByText("No sales logged this shift"),
 		).toBeInTheDocument();
 	});
 

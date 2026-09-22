@@ -96,4 +96,5 @@
 *   [x] **Mission 114:** Repository Prose Synchronization & Documentation Hygiene — synchronized system mechanisms, user stories, UI behaviors, changelog, and ADR documentation to reflect implemented Phase 8 architecture (specifically M-99 auto-open shift endpoint and post-M-89 operational scope) (2026-09-22, Locked; ACP-022).
 *   [x] **Mission 115:** Repository Governance & Lifecycle Documentation Hygiene — synchronized advisory counts, lifecycle gate proposal reference, authentic subsystem examples, and constitution ADR reference (2026-09-22, Locked; ACP-023).
 *   [x] **Mission 116:** Dashboard Game Sales Item Granularity — itemized game sales aggregation by game name, unit type, quantity sold, and revenue on Dashboard, KPI item subtitle, and expanded Safe Slip printout (2026-09-22, Locked; ACP-024).
+*   [x] **Mission 117:** Dashboard Top Card Game Sales Item Granularity — refactor top Game Sales KPI card to display item-level breakdown with pills, quantities, subtotals, and mini distribution bar per Option B (2026-09-22, Locked; ACP-025).
 

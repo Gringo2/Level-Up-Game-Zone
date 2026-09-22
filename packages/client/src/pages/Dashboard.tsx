@@ -357,15 +357,82 @@ export function Dashboard() {
 							<CardTitle className="text-sm font-medium">Game Sales</CardTitle>
 							<Gamepad2 className="h-4 w-4 text-zinc-500" />
 						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold">
-								${totalGameSales.toFixed(2)}
-							</div>
-							<p className="text-xs text-zinc-500 mt-1">
-								{gameSalesByItem.length === 0
-									? "No sales logged"
-									: `${totalItemsSold} ${totalItemsSold === 1 ? "unit" : "units"} across ${gameSalesByItem.length} ${gameSalesByItem.length === 1 ? "game type" : "game types"}`}
-							</p>
+						<CardContent className="space-y-2">
+							{gameSalesByItem.length === 0 ? (
+								<div className="py-2 text-center">
+									<span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+										No sales logged this shift
+									</span>
+								</div>
+							) : (
+								<>
+									<div className="space-y-1.5">
+										{gameSalesByItem.slice(0, 3).map((item) => {
+											const unitLabel =
+												item.unitType.toLowerCase() === "hour"
+													? item.totalQuantity === 1
+														? "hr"
+														: "hrs"
+													: item.totalQuantity === 1
+														? "game"
+														: "games";
+											return (
+												<div
+													key={item.gameName}
+													className="flex items-center justify-between text-xs gap-1"
+												>
+													<div className="flex items-center gap-1.5 min-w-0">
+														<span className="font-semibold text-zinc-900 truncate">
+															{item.gameName}
+														</span>
+														<span className="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-medium bg-zinc-100 text-zinc-600 shrink-0">
+															{item.totalQuantity} {unitLabel}
+														</span>
+													</div>
+													<span className="font-bold text-zinc-900 shrink-0">
+														${item.totalRevenue.toFixed(2)}
+													</span>
+												</div>
+											);
+										})}
+										{gameSalesByItem.length > 3 && (
+											<p className="text-[11px] text-zinc-400 text-right">
+												+{gameSalesByItem.length - 3} more games
+											</p>
+										)}
+									</div>
+
+									{/* Segmented Distribution Bar */}
+									<div
+										data-testid="game-sales-distribution-bar"
+										className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden flex"
+										title="Sales distribution by game"
+									>
+										{gameSalesByItem.map((item, idx) => {
+											const sharePercent =
+												totalGameSales > 0
+													? (item.totalRevenue / totalGameSales) * 100
+													: 0;
+											const barColors = [
+												"bg-emerald-500",
+												"bg-blue-500",
+												"bg-purple-500",
+												"bg-amber-500",
+												"bg-indigo-500",
+											];
+											const colorClass = barColors[idx % barColors.length];
+											return (
+												<div
+													key={item.gameName}
+													className={`${colorClass} h-full transition-all`}
+													style={{ width: `${sharePercent}%` }}
+													title={`${item.gameName}: ${sharePercent.toFixed(1)}%`}
+												/>
+											);
+										})}
+									</div>
+								</>
+							)}
 						</CardContent>
 					</Card>
 					<Card>

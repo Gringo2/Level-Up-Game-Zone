@@ -1,32 +1,31 @@
 # CURRENT MISSION
 
 **Type:** Feature / UX  
-**Mission:** M-116 Dashboard Game Sales Item Granularity  
+**Mission:** M-117 Dashboard Top Card Game Sales Item Granularity  
 **Status:** Locked  
-**Proposal:** ACP-024  
+**Proposal:** ACP-025  
 
 ## 1. Objective
-Implement item-level granularity for Game Sales on the Dashboard (`Dashboard.tsx`):
-1. Compute itemized sales aggregation (`gameSalesByItem`) grouping shift sales by game name, unit type, quantity sold, and total revenue.
-2. Enhance the Game Sales KPI summary card with item metrics and scoped testid.
-3. Introduce a dedicated responsive "Shift Game Sales by Item" breakdown card with formatted table and empty state.
-4. Itemize game sales in the printable Safe Slip (Z-Report) for physical store auditability.
+Refactor the top Game Sales KPI card (`kpi-game-sales`) on the Dashboard (`Dashboard.tsx`) to display direct item-level granularity per Product Owner approved Option B:
+1. Replace scalar aggregate currency headline with compact itemized micro-rows and quantity badges.
+2. Render segmented distribution bar visualizing proportional revenue share per game.
+3. Provide clean empty state badge when zero shift game sales exist.
+4. Retain the dedicated "Shift Game Sales by Item" breakdown table card below for auditability.
 5. Provide comprehensive unit tests in `Dashboard.test.tsx` following ADR-006 Red-Green validation.
 
 ## 2. Context
-User reported: "dashboard granurality issues game sales doesnt show items". The existing Dashboard aggregated all shift game sales into a single numeric total, depriving operators of item-level visibility. This mission provides client-side itemized granularity with zero backend mutations.
+In Mission M-116 (ACP-024), item-level granularity was provided in a table card below the KPI row, but the top card retained a scalar aggregate dollar amount. The Product Owner approved Option B to make the top card itself itemized, eliminating the aggregate-only headline from the top row.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
   - `packages/client/src/pages/Dashboard.tsx`
   - `packages/client/src/__tests__/pages/Dashboard.test.tsx`
-  - `governance/proposals/ACP-024_Dashboard_Game_Sales_Item_Granularity.md`
-  - `governance/missions/M-116_DASHBOARD_GAME_SALES_GRANULARITY.md`
+  - `governance/proposals/ACP-025_Dashboard_Top_Card_Item_Granularity.md`
+  - `governance/missions/M-117_DASHBOARD_TOP_CARD_ITEM_GRANULARITY.md`
   - `governance/MISSION.md`
   - `governance/SYSTEM_CONTEXT.md`
   - `governance/TASKS.md`
   - `governance/ROADMAP.md`
-  - `docs/reports/M-116_BLAST_RADIUS_AND_CORRECTNESS_REPORT.md`
 - **Out of Scope:**
   - Backend controllers, schemas, or database collections.
   - Other client pages.
@@ -35,9 +34,11 @@ User reported: "dashboard granurality issues game sales doesnt show items". The 
 ## 4. Testing Strategy
 - Vitest unit tests in `Dashboard.test.tsx` with Red-Green gating (ADR-006).
 - Fitness gates: `npm run lint`, `npm run knip`, `npm run build`, `npx vitest run`.
+- Local Playwright browser probe capturing rendered screenshot.
 
 ## 5. Evidence Payload
-- [x] Functional Verification: Itemized breakdown table, KPI subtitle, and Safe Slip render accurate data with sum conservation.
-- [x] Red-Green Validation: Negative test execution recorded prior to implementation (3 failed, 19 passed; post-implementation 22 passed).
+- [x] Functional Verification: Top Game Sales KPI card renders item micro-rows, quantity pills, subtotal amounts, and segmented distribution bar.
+- [x] Red-Green Validation: Verified failing test state prior to implementation (2 failed, 20 passed), followed by 100% green state (22 passed in `Dashboard.test.tsx`).
+- [x] Visual Browser Verification: Local Playwright browser probe verified both active multi-item rendering and clean empty-state badge.
 - [x] Monorepo Hygiene: Biome lint (0 errors, 0 warnings across 160 files), Knip (0 issues), clean TypeScript build, and Vitest suite (633/633 tests passing across 39 files).
-- [x] Governance Traceability: ACP-024 approved, M-116 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.
+- [x] Governance Traceability: ACP-025 approved, M-117 logged in TASKS.md and ROADMAP.md, and locked in MISSION.md.
