@@ -1,7 +1,7 @@
 import type { Expense, ExpenseCategory } from "@level-up/shared";
 import { EXPENSE_CATEGORY_FALLBACKS, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Edit2, Loader2, Trash2 } from "lucide-react";
+import { Edit2, Loader2, Receipt, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -629,7 +629,11 @@ export function Expenses() {
 						<div>
 							{expenses.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
-									No expenses found for the selected date range.
+									<Receipt
+										className="mx-auto h-8 w-8 text-zinc-300 mb-2"
+										aria-hidden="true"
+									/>
+									<p>No expenses found for the selected date range.</p>
 								</div>
 							) : (
 								<div className="rounded-md border bg-white divide-y">

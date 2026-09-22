@@ -1,7 +1,7 @@
 import type { GameRate, GameSalesLog } from "@level-up/shared";
 import { DEFAULT_GAME_RATES, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Edit2, Loader2, Trash2 } from "lucide-react";
+import { Edit2, Gamepad2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -631,9 +631,15 @@ export function GameSales() {
 						<div>
 							{logs.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
-									{rangeStart === todayStr && rangeEnd === todayStr
-										? "No game sales logged today yet."
-										: "No game sales logged in this period."}
+									<Gamepad2
+										className="mx-auto h-8 w-8 text-zinc-300 mb-2"
+										aria-hidden="true"
+									/>
+									<p>
+										{rangeStart === todayStr && rangeEnd === todayStr
+											? "No game sales logged today yet."
+											: "No game sales logged in this period."}
+									</p>
 								</div>
 							) : (
 								<div className="rounded-md border bg-white divide-y">

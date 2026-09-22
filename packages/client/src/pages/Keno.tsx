@@ -1,7 +1,7 @@
 import type { KenoLog } from "@level-up/shared";
 import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Edit2, Loader2, Trash2 } from "lucide-react";
+import { Coins, Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -477,9 +477,15 @@ export function Keno() {
 						<div>
 							{logs.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
-									{rangeStart === todayStr && rangeEnd === todayStr
-										? "No Keno logged today yet."
-										: "No Keno logged in this period."}
+									<Coins
+										className="mx-auto h-8 w-8 text-zinc-300 mb-2"
+										aria-hidden="true"
+									/>
+									<p>
+										{rangeStart === todayStr && rangeEnd === todayStr
+											? "No Keno logged today yet."
+											: "No Keno logged in this period."}
+									</p>
 								</div>
 							) : (
 								<div className="rounded-md border bg-white divide-y">

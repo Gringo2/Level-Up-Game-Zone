@@ -1,7 +1,7 @@
 import type { Credit, Employee } from "@level-up/shared";
 import { CREDIT_STATUSES, ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Edit2, Loader2, Trash2 } from "lucide-react";
+import { CreditCard, Edit2, Loader2, Trash2 } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -431,7 +431,11 @@ export function Credits() {
 						<div className="space-y-3">
 							{credits.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
-									No credits logged yet.
+									<CreditCard
+										className="mx-auto h-8 w-8 text-zinc-300 mb-2"
+										aria-hidden="true"
+									/>
+									<p>No credits logged yet.</p>
 								</div>
 							) : (
 								credits.map((credit) => (
