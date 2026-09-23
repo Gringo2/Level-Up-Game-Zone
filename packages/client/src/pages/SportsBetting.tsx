@@ -335,6 +335,7 @@ export function SportsBetting() {
 									id="net"
 									type="number"
 									step="0.01"
+									inputMode="decimal"
 									value={netAmount}
 									onChange={(e) => setNetAmount(e.target.value)}
 									required
@@ -394,8 +395,8 @@ export function SportsBetting() {
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<div className="flex flex-wrap sm:flex-nowrap gap-2 items-end mb-3">
-							<div className="space-y-1 flex-1 min-w-[130px]">
+						<div className="flex flex-col min-[400px]:flex-row flex-wrap sm:flex-nowrap gap-2 items-end mb-3">
+							<div className="space-y-1 w-full min-[400px]:flex-1 min-w-0">
 								<Label htmlFor="bettingRangeStart">From</Label>
 								<Input
 									id="bettingRangeStart"
@@ -404,7 +405,7 @@ export function SportsBetting() {
 									onChange={(e) => setRangeStart(e.target.value)}
 								/>
 							</div>
-							<div className="space-y-1 flex-1 min-w-[130px]">
+							<div className="space-y-1 w-full min-[400px]:flex-1 min-w-0">
 								<Label htmlFor="bettingRangeEnd">To</Label>
 								<Input
 									id="bettingRangeEnd"
@@ -413,12 +414,13 @@ export function SportsBetting() {
 									onChange={(e) => setRangeEnd(e.target.value)}
 								/>
 							</div>
-							<div className="flex gap-2">
+							<div className="flex gap-2 w-full min-[400px]:w-auto">
 								<Button
 									type="button"
 									variant="outline"
 									onClick={() => void loadLogs()}
 									disabled={rangeStart > rangeEnd || listLoading}
+									className="flex-1 min-[400px]:flex-initial"
 								>
 									{listLoading && (
 										<Loader2
@@ -436,6 +438,7 @@ export function SportsBetting() {
 										setRangeEnd(todayStr);
 									}}
 									disabled={listLoading}
+									className="flex-1 min-[400px]:flex-initial"
 								>
 									Today
 								</Button>

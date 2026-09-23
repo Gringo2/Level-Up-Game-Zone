@@ -1,45 +1,38 @@
 # CURRENT MISSION
 
-**Type:** Feature / Financial Domain  
-**Mission:** M-120 Sports Betting Income Stream Integration  
+**Type:** Quality / E2E & Ergonomics  
+**Mission:** M-121 Sports Betting Playwright E2E Suite & Mobile Touch Ergonomics Hardening  
 **Status:** Locked  
-**Proposal:** ACP-028  
-**Architecture Record:** ADR-009  
+**Proposal:** ACP-029  
 
 ## 1. Objective
-Implement full-stack integration for the Sports Betting revenue stream at Level-Up Game Zone. Provide secure, role-gated logging of net sports betting profit/loss, integrate sports betting income directly into physical cash register drawer balancing (`expected_cash_calculated`), introduce a dedicated management page (`/betting`), surface sports betting in the 5th Dashboard KPI card and Safe Slip (Z-Report), and aggregate sports betting in Financial Reports and Revenue Mix.
+Expand the automated end-to-end browser test suite for the Sports Betting domain (`/betting`) and harden mobile/tablet touch ergonomics (virtual keypad, responsive date controls, and zero horizontal overflow).
 
 ## 2. Context & Root Cause
-Level-Up Game Zone operates an independent Sports Betting terminal that generates daily net revenue. Previously, the system lacked a sports betting data model, API endpoints, drawer formula representation, or user interface. Operators had no system mechanism to log net betting returns or balance them against physical cash in the shift drawer. Per ACP-028 and ADR-009, Sports Betting follows the simple net income model (analogous to Keno), restricted to Managers and Admins, with full audit trail logging and register drawer integration.
+In M-120 (ACP-028 / ADR-009), the Sports Betting income stream was integrated full-stack. To guarantee operational resilience and touch usability, Mission M-121 establishes automated end-to-end browser coverage for the `/betting` route and refines touch ergonomics for mobile and tablet devices.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `@level-up/shared`: `COLLECTIONS.SPORTS_BETTING_LOGS`, `SportsBettingLog` interface.
-  - `packages/server`:
-    - Schemas: `CreateSportsBettingSchema`, `UpdateSportsBettingSchema` with JSON-NaN hole guards.
-    - Controller & Routes: `sportsBettingController.ts` & `routes/sportsBetting.ts` (CRUD, verify, manager/admin role gate, atomic `audit_logs` logging).
-    - Shift Balancing: `shiftsController.ts` updated with `expectedCash = opening_float + gameSales + kenoNet + bettingNet - expenses - pendingCredits`.
-  - `packages/client`:
-    - Pure validator: `parseNetAmountInput` in `inputUtils.ts` (reused across Keno and SportsBetting).
-    - Navigation & Routing: `Trophy` icon nav item in `Layout.tsx`, `/betting` route in `App.tsx` gated to Manager/Admin.
-    - Dedicated Page: `pages/SportsBetting.tsx` with date-range filters, cursor pagination, day grouping, period summary, inline edit/delete/verify modals, and `visibilitychange` refetch.
-    - Dashboard: `pages/Dashboard.tsx` 5th KPI card (`kpi-sports-betting`), 5-column responsive grid, drawer variance calculation, and Safe Slip printout.
-    - Reports: `pages/Reports.tsx` parallel fetch, `totalSportsBettingNet` aggregation, Revenue Mix entry, Total Revenue calculation parity, and ledger section.
+  - `packages/client/src/pages/SportsBetting.tsx`: Added `inputMode="decimal"` to `#net`, responsive date toolbar stacking with `min-[400px]:flex-row` and `w-full min-[400px]:w-auto`.
+  - `tests/e2e/dashboard_flow.spec.ts`: Added `/api/sports-betting` route mock to align with M-120 dashboard data contract.
+  - `tests/e2e/sports_betting_flow.spec.ts`: 6 comprehensive E2E tests covering RBAC isolation, manager navigation & logging, verification badge transition, edit modal with required reason, delete modal with confirmation, and multi-device responsive overflow check.
+  - Governance tracking: `MISSION.md`, `SYSTEM_CONTEXT.md`, `TASKS.md`, `ROADMAP.md`, `ACP-029`.
 - **Out of Scope:**
-  - Automated terminal hardware integration or scrapers.
-  - Individual bet ticket tracking (handled by external sports betting software).
+  - Database schema changes.
+  - Express controller API modifications.
   - Mutating git commands.
 
-## 4. Testing Strategy
-- Vitest unit & integration tests across 7 test suites (T-1 to T-7) covering pure validation, server schemas/controllers/audit logs/shifts formula, client navigation/guards/page interactions/dashboard/reports.
-- ADR-006 Red-Green validation with negative path coverage and JSON-NaN hole tests.
-- Fitness gates: `npm run lint`, `npm run knip`, `npm run build`, `npx vitest run`.
+## 4. Execution & Testing Gates
+- Playwright E2E tests: 6 new tests in `sports_betting_flow.spec.ts`, 26/26 full suite passing.
+- Vitest unit tests: 690/690 tests passing across 42 test files.
+- Monorepo fitness gates: Biome lint (0 errors, 0 warnings across 168 files), Knip (0 issues), clean TypeScript build across shared, client, and server.
 
 ## 5. Evidence Payload
-- [x] Functional Verification: Full-stack CRUD, drawer balancing, dashboard KPI card, reports ledger, and safe slip verified.
-- [x] Red-Green Test Verification: Test suites T-1 to T-7 verified (690/690 vitest tests passing across 42 test files).
-- [x] Coverage Thresholds: Met all thresholds across client and server (Lines: 94.32%, Funcs: 96.21%).
-- [x] Monorepo Typecheck & Build: Shared, client, and server build cleanly.
-- [x] Biome Lint & Knip: 0 errors, 0 warnings across 167 files; Knip clean.
-- [x] Traceability & ADR Compliance: ACP-028 approved, ADR-009 documented, M-120 formalized.
+- [x] Playwright E2E Suite: 26/26 tests passing green (including 6 new tests in `sports_betting_flow.spec.ts`).
+- [x] Multi-Device Ergonomics: Verified decimal keyboard trigger and zero overflow across 320px, 375px, 768px, and 1280px viewports.
+- [x] Vitest Unit Suite: 42 test files, 690 tests passing green.
+- [x] Monorepo Build: Shared, client, and server build cleanly.
+- [x] Biome Lint & Knip: 0 errors, 0 warnings across 168 files; Knip clean.
+- [x] Traceability: Authorized by ACP-029 and formal approval.
+
 

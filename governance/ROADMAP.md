@@ -100,5 +100,6 @@
 *   [x] **Mission 118:** Dashboard Streamline & Redundant Table Removal — remove redundant Shift Game Sales by Item table card from Dashboard.tsx while preserving top card itemization and Safe Slip printout (2026-09-22, Locked; ACP-026).
 *   [x] **Mission 119:** Dashboard Game Sales Sum & Item Integration — integrate prominent total game sales sum ($totalGameSales.toFixed(2)) and granular item breakdown within the top Game Sales KPI card (2026-09-22, Locked; ACP-027).
 *   [x] **Mission 120:** Sports Betting Income Stream Integration — integrate sports betting income stream full-stack with shared types, role-gated API endpoints, atomic audit logs, shift cash drawer balancing, dedicated management page (/betting), 5th Dashboard KPI card, safe slip line, and financial reports revenue mix (2026-09-23, Locked; ACP-028 / ADR-009).
+*   [x] **Mission 121:** Sports Betting Playwright E2E Suite & Mobile Touch Ergonomics Hardening — establish automated browser testing for sports betting RBAC isolation, manager navigation, positive/negative logging, verification badge transitions, and modal flows with reasons; harden mobile touch ergonomics with inputMode decimal and responsive From/To date toolbar wrapping (2026-09-23, Locked; ACP-029).
 
 
