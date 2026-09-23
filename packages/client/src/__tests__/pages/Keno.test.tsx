@@ -15,7 +15,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
 import { getShopEndOfDay, getShopStartOfDay } from "../../lib/dateUtils.js";
 import { groupLogsByDay, HISTORY_PAGE_SIZE } from "../../lib/history.js";
-import { Keno, parseNetAmountInput } from "../../pages/Keno.js";
+import { parseNetAmountInput } from "../../lib/inputUtils.js";
+import { Keno } from "../../pages/Keno.js";
 
 afterEach(cleanup);
 

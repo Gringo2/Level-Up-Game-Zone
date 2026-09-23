@@ -50,6 +50,9 @@ vi.mock("../pages/GameSales", () => ({
 vi.mock("../pages/Keno", () => ({
 	Keno: () => <div data-testid="page-keno" />,
 }));
+vi.mock("../pages/SportsBetting", () => ({
+	SportsBetting: () => <div data-testid="page-sportsbetting" />,
+}));
 vi.mock("../pages/Credits", () => ({
 	Credits: () => <div data-testid="page-credits" />,
 }));
@@ -127,11 +130,42 @@ describe("App", () => {
 		expect(screen.getByTestId("page-dashboard")).toBeDefined();
 		expect(screen.getByTestId("page-gamesales")).toBeDefined();
 		expect(screen.getByTestId("page-keno")).toBeDefined();
+		expect(screen.getByTestId("page-sportsbetting")).toBeDefined();
 		expect(screen.getByTestId("page-credits")).toBeDefined();
 		expect(screen.getByTestId("page-expenses")).toBeDefined();
 		expect(screen.getByTestId("page-salaryreport")).toBeDefined();
 		expect(screen.getByTestId("page-reports")).toBeDefined();
 		expect(screen.getByTestId("page-employeeroster")).toBeDefined();
+	});
+
+	it("does not render sports betting route for staff user", () => {
+		mockUseAuth.mockReturnValue({
+			user: { role: "staff", displayName: "Staff" },
+			loading: false,
+		});
+		render(<App />);
+		expect(screen.queryByTestId("page-sportsbetting")).toBeNull();
+		expect(screen.queryByTestId("route-/betting")).toBeNull();
+	});
+
+	it("renders sports betting route for manager user", () => {
+		mockUseAuth.mockReturnValue({
+			user: { role: "manager", displayName: "Manager" },
+			loading: false,
+		});
+		render(<App />);
+		expect(screen.getByTestId("page-sportsbetting")).toBeDefined();
+		expect(screen.getByTestId("route-/betting")).toBeDefined();
+	});
+
+	it("renders sports betting route for admin user", () => {
+		mockUseAuth.mockReturnValue({
+			user: { role: "admin", displayName: "Admin" },
+			loading: false,
+		});
+		render(<App />);
+		expect(screen.getByTestId("page-sportsbetting")).toBeDefined();
+		expect(screen.getByTestId("route-/betting")).toBeDefined();
 	});
 
 	it("renders admin-only routes for admin user", () => {

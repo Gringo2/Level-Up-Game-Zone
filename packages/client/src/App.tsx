@@ -18,6 +18,7 @@ import { Keno } from "./pages/Keno";
 import { Login } from "./pages/Login";
 import { Reports } from "./pages/Reports";
 import { SalaryReport } from "./pages/SalaryReport";
+import { SportsBetting } from "./pages/SportsBetting";
 
 function AppContent() {
 	const { user, loading } = useAuth();
@@ -47,6 +48,7 @@ function AppContent() {
 						{(user.role === ROLES.MANAGER || user.role === ROLES.ADMIN) && (
 							<>
 								<Route path="/keno" element={<Keno />} />
+								<Route path="/betting" element={<SportsBetting />} />
 								<Route path="/credits" element={<Credits />} />
 								<Route path="/expenses" element={<Expenses />} />
 								<Route path="/salary-report" element={<SalaryReport />} />

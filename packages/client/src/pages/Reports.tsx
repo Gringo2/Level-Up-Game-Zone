@@ -4,6 +4,7 @@ import type {
 	GameSalesLog,
 	KenoLog,
 	Shift,
+	SportsBettingLog,
 } from "@level-up/shared";
 import {
 	CREDIT_STATUSES,
@@ -90,6 +91,9 @@ export function Reports() {
 	const [kenoLogs, setKenoLogs] = useState<KenoLog[]>([]);
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
+	const [sportsBettingLogs, setSportsBettingLogs] = useState<
+		SportsBettingLog[]
+	>([]);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -114,12 +118,14 @@ export function Reports() {
 					kenoResponse,
 					creditsResponse,
 					expensesResponse,
+					bettingResponse,
 				] = await Promise.all([
 					authFetch(`${API_BASE}/api/shifts${queryParams}`),
 					authFetch(`${API_BASE}/api/sales${queryParams}`),
 					authFetch(`${API_BASE}/api/keno${queryParams}`),
 					authFetch(`${API_BASE}/api/credits${queryParams}`),
 					authFetch(`${API_BASE}/api/expenses${queryParams}`),
+					authFetch(`${API_BASE}/api/sports-betting${queryParams}`),
 				]);
 
 				if (!shiftsResponse.ok) {
@@ -137,15 +143,25 @@ export function Reports() {
 				if (!expensesResponse.ok) {
 					throw new Error("Failed to fetch expenses");
 				}
+				if (!bettingResponse.ok) {
+					throw new Error("Failed to fetch sports betting logs");
+				}
 
-				const [shiftsData, salesData, kenoData, creditsData, expensesData] =
-					await Promise.all([
-						safeJson<Shift[]>(shiftsResponse),
-						safeJson<GameSalesLog[]>(salesResponse),
-						safeJson<KenoLog[]>(kenoResponse),
-						safeJson<Credit[]>(creditsResponse),
-						safeJson<Expense[]>(expensesResponse),
-					]);
+				const [
+					shiftsData,
+					salesData,
+					kenoData,
+					creditsData,
+					expensesData,
+					bettingData,
+				] = await Promise.all([
+					safeJson<Shift[]>(shiftsResponse),
+					safeJson<GameSalesLog[]>(salesResponse),
+					safeJson<KenoLog[]>(kenoResponse),
+					safeJson<Credit[]>(creditsResponse),
+					safeJson<Expense[]>(expensesResponse),
+					safeJson<SportsBettingLog[]>(bettingResponse),
+				]);
 
 				if (!mounted) return;
 
@@ -154,6 +170,7 @@ export function Reports() {
 				setKenoLogs(kenoData as KenoLog[]);
 				setCredits(creditsData as Credit[]);
 				setExpenses(expensesData as Expense[]);
+				setSportsBettingLogs(Array.isArray(bettingData) ? bettingData : []);
 				setLoading(false);
 			} catch (err) {
 				console.error(err);
@@ -187,6 +204,10 @@ export function Reports() {
 		0,
 	);
 	const totalKenoNet = kenoLogs.reduce((sum, log) => sum + log.net_profit, 0);
+	const totalSportsBettingNet = sportsBettingLogs.reduce(
+		(sum, log) => sum + log.net_profit,
+		0,
+	);
 	const totalExpenses = expenses.reduce((sum, log) => sum + log.amount, 0);
 
 	const closedShifts = shifts.filter((s) => s.status === SHIFT_STATUSES.CLOSED);
@@ -215,12 +236,20 @@ export function Reports() {
 		.reduce((sum, c) => sum + c.amount, 0);
 
 	const netProfit =
-		totalGameSales + totalKenoNet - totalExpenses - pendingCredits;
+		totalGameSales +
+		totalKenoNet +
+		totalSportsBettingNet -
+		totalExpenses -
+		pendingCredits;
 
 	// Revenue Mix
 	const revenueMix = [
 		{ name: "Game Sales", value: totalGameSales },
 		{ name: "Keno Net", value: totalKenoNet > 0 ? totalKenoNet : 0 },
+		{
+			name: "Sports Betting",
+			value: totalSportsBettingNet > 0 ? totalSportsBettingNet : 0,
+		},
 	].filter((item) => item.value > 0);
 	const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -384,7 +413,12 @@ export function Reports() {
 							</CardHeader>
 							<CardContent>
 								<div className="text-2xl font-bold">
-									${(totalGameSales + totalKenoNet).toFixed(2)}
+									$
+									{(
+										totalGameSales +
+										totalKenoNet +
+										totalSportsBettingNet
+									).toFixed(2)}
 								</div>
 							</CardContent>
 						</Card>
@@ -901,6 +935,79 @@ export function Reports() {
 																className={`px-4 py-3 text-right font-medium ${log.net_profit < 0 ? "text-red-600" : "text-emerald-600"}`}
 															>
 																${log.net_profit.toFixed(2)}
+															</td>
+														</tr>
+													))}
+											</tbody>
+										</table>
+									</div>
+								)}
+							</CardContent>
+						</Card>
+
+						{/* Sports Betting Logs */}
+						<Card className="print:break-inside-avoid">
+							<CardHeader>
+								<CardTitle>Sports Betting Logs</CardTitle>
+								<CardDescription>
+									Sports betting net income logged in this period.
+								</CardDescription>
+							</CardHeader>
+							<CardContent>
+								{sportsBettingLogs.length === 0 ? (
+									<div className="text-center text-zinc-500 py-4">
+										No sports betting logs in this period.
+									</div>
+								) : (
+									<div className="overflow-x-auto">
+										<table className="w-full text-sm text-left">
+											<thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b">
+												<tr>
+													<th className="px-4 py-3 font-medium">
+														Date &amp; Time
+													</th>
+													<th className="px-4 py-3 font-medium">Logged By</th>
+													<th className="px-4 py-3 font-medium text-right">
+														Net Profit
+													</th>
+													<th className="px-4 py-3 font-medium text-center">
+														Status
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{[...sportsBettingLogs]
+													.sort(
+														(a, b) =>
+															new Date(b.date).getTime() -
+															new Date(a.date).getTime(),
+													)
+													.map((log) => (
+														<tr key={log.id} className="border-b last:border-0">
+															<td className="px-4 py-3">
+																{format(
+																	new Date(log.date),
+																	"MMM d, yyyy h:mm a",
+																)}
+															</td>
+															<td className="px-4 py-3 text-zinc-500">
+																{log.user_name ?? "—"}
+															</td>
+															<td
+																className={`px-4 py-3 text-right font-medium ${log.net_profit < 0 ? "text-red-600" : "text-emerald-600"}`}
+															>
+																${log.net_profit.toFixed(2)}
+															</td>
+															<td className="px-4 py-3 text-center">
+																{log.verified ? (
+																	<span className="text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">
+																		Verified
+																	</span>
+																) : (
+																	<span className="text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded text-xs">
+																		Unverified
+																	</span>
+																)}
 															</td>
 														</tr>
 													))}

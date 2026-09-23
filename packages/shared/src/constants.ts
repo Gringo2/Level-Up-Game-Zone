@@ -56,6 +56,7 @@ export const COLLECTIONS = {
 	GAME_RATES: "game_rates",
 	SHIFTS: "shifts",
 	MISSED_DAY_RESOLUTIONS: "missed_day_resolutions",
+	SPORTS_BETTING_LOGS: "sports_betting_logs",
 } as const;
 
 // ── Root Admin Emails (override via env: ROOT_ADMIN_EMAILS — server-side only;

@@ -108,6 +108,15 @@ const resolvedCreditLog = {
 	date: "2026-08-01T13:45:00.000+03:00",
 };
 
+const sportsBettingLog = {
+	id: "sb1",
+	net_profit: 80,
+	user_id: "u1",
+	user_name: "Manager",
+	date: "2026-08-01T15:00:00.000+03:00",
+	verified: true,
+};
+
 describe("Reports", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -139,11 +148,13 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([shift]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([creditLog]))
-			.mockResolvedValueOnce(jsonResponse([expenseLog]));
+			.mockResolvedValueOnce(jsonResponse([expenseLog]))
+			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -179,12 +190,14 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(
 				jsonResponse([creditLog, pendingCreditLog, resolvedCreditLog]),
 			)
-			.mockResolvedValueOnce(jsonResponse([expenseLog]));
+			.mockResolvedValueOnce(jsonResponse([expenseLog]))
+			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -214,6 +227,7 @@ describe("Reports", () => {
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([])),
 		);
 
@@ -236,6 +250,7 @@ describe("Reports", () => {
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([])),
 		);
 
@@ -254,11 +269,13 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([shift]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([creditLog]))
-			.mockResolvedValueOnce(jsonResponse([expenseLog]));
+			.mockResolvedValueOnce(jsonResponse([expenseLog]))
+			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -275,7 +292,7 @@ describe("Reports", () => {
 		fireEvent.click(screen.getByText("Apply"));
 
 		await waitFor(() => {
-			expect(fetchMock).toHaveBeenCalledTimes(10);
+			expect(fetchMock).toHaveBeenCalledTimes(12);
 		});
 	});
 
@@ -284,6 +301,7 @@ describe("Reports", () => {
 			"fetch",
 			vi
 				.fn()
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
@@ -321,7 +339,9 @@ describe("Reports", () => {
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([kenoLog, netOnlyKenoLog]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([])),
 		);
@@ -385,7 +405,9 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([s1, s2, s3]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
@@ -444,6 +466,8 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
@@ -473,7 +497,8 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([creditLog]))
-			.mockResolvedValueOnce(jsonResponse([expenseLog]));
+			.mockResolvedValueOnce(jsonResponse([expenseLog]))
+			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -488,5 +513,42 @@ describe("Reports", () => {
 		fireEvent.change(dateInputs[1], { target: { value: "2026-08-01" } });
 
 		expect(screen.getByText("Apply")).toBeDisabled();
+	});
+
+	it("renders sports betting logs ledger and revenue mix in reports", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([salesLog]))
+			.mockResolvedValueOnce(jsonResponse([kenoLog]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([sportsBettingLog]));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		fireEvent.change(dateInputs[0], { target: { value: "2026-08-01" } });
+		fireEvent.change(dateInputs[1], { target: { value: "2026-08-31" } });
+		fireEvent.click(screen.getByText("Apply"));
+
+		await waitFor(() => {
+			expect(screen.getByText("Sports Betting Logs")).toBeDefined();
+		});
+
+		expect(
+			screen.getByText("Sports betting net income logged in this period."),
+		).toBeInTheDocument();
+		expect(screen.getByText("$80.00")).toBeInTheDocument();
+		expect(screen.getByText("Sports Betting ($80.00)")).toBeInTheDocument();
+		expect(screen.getAllByText("$160.00").length).toBeGreaterThanOrEqual(1);
 	});
 });

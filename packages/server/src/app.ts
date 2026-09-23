@@ -79,6 +79,7 @@ import kenoRoutes from "./routes/keno.js";
 import ratesRoutes from "./routes/rates.js";
 import salesRoutes from "./routes/sales.js";
 import shiftRoutes from "./routes/shifts.js";
+import sportsBettingRoutes from "./routes/sportsBetting.js";
 import usersRoutes from "./routes/users.js";
 
 // Health check endpoint
@@ -89,6 +90,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/shifts", shiftRoutes);
 app.use("/api/sales", salesRoutes);
 app.use("/api/keno", kenoRoutes);
+app.use("/api/sports-betting", sportsBettingRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api/expense-categories", expenseCategoriesRoutes);
 app.use("/api/rates", ratesRoutes);

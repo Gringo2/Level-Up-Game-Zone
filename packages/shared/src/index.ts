@@ -66,6 +66,15 @@ export interface KenoLog {
 	verified?: boolean;
 }
 
+export interface SportsBettingLog {
+	id: string;
+	net_profit: number;
+	user_id: string;
+	user_name?: string;
+	date: string; // full ISO datetime string (e.g. "2026-09-23T00:00:00.000Z")
+	verified?: boolean;
+}
+
 export interface Credit {
 	id: string;
 	employee_id?: string;

@@ -11,6 +11,7 @@ import {
 	Menu,
 	Receipt,
 	Settings,
+	Trophy,
 	UserCog,
 	Users,
 	X,
@@ -53,6 +54,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			path: "/keno",
 			label: "Keno",
 			icon: Coins,
+			roles: [ROLES.ADMIN, ROLES.MANAGER],
+		},
+		{
+			path: "/betting",
+			label: "Sports Betting",
+			icon: Trophy,
 			roles: [ROLES.ADMIN, ROLES.MANAGER],
 		},
 		{

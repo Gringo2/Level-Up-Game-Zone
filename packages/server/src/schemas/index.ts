@@ -124,6 +124,17 @@ export const UpdateKenoSchema = rejectRetiredAndUnknownKeys({
 		.min(3, "Reason for change must be at least 3 characters"),
 });
 
+// Sports Betting Schemas
+export const CreateSportsBettingSchema = z.object({
+	net_profit: finiteNumber("Net profit"),
+	date: z.string().optional(),
+});
+
+export const UpdateSportsBettingSchema = z.object({
+	net_profit: finiteNumber("Net profit").optional(),
+	editReason: z.string().trim().min(3, "Reason must be at least 3 characters"),
+});
+
 export const DateRangeQuerySchema = z.object({
 	startDate: z.string().optional(),
 	endDate: z.string().optional(),

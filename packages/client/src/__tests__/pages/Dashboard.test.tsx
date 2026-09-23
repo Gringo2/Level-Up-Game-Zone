@@ -128,6 +128,9 @@ describe("Dashboard", () => {
 			if (url.includes("/api/expenses")) {
 				return jsonResponse(expenses);
 			}
+			if (url.includes("/api/sports-betting")) {
+				return jsonResponse([]);
+			}
 			if (url.includes("/close") || url.includes("/float")) {
 				return jsonResponse({ ok: true });
 			}
@@ -693,5 +696,92 @@ describe("Dashboard", () => {
 		expect(safeSlip).toBeInTheDocument();
 		expect(safeSlip).toHaveTextContent("Games Total: $100.00");
 		expect(safeSlip).toHaveTextContent("PS5 (2 hrs): $100.00");
+	});
+
+	it("renders Sports Betting KPI card with correct total", async () => {
+		const bettingLogs = [
+			{ id: "b1", net_profit: 50, date: new Date().toISOString() },
+		];
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sports-betting")) return jsonResponse(bettingLogs);
+			if (url.includes("/api/sales")) return jsonResponse(gameSalesLogs);
+			if (url.includes("/api/keno")) return jsonResponse(kenoLogs);
+			if (url.includes("/api/credits")) return jsonResponse(credits);
+			if (url.includes("/api/expenses")) return jsonResponse(expenses);
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		const card = await screen.findByTestId("kpi-sports-betting");
+		expect(within(card).getByText("$50.00")).toBeInTheDocument();
+		expect(within(card).getByText("1 entry")).toBeInTheDocument();
+	});
+
+	it("renders empty Sports Betting KPI card when no betting logs exist", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sports-betting")) return jsonResponse([]);
+			if (url.includes("/api/sales")) return jsonResponse(gameSalesLogs);
+			if (url.includes("/api/keno")) return jsonResponse(kenoLogs);
+			if (url.includes("/api/credits")) return jsonResponse(credits);
+			if (url.includes("/api/expenses")) return jsonResponse(expenses);
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		const card = await screen.findByTestId("kpi-sports-betting");
+		expect(within(card).getByText("$0.00")).toBeInTheDocument();
+		expect(within(card).getByText("No entries this shift")).toBeInTheDocument();
+	});
+
+	it("expectedCash includes sports betting net in variance calculation", async () => {
+		// opening_float=100, gameSales=10, kenoNet=60, bettingNet=50, expenses=12.50, credits=20
+		// expectedCash = 100 + 10 + 60 + 50 - 12.50 - 20 = 187.50
+		const bettingLogs = [
+			{ id: "b1", net_profit: 50, date: new Date().toISOString() },
+		];
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sports-betting")) return jsonResponse(bettingLogs);
+			if (url.includes("/api/sales")) return jsonResponse(gameSalesLogs);
+			if (url.includes("/api/keno")) return jsonResponse(kenoLogs);
+			if (url.includes("/api/credits")) return jsonResponse(credits);
+			if (url.includes("/api/expenses")) return jsonResponse(expenses);
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		fireEvent.click(
+			screen.getByRole("button", { name: "Close Shift (Blind Count)" }),
+		);
+		fireEvent.change(screen.getByLabelText("Actual Cash Counted ($)"), {
+			target: { value: "187.50" },
+		});
+
+		// Zero variance -> reason field should not be present
+		expect(
+			screen.queryByLabelText("Reason for Variance (Required)"),
+		).not.toBeInTheDocument();
+	});
+
+	it("shows Sports Betting line in safe slip preview", async () => {
+		const bettingLogs = [
+			{ id: "b1", net_profit: 50, date: new Date().toISOString() },
+		];
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sports-betting")) return jsonResponse(bettingLogs);
+			if (url.includes("/api/sales")) return jsonResponse(gameSalesLogs);
+			if (url.includes("/api/keno")) return jsonResponse(kenoLogs);
+			if (url.includes("/api/credits")) return jsonResponse(credits);
+			if (url.includes("/api/expenses")) return jsonResponse(expenses);
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		const safeSlip = document.querySelector(".print\\:block");
+		expect(safeSlip).toBeInTheDocument();
+		expect(safeSlip).toHaveTextContent("Sports Betting Net: $50.00");
 	});
 });

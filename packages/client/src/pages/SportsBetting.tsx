@@ -1,7 +1,7 @@
-import type { KenoLog } from "@level-up/shared";
+import type { SportsBettingLog } from "@level-up/shared";
 import { ROLES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Coins, Edit2, Loader2, Trash2 } from "lucide-react";
+import { Edit2, Loader2, Trash2, Trophy } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -29,10 +29,9 @@ import {
 	HISTORY_PAGE_SIZE,
 	historyPageBounds,
 } from "../lib/history";
-
 import { parseNetAmountInput } from "../lib/inputUtils";
 
-export function Keno() {
+export function SportsBetting() {
 	const { user } = useAuth();
 	const [netAmount, setNetAmount] = useState("");
 	const todayStr = getShopDateString();
@@ -40,7 +39,7 @@ export function Keno() {
 	const [rangeEnd, setRangeEnd] = useState(todayStr);
 	const [entryDate, setEntryDate] = useState(() => getShopDateString());
 	const [loading, setLoading] = useState(false);
-	const [logs, setLogs] = useState<KenoLog[]>([]);
+	const [logs, setLogs] = useState<SportsBettingLog[]>([]);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [verifyingId, setVerifyingId] = useState<string | null>(null);
@@ -50,12 +49,13 @@ export function Keno() {
 	const [listLoading, setListLoading] = useState(false);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
+
 	const isWithinActiveRange = (date: string) => {
 		const shopDate = getShopDateString(new Date(date));
 		return shopDate >= rangeStart && shopDate <= rangeEnd;
 	};
 
-	const loadKenoLogs = useCallback(async () => {
+	const loadLogs = useCallback(async () => {
 		if (rangeStart > rangeEnd) return;
 		setListLoading(true);
 		try {
@@ -66,19 +66,21 @@ export function Keno() {
 				new Date(`${rangeEnd}T00:00:00`),
 			).toISOString();
 			const response = await authFetch(
-				`${API_BASE}/api/keno?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200`,
+				`${API_BASE}/api/sports-betting?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200`,
 			);
 			if (!response.ok) {
 				throw new Error(
-					(await safeJson(response)).error || "Failed to fetch keno logs",
+					(await safeJson(response)).error ||
+						"Failed to fetch sports betting logs",
 				);
 			}
 
 			const payload = (await safeJson<
-				KenoLog[] | { data: KenoLog[]; nextCursor: string | null }
+				| SportsBettingLog[]
+				| { data: SportsBettingLog[]; nextCursor: string | null }
 			>(response)) as
-				| KenoLog[]
-				| { data: KenoLog[]; nextCursor: string | null };
+				| SportsBettingLog[]
+				| { data: SportsBettingLog[]; nextCursor: string | null };
 			const data = listFromPayload(payload);
 			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
 			setLogs(
@@ -92,7 +94,7 @@ export function Keno() {
 			toast.error(
 				err instanceof Error && err.message
 					? err.message
-					: "Failed to load keno logs",
+					: "Failed to load sports betting logs",
 			);
 		} finally {
 			setListLoading(false);
@@ -100,11 +102,11 @@ export function Keno() {
 	}, [rangeStart, rangeEnd]);
 
 	useEffect(() => {
-		void loadKenoLogs();
+		void loadLogs();
 
 		const handleVisibility = () => {
 			if (document.visibilityState === "visible") {
-				void loadKenoLogs();
+				void loadLogs();
 			}
 		};
 		document.addEventListener("visibilitychange", handleVisibility);
@@ -112,9 +114,9 @@ export function Keno() {
 		return () => {
 			document.removeEventListener("visibilitychange", handleVisibility);
 		};
-	}, [loadKenoLogs]);
+	}, [loadLogs]);
 
-	const handleEdit = (log: KenoLog) => {
+	const handleEdit = (log: SportsBettingLog) => {
 		setEditingId(log.id);
 		setNetAmount(log.net_profit.toString());
 		window.scrollTo({ top: 0, behavior: "smooth" });
@@ -133,17 +135,15 @@ export function Keno() {
 		}
 		setDeletePending(true);
 		try {
-			const response = await authFetch(`${API_BASE}/api/keno/${id}`, {
+			const response = await authFetch(`${API_BASE}/api/sports-betting/${id}`, {
 				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ deleteReason }),
 			});
 			if (!response.ok)
 				throw new Error((await safeJson(response)).error || "Failed to delete");
 
-			toast.success("Keno log deleted successfully!");
+			toast.success("Sports betting log deleted successfully!");
 			setLogs((prev) => prev.filter((l) => l.id !== id));
 			setDeletingId(null);
 			setDeleteReason("");
@@ -152,7 +152,7 @@ export function Keno() {
 			toast.error(
 				err instanceof Error && err.message
 					? err.message
-					: "Failed to delete keno log",
+					: "Failed to delete sports betting log",
 			);
 		} finally {
 			setDeletePending(false);
@@ -162,9 +162,10 @@ export function Keno() {
 	const handleVerify = async (id: string) => {
 		setVerifyingId(id);
 		try {
-			const response = await authFetch(`${API_BASE}/api/keno/${id}/verify`, {
-				method: "PUT",
-			});
+			const response = await authFetch(
+				`${API_BASE}/api/sports-betting/${id}/verify`,
+				{ method: "PUT" },
+			);
 			if (!response.ok)
 				throw new Error((await safeJson(response)).error || "Failed to verify");
 
@@ -177,14 +178,14 @@ export function Keno() {
 			toast.error(
 				err instanceof Error && err.message
 					? err.message
-					: "Failed to verify keno log",
+					: "Failed to verify sports betting log",
 			);
 		} finally {
 			setVerifyingId(null);
 		}
 	};
 
-	const loadOlderKeno = async () => {
+	const loadOlderLogs = async () => {
 		if (!nextCursor) return;
 		setListLoading(true);
 		try {
@@ -195,12 +196,12 @@ export function Keno() {
 				new Date(`${rangeEnd}T00:00:00`),
 			).toISOString();
 			const res = await authFetch(
-				`${API_BASE}/api/keno?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200&cursor=${encodeURIComponent(nextCursor)}`,
+				`${API_BASE}/api/sports-betting?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&limit=200&cursor=${encodeURIComponent(nextCursor)}`,
 			);
-			if (!res.ok) throw new Error("Failed to fetch keno logs");
+			if (!res.ok) throw new Error("Failed to fetch sports betting logs");
 			const payload = (await safeJson(res)) as
-				| KenoLog[]
-				| { data: KenoLog[]; nextCursor: string | null };
+				| SportsBettingLog[]
+				| { data: SportsBettingLog[]; nextCursor: string | null };
 			const older = listFromPayload(payload);
 			setNextCursor(Array.isArray(payload) ? null : payload.nextCursor);
 			setLogs((prev) =>
@@ -213,7 +214,7 @@ export function Keno() {
 			toast.error(
 				err instanceof Error && err.message
 					? err.message
-					: "Failed to load keno logs",
+					: "Failed to load sports betting logs",
 			);
 		} finally {
 			setListLoading(false);
@@ -222,7 +223,7 @@ export function Keno() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!netAmount || !user) return;
+		if (!user) return;
 
 		const parsedNet = parseNetAmountInput(netAmount);
 		if (parsedNet === null) {
@@ -238,22 +239,20 @@ export function Keno() {
 					setLoading(false);
 					return;
 				}
-				const response = await authFetch(`${API_BASE}/api/keno/${editingId}`, {
-					method: "PUT",
-					headers: {
-						"Content-Type": "application/json",
+				const response = await authFetch(
+					`${API_BASE}/api/sports-betting/${editingId}`,
+					{
+						method: "PUT",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ net_profit: parsedNet, editReason }),
 					},
-					body: JSON.stringify({
-						net_profit: parsedNet,
-						editReason,
-					}),
-				});
+				);
 				if (!response.ok)
 					throw new Error(
 						(await safeJson(response)).error || "Failed to update",
 					);
-				const updated = await safeJson<KenoLog>(response);
-				toast.success("Keno log updated successfully!");
+				const updated = await safeJson<SportsBettingLog>(response);
+				toast.success("Sports betting log updated successfully!");
 				setLogs((prev) => {
 					const withoutUpdated = prev.filter((l) => l.id !== editingId);
 					if (!isWithinActiveRange(updated.date)) {
@@ -265,11 +264,9 @@ export function Keno() {
 				});
 				cancelEdit();
 			} else {
-				const response = await authFetch(`${API_BASE}/api/keno`, {
+				const response = await authFetch(`${API_BASE}/api/sports-betting`, {
 					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
+					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						net_profit: parsedNet,
 						date: new Date(entryDate).toISOString(),
@@ -277,21 +274,21 @@ export function Keno() {
 				});
 				if (!response.ok)
 					throw new Error(
-						(await safeJson(response)).error || "Failed to log keno",
+						(await safeJson(response)).error || "Failed to log sports betting",
 					);
-				const newLog = await safeJson<KenoLog>(response);
+				const newLog = await safeJson<SportsBettingLog>(response);
 				if (isWithinActiveRange(newLog.date)) {
 					setLogs((prev) => [newLog, ...prev]);
 				}
 				setNetAmount("");
-				toast.success("Keno logged successfully!");
+				toast.success("Sports betting logged successfully!");
 			}
 		} catch (err: unknown) {
 			console.error(err);
 			toast.error(
 				err instanceof Error && err.message
 					? err.message
-					: "Failed to save keno log",
+					: "Failed to save sports betting log",
 			);
 		} finally {
 			setLoading(false);
@@ -309,7 +306,7 @@ export function Keno() {
 
 	return (
 		<div className="space-y-6">
-			<h2 className="text-2xl font-bold tracking-tight">Log Keno</h2>
+			<h2 className="text-2xl font-bold tracking-tight">Log Sports Betting</h2>
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<Card className="lg:col-span-1 h-fit">
 					<form onSubmit={handleSubmit}>
@@ -318,7 +315,7 @@ export function Keno() {
 							<CardDescription>
 								{editingId
 									? "Update the net amount for this log."
-									: "Enter the net amount from the Keno software."}
+									: "Enter the net amount from the sports betting software."}
 							</CardDescription>
 						</CardHeader>
 						<CardContent className="space-y-4">
@@ -362,7 +359,7 @@ export function Keno() {
 										value={editReason}
 										onChange={(e) => setEditReason(e.target.value)}
 										required
-										placeholder="e.g., Typo in sales amount"
+										placeholder="e.g., Typo in net amount"
 									/>
 								</div>
 							)}
@@ -376,7 +373,7 @@ export function Keno() {
 								{loading ? (
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 								) : null}
-								{editingId ? "Update Keno" : "Log Keno"}
+								{editingId ? "Update Entry" : "Log Betting"}
 							</Button>
 							{editingId && (
 								<Button type="button" variant="outline" onClick={cancelEdit}>
@@ -389,28 +386,28 @@ export function Keno() {
 
 				<Card className="lg:col-span-2">
 					<CardHeader>
-						<CardTitle>Keno Logs</CardTitle>
+						<CardTitle>Sports Betting Logs</CardTitle>
 						<CardDescription>
 							{rangeStart === todayStr && rangeEnd === todayStr
-								? "Recent Keno entries logged today."
-								: "Keno entries in the selected range."}
+								? "Recent sports betting entries logged today."
+								: "Sports betting entries in the selected range."}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<div className="flex flex-wrap sm:flex-nowrap gap-2 items-end mb-3">
 							<div className="space-y-1 flex-1 min-w-[130px]">
-								<Label htmlFor="kenoRangeStart">From</Label>
+								<Label htmlFor="bettingRangeStart">From</Label>
 								<Input
-									id="kenoRangeStart"
+									id="bettingRangeStart"
 									type="date"
 									value={rangeStart}
 									onChange={(e) => setRangeStart(e.target.value)}
 								/>
 							</div>
 							<div className="space-y-1 flex-1 min-w-[130px]">
-								<Label htmlFor="kenoRangeEnd">To</Label>
+								<Label htmlFor="bettingRangeEnd">To</Label>
 								<Input
-									id="kenoRangeEnd"
+									id="bettingRangeEnd"
 									type="date"
 									value={rangeEnd}
 									onChange={(e) => setRangeEnd(e.target.value)}
@@ -420,7 +417,7 @@ export function Keno() {
 								<Button
 									type="button"
 									variant="outline"
-									onClick={() => void loadKenoLogs()}
+									onClick={() => void loadLogs()}
 									disabled={rangeStart > rangeEnd || listLoading}
 								>
 									{listLoading && (
@@ -452,7 +449,7 @@ export function Keno() {
 						{logs.length > 0 && (
 							<div
 								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"
-								data-testid="keno-range-summary"
+								data-testid="betting-range-summary"
 							>
 								<span className="text-sm font-medium text-zinc-600">
 									{logs.length} {logs.length === 1 ? "entry" : "entries"}
@@ -468,14 +465,14 @@ export function Keno() {
 						<div>
 							{logs.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">
-									<Coins
+									<Trophy
 										className="mx-auto h-8 w-8 text-zinc-300 mb-2"
 										aria-hidden="true"
 									/>
 									<p>
 										{rangeStart === todayStr && rangeEnd === todayStr
-											? "No Keno logged today yet."
-											: "No Keno logged in this period."}
+											? "No sports betting logged today yet."
+											: "No sports betting logged in this period."}
 									</p>
 								</div>
 							) : (
@@ -500,7 +497,7 @@ export function Keno() {
 												)}
 												<div
 													className="grid gap-3 px-3 py-2 text-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
-													data-testid="keno-history-row"
+													data-testid="betting-history-row"
 												>
 													<div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
 														<span
@@ -514,12 +511,6 @@ export function Keno() {
 														{log.user_name && (
 															<span className="text-zinc-500 truncate max-w-[10rem]">
 																{log.user_name}
-															</span>
-														)}
-														{log.sales != null && log.payouts != null && (
-															<span className="text-xs text-zinc-400 hidden md:inline">
-																Sales ${log.sales.toFixed(2)} &middot; Payouts $
-																{log.payouts.toFixed(2)}
 															</span>
 														)}
 														{log.verified ? (
@@ -564,7 +555,7 @@ export function Keno() {
 																disabled={
 																	!!editingId || !!verifyingId || deletePending
 																}
-																aria-label="Delete keno log"
+																aria-label="Delete sports betting log"
 															>
 																<Trash2 className="h-4 w-4" />
 															</Button>
@@ -612,7 +603,7 @@ export function Keno() {
 									size="sm"
 									className="mt-3"
 									data-testid="load-older"
-									onClick={() => void loadOlderKeno()}
+									onClick={() => void loadOlderLogs()}
 									disabled={listLoading}
 								>
 									Load older
@@ -624,8 +615,8 @@ export function Keno() {
 			</div>
 			<ConfirmDialog
 				open={!!deletingId}
-				title="Delete Keno Ticket"
-				message="Are you sure you want to delete this keno ticket? This action cannot be undone."
+				title="Delete Sports Betting Log"
+				message="Are you sure you want to delete this sports betting log? This action cannot be undone."
 				reasonValue={deleteReason}
 				onReasonChange={setDeleteReason}
 				requireReason

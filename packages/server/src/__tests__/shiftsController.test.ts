@@ -171,6 +171,182 @@ describe("Shifts Integration Tests", () => {
 			expect(response.body.data.variance).toBe(0);
 		});
 
+		it("should include sports betting net profit in expected cash calculation on shift close", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									status: "OPEN",
+									start_time: "2026-08-01T10:00:00Z",
+									opening_float: 100,
+								}),
+							}),
+							update: vi.fn(),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_sales_logs") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ calculated_total: 100 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "keno_logs") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ net_profit: 50 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "sports_betting_logs") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ net_profit: 40 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "credits") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ status: "Pending", amount: 20 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "expenses") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ amount: 30 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [], empty: true }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			// opening_float(100) + gameSales(100) + kenoNet(50) + bettingNet(40) - expenses(30) - pendingCredits(20) = 240
+			const response = await request(app)
+				.post("/api/shifts/shift-123/close")
+				.set("Authorization", authHeader)
+				.send({ actualCashCounted: 240 });
+
+			expect(response.status).toBe(200);
+			expect(response.body.data.expected_cash_calculated).toBe(240);
+			expect(response.body.data.variance).toBe(0);
+		});
+
+		it("should handle negative sports betting net (losing day) reducing expected cash", async () => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "shifts") {
+					return {
+						doc: () => ({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({
+									status: "OPEN",
+									start_time: "2026-08-01T10:00:00Z",
+									opening_float: 100,
+								}),
+							}),
+							update: vi.fn(),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "game_sales_logs") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ calculated_total: 100 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "keno_logs") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ net_profit: 50 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "sports_betting_logs") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ net_profit: -30 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "credits") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ status: "Pending", amount: 20 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				if (path === "expenses") {
+					return {
+						where: () => ({
+							get: vi.fn().mockResolvedValue({
+								docs: [{ data: () => ({ amount: 30 }) }],
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
+				return {
+					doc: vi.fn().mockReturnValue({ id: "audit-123" }),
+					where: vi.fn().mockReturnThis(),
+					limit: vi.fn().mockReturnThis(),
+					get: vi.fn().mockResolvedValue({ docs: [], empty: true }),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+				} as any;
+			});
+
+			// opening_float(100) + gameSales(100) + kenoNet(50) + bettingNet(-30) - expenses(30) - pendingCredits(20) = 170
+			const response = await request(app)
+				.post("/api/shifts/shift-123/close")
+				.set("Authorization", authHeader)
+				.send({ actualCashCounted: 170 });
+
+			expect(response.status).toBe(200);
+			expect(response.body.data.expected_cash_calculated).toBe(170);
+			expect(response.body.data.variance).toBe(0);
+		});
+
 		it("should successfully list shifts", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "shifts") {

@@ -1,7 +1,20 @@
-import type { Credit, Expense, GameSalesLog, KenoLog } from "@level-up/shared";
+import type {
+	Credit,
+	Expense,
+	GameSalesLog,
+	KenoLog,
+	SportsBettingLog,
+} from "@level-up/shared";
 import { CREDIT_STATUSES } from "@level-up/shared";
 import { format } from "date-fns";
-import { Coins, CreditCard, Gamepad2, Loader2, Receipt } from "lucide-react";
+import {
+	Coins,
+	CreditCard,
+	Gamepad2,
+	Loader2,
+	Receipt,
+	Trophy,
+} from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -41,6 +54,9 @@ export function Dashboard() {
 	const [kenoLogs, setKenoLogs] = useState<KenoLog[]>([]);
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
+	const [sportsBettingLogs, setSportsBettingLogs] = useState<
+		SportsBettingLog[]
+	>([]);
 
 	useEffect(() => {
 		let mounted = true;
@@ -51,21 +67,29 @@ export function Dashboard() {
 					? activeShift.start_time
 					: getShopStartOfDay().toISOString();
 
-				const [gamesResponse, kenoResponse, creditsResponse, expensesResponse] =
-					await Promise.all([
-						authFetch(
-							`${API_BASE}/api/sales?startDate=${encodeURIComponent(start)}`,
-						),
-						authFetch(
-							`${API_BASE}/api/keno?startDate=${encodeURIComponent(start)}`,
-						),
-						authFetch(
-							`${API_BASE}/api/credits?startDate=${encodeURIComponent(start)}`,
-						),
-						authFetch(
-							`${API_BASE}/api/expenses?startDate=${encodeURIComponent(start)}`,
-						),
-					]);
+				const [
+					gamesResponse,
+					kenoResponse,
+					creditsResponse,
+					expensesResponse,
+					bettingResponse,
+				] = await Promise.all([
+					authFetch(
+						`${API_BASE}/api/sales?startDate=${encodeURIComponent(start)}`,
+					),
+					authFetch(
+						`${API_BASE}/api/keno?startDate=${encodeURIComponent(start)}`,
+					),
+					authFetch(
+						`${API_BASE}/api/credits?startDate=${encodeURIComponent(start)}`,
+					),
+					authFetch(
+						`${API_BASE}/api/expenses?startDate=${encodeURIComponent(start)}`,
+					),
+					authFetch(
+						`${API_BASE}/api/sports-betting?startDate=${encodeURIComponent(start)}`,
+					),
+				]);
 
 				if (!gamesResponse.ok) {
 					throw new Error("Failed to fetch sales logs");
@@ -80,12 +104,13 @@ export function Dashboard() {
 					throw new Error("Failed to fetch expenses");
 				}
 
-				const [gamesData, kenoData, creditsData, expensesData] =
+				const [gamesData, kenoData, creditsData, expensesData, bettingData] =
 					await Promise.all([
 						safeJson<GameSalesLog[]>(gamesResponse),
 						safeJson<KenoLog[]>(kenoResponse),
 						safeJson<Credit[]>(creditsResponse),
 						safeJson<Expense[]>(expensesResponse),
+						safeJson<SportsBettingLog[]>(bettingResponse),
 					]);
 
 				if (!mounted) return;
@@ -94,6 +119,7 @@ export function Dashboard() {
 				setKenoLogs(kenoData as KenoLog[]);
 				setCredits(creditsData as Credit[]);
 				setExpenses(expensesData as Expense[]);
+				setSportsBettingLogs(Array.isArray(bettingData) ? bettingData : []);
 			} catch (err) {
 				console.error(err);
 				if (mounted) {
@@ -145,6 +171,10 @@ export function Dashboard() {
 	).sort((a, b) => b.totalRevenue - a.totalRevenue);
 
 	const totalKenoNet = kenoLogs.reduce((sum, log) => sum + log.net_profit, 0);
+	const totalSportsBettingNet = sportsBettingLogs.reduce(
+		(sum, log) => sum + log.net_profit,
+		0,
+	);
 	const pendingCredits = credits
 		.filter((c) => c.status === CREDIT_STATUSES.PENDING)
 		.reduce((sum, log) => sum + log.amount, 0);
@@ -153,7 +183,8 @@ export function Dashboard() {
 	const expectedCash =
 		(activeShift?.opening_float || 0) +
 		totalKenoNet +
-		totalGameSales -
+		totalGameSales +
+		totalSportsBettingNet -
 		totalExpenses -
 		pendingCredits;
 	const variance = closingCash ? parseFloat(closingCash) - expectedCash : 0;
@@ -304,6 +335,7 @@ export function Dashboard() {
 				</div>
 				<h2 className="text-xl font-bold mt-6 border-b pb-2">Revenue</h2>
 				<p>Keno Net: ${totalKenoNet.toFixed(2)}</p>
+				<p>Sports Betting Net: ${totalSportsBettingNet.toFixed(2)}</p>
 				<p>Games Total: ${totalGameSales.toFixed(2)}</p>
 				{gameSalesByItem.length > 0 && (
 					<ul className="ml-4 text-sm list-disc">
@@ -347,7 +379,7 @@ export function Dashboard() {
 			<div className="print:hidden space-y-6">
 				<h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
 
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
 					<Card data-testid="kpi-game-sales">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium">Game Sales</CardTitle>
@@ -441,6 +473,31 @@ export function Dashboard() {
 							<div className="text-2xl font-bold">
 								${totalKenoNet.toFixed(2)}
 							</div>
+						</CardContent>
+					</Card>
+					<Card data-testid="kpi-sports-betting">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium">
+								Sports Betting
+							</CardTitle>
+							<Trophy className="h-4 w-4 text-zinc-500" />
+						</CardHeader>
+						<CardContent>
+							<div
+								className={`text-2xl font-bold ${
+									totalSportsBettingNet < 0 ? "text-red-500" : ""
+								}`}
+							>
+								${totalSportsBettingNet.toFixed(2)}
+							</div>
+							{sportsBettingLogs.length === 0 ? (
+								<p className="text-xs text-zinc-500">No entries this shift</p>
+							) : (
+								<p className="text-xs text-zinc-500">
+									{sportsBettingLogs.length}{" "}
+									{sportsBettingLogs.length === 1 ? "entry" : "entries"}
+								</p>
+							)}
 						</CardContent>
 					</Card>
 					<Card>

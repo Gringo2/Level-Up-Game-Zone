@@ -154,22 +154,25 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 		const startTime = initialShiftData.start_time;
 
 		// Fetch dependent data securely on the backend
-		const [gameSalesSnap, kenoSnap, creditsSnap, expensesSnap] =
-			await Promise.all([
-				db
-					.collection(COLLECTIONS.GAME_SALES_LOGS)
-					.where("date", ">=", startTime)
-					.get(),
-				db
-					.collection(COLLECTIONS.KENO_LOGS)
-					.where("date", ">=", startTime)
-					.get(),
-				db.collection(COLLECTIONS.CREDITS).where("date", ">=", startTime).get(),
-				db
-					.collection(COLLECTIONS.EXPENSES)
-					.where("date", ">=", startTime)
-					.get(),
-			]);
+		const [
+			gameSalesSnap,
+			kenoSnap,
+			creditsSnap,
+			expensesSnap,
+			sportsBettingSnap,
+		] = await Promise.all([
+			db
+				.collection(COLLECTIONS.GAME_SALES_LOGS)
+				.where("date", ">=", startTime)
+				.get(),
+			db.collection(COLLECTIONS.KENO_LOGS).where("date", ">=", startTime).get(),
+			db.collection(COLLECTIONS.CREDITS).where("date", ">=", startTime).get(),
+			db.collection(COLLECTIONS.EXPENSES).where("date", ">=", startTime).get(),
+			db
+				.collection(COLLECTIONS.SPORTS_BETTING_LOGS)
+				.where("date", ">=", startTime)
+				.get(),
+		]);
 
 		const totalGameSales = gameSalesSnap.docs.reduce(
 			(sum: number, doc: QueryDocumentSnapshot) =>
@@ -196,6 +199,11 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 				sum + (doc.data().amount || 0),
 			0,
 		);
+		const totalSportsBettingNet = sportsBettingSnap.docs.reduce(
+			(sum: number, doc: QueryDocumentSnapshot) =>
+				sum + (doc.data().net_profit || 0),
+			0,
+		);
 
 		// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload built conditionally
 		let updateData: any;
@@ -219,7 +227,8 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 				const expectedCash =
 					(shiftData.opening_float || 0) +
 					totalKenoNet +
-					totalGameSales -
+					totalGameSales +
+					totalSportsBettingNet -
 					totalExpenses -
 					pendingCredits;
 				const variance = Number(actualCashCounted) - expectedCash;
