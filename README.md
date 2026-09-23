@@ -86,11 +86,38 @@ When the repository is linked to cPanel via Git™ Version Control, deploy and a
 ```bash
 cd ~/levelup.froge.studio
 git pull origin main
-npm run build
+npm run build:cpanel
 mkdir -p tmp && touch tmp/restart.txt
 ```
 
 ### What This Does:
 1. `git pull origin main` — Pulls the latest production commits directly from GitHub.
-2. `npm run build` — Compiles `@level-up/shared`, client assets with Vite into `packages/client/dist/`, and backend TypeScript into `packages/server/dist/`.
+2. `npm run build:cpanel` — Compiles `@level-up/shared`, client assets with Vite into `packages/client/dist/`, and backend TypeScript into `packages/server/dist/` under strict thread constraints.
 3. `mkdir -p tmp && touch tmp/restart.txt` — Signals Phusion Passenger / cPanel Node.js App to gracefully reload the server process without downtime.
+
+### CloudLinux / cPanel Thread Limit Constraint
+
+Shared cPanel hosting environments enforce strict CloudLinux LVE process and thread limits (typically **30 to 35 processes/threads** per cPanel account).
+
+During `vite build`, three separate runtimes execute concurrently:
+- **Rust** (`@tailwindcss/vite` / Lightning CSS) — uses Rayon for parallel CSS transformation.
+- **Go** (`esbuild` module bundler) — uses the Go runtime worker threadpool.
+- **Node.js / C++** (`libuv` threadpool) — handles async file I/O.
+
+On high-core shared servers (e.g. 32 to 128 cores), these runtimes attempt to spawn dozens of worker threads by default, exceeding the cPanel limit and causing crashes like:
+- `fatal error: newosproc` / `runtime: failed to create new OS thread (have 30 already; errno=11)` (Go)
+- `ThreadPoolBuildError: WouldBlock` / `Resource temporarily unavailable` (Rust/Rayon)
+
+`npm run build:cpanel` automatically sets:
+```bash
+RAYON_NUM_THREADS=1 GOMAXPROCS=1 UV_THREADPOOL_SIZE=1 npm run build
+```
+
+This pins each runtime to a single worker thread, keeping total active threads at ~5–8 and ensuring smooth, 100% reliable builds on shared hosting.
+
+> [!TIP]
+> If a build previously crashed with a core dump, clean up any lingering orphaned processes before rebuilding:
+> ```bash
+> pkill -u $USER -f "vite|esbuild" || true
+> ```
+
