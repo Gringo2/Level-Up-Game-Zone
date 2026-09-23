@@ -80,6 +80,15 @@ test.describe("Authenticated Dashboard Flow & API Mocks", () => {
 			});
 		});
 
+		// Mock Sports Betting API
+		await page.route("**/api/sports-betting", async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify([]),
+			});
+		});
+
 		await page.goto("/");
 		await expect(page.locator("h2:has-text('Dashboard')")).toBeVisible();
 		await expect(page.locator("text=Shift Management")).toBeVisible();
