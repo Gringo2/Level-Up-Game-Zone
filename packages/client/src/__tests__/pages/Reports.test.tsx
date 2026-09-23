@@ -551,4 +551,29 @@ describe("Reports", () => {
 		expect(screen.getByText("Sports Betting ($80.00)")).toBeInTheDocument();
 		expect(screen.getAllByText("$160.00").length).toBeGreaterThanOrEqual(1);
 	});
+
+	it("sets range to yesterday when Yesterday preset button is clicked", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Historical Reports")).toBeDefined();
+		});
+
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		expect(yesterdayBtn).toBeInTheDocument();
+
+		fireEvent.click(yesterdayBtn);
+
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		const startDateInput = dateInputs[0] as HTMLInputElement;
+		const endDateInput = dateInputs[1] as HTMLInputElement;
+
+		expect(startDateInput.value).toBe(endDateInput.value);
+		expect(startDateInput.value).not.toBe("");
+	});
 });

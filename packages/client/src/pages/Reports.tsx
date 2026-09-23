@@ -55,9 +55,11 @@ export function Reports() {
 	const today = new Date();
 	const shopToday = toZonedTime(today, SHOP_TIMEZONE);
 	const todayStr = toShopDateStr(today);
+	const yesterdayStr = toShopDateStr(subDays(shopToday, 1));
 
 	const presets: Preset[] = [
 		{ label: "Today", from: todayStr, to: todayStr },
+		{ label: "Yesterday", from: yesterdayStr, to: yesterdayStr },
 		{
 			label: "This Week",
 			from: toShopDateStr(startOfWeek(shopToday, { weekStartsOn: 1 })),

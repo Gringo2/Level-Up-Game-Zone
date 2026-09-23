@@ -1,9 +1,9 @@
-# CURRENT MISSION
+# Mission M-122: Reports Yesterday Date Filter Preset
 
-**Type:** Feature / UX Polish  
-**Mission:** M-122 Reports Yesterday Date Filter Preset  
 **Status:** Locked  
+**Type:** Feature / UX Polish  
 **Proposal:** ACP-030  
+**Owner:** Execution  
 
 ## 1. Objective
 Add a dedicated "Yesterday" date preset button to the Historical Reports page (`/reports`), enabling one-click reconciliation and performance analysis of the previous day's operations.
@@ -34,6 +34,3 @@ Add a dedicated "Yesterday" date preset button to the Historical Reports page (`
 - [x] Monorepo Build: Shared, client, and server build without errors.
 - [x] Biome Lint & Knip: 0 errors, 0 warnings across 168 files; Knip clean.
 - [x] Traceability: Traceable to ACP-030.
-
-
-
