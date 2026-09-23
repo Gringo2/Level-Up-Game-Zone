@@ -75,11 +75,11 @@ describe("Sports Betting Integration Tests", () => {
 					};
 					return chainable;
 				}
-				// biome-ignore lint/suspicious/noExplicitAny: Firestore mock
 				return {
 					get: vi.fn().mockResolvedValue({ docs: [] }),
 					where: vi.fn().mockReturnThis(),
 					orderBy: vi.fn().mockReturnThis(),
+					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 				} as any;
 			});
 
@@ -140,13 +140,11 @@ describe("Sports Betting Integration Tests", () => {
 				if (path === COLLECTIONS.SPORTS_BETTING_LOGS) {
 					return {
 						doc: vi.fn().mockReturnValue({
-							get: vi
-								.fn()
-								.mockResolvedValue({
-									exists: true,
-									id: "b1",
-									data: () => ({ ...oldDoc, net_profit: 200 }),
-								}),
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								id: "b1",
+								data: () => ({ ...oldDoc, net_profit: 200 }),
+							}),
 						}),
 						// biome-ignore lint/suspicious/noExplicitAny: Firestore mock
 					} as any;

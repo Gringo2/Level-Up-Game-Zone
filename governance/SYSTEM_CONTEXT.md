@@ -7,7 +7,7 @@ A web application monorepo managing point-of-sale, store credit, shifts, and ken
 To provide a unified, secure, and robust platform for managing the physical store's transactions and employee operations.
 
 **Current Phase:** Phase 8 — Shift Operational Integrity & Identity Bridge
-**Current Mission:** M-119 Dashboard Game Sales Sum & Item Integration
+**Current Mission:** M-120 Sports Betting Income Stream Integration
 **Mission Status:** Locked
 
 **Current Architecture Version:** v1.0.0
