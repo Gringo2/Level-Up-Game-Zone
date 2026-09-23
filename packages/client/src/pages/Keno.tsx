@@ -23,6 +23,7 @@ import {
 	getShopDateString,
 	getShopEndOfDay,
 	getShopStartOfDay,
+	getShopYesterdayString,
 } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -36,6 +37,7 @@ export function Keno() {
 	const { user } = useAuth();
 	const [netAmount, setNetAmount] = useState("");
 	const todayStr = getShopDateString();
+	const yesterdayStr = getShopYesterdayString();
 	const [rangeStart, setRangeStart] = useState(todayStr);
 	const [rangeEnd, setRangeEnd] = useState(todayStr);
 	const [entryDate, setEntryDate] = useState(() => getShopDateString());
@@ -393,7 +395,9 @@ export function Keno() {
 						<CardDescription>
 							{rangeStart === todayStr && rangeEnd === todayStr
 								? "Recent Keno entries logged today."
-								: "Keno entries in the selected range."}
+								: rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+									? "Keno entries logged yesterday."
+									: "Keno entries in the selected range."}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -442,6 +446,17 @@ export function Keno() {
 								>
 									Today
 								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => {
+										setRangeStart(yesterdayStr);
+										setRangeEnd(yesterdayStr);
+									}}
+									disabled={listLoading}
+								>
+									Yesterday
+								</Button>
 							</div>
 						</div>
 						{rangeStart > rangeEnd && (
@@ -475,7 +490,9 @@ export function Keno() {
 									<p>
 										{rangeStart === todayStr && rangeEnd === todayStr
 											? "No Keno logged today yet."
-											: "No Keno logged in this period."}
+											: rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+												? "No Keno logged yesterday."
+												: "No Keno logged in this period."}
 									</p>
 								</div>
 							) : (

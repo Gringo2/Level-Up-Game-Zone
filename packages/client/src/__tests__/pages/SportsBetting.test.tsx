@@ -494,4 +494,23 @@ describe("SportsBetting Page", () => {
 			),
 		);
 	});
+
+	it("sets range to yesterday when Yesterday button is clicked", async () => {
+		mockFetch.mockImplementation(() =>
+			Promise.resolve(jsonResponse([bettingLog])),
+		);
+		render(<SportsBetting />);
+		await screen.findByText("Net: $75.00");
+
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		expect(yesterdayBtn).toBeInTheDocument();
+
+		fireEvent.click(yesterdayBtn);
+
+		const fromInput = screen.getByLabelText("From") as HTMLInputElement;
+		const toInput = screen.getByLabelText("To") as HTMLInputElement;
+
+		expect(fromInput.value).toBe(toInput.value);
+		expect(fromInput.value).not.toBe("");
+	});
 });

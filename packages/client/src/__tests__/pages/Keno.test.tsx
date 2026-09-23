@@ -844,4 +844,24 @@ describe("Keno", () => {
 
 		expect(await screen.findByText(/\$99\.00/)).toBeInTheDocument();
 	});
+
+	it("sets range to yesterday when Yesterday button is clicked", async () => {
+		mockFetch.mockImplementation(() =>
+			Promise.resolve(jsonResponse([kenoLog])),
+		);
+
+		render(<Keno />);
+		await screen.findByTestId("keno-range-summary");
+
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		expect(yesterdayBtn).toBeInTheDocument();
+
+		fireEvent.click(yesterdayBtn);
+
+		const fromInput = screen.getByLabelText("From") as HTMLInputElement;
+		const toInput = screen.getByLabelText("To") as HTMLInputElement;
+
+		expect(fromInput.value).toBe(toInput.value);
+		expect(fromInput.value).not.toBe("");
+	});
 });

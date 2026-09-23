@@ -1,4 +1,4 @@
-import { endOfDay, format, isValid, startOfDay } from "date-fns";
+import { endOfDay, format, isValid, startOfDay, subDays } from "date-fns";
 import { toZonedTime } from "date-fns-tz";
 
 export const SHOP_TIMEZONE = "Africa/Addis_Ababa";
@@ -9,6 +9,10 @@ export const getShopDate = (date: Date = new Date()) => {
 
 export const getShopDateString = (date: Date = new Date()) => {
 	return format(getShopDate(date), "yyyy-MM-dd");
+};
+
+export const getShopYesterdayString = (date: Date = new Date()): string => {
+	return format(subDays(getShopDate(date), 1), "yyyy-MM-dd");
 };
 
 export const shopDateToInstant = (shopDate: string) => {

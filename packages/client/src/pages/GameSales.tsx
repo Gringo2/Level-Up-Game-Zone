@@ -23,6 +23,7 @@ import {
 	getShopDateString,
 	getShopEndOfDay,
 	getShopStartOfDay,
+	getShopYesterdayString,
 } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -58,6 +59,7 @@ export function GameSales() {
 	const [deleteReason, setDeleteReason] = useState("");
 	const [loadingDefaults, setLoadingDefaults] = useState(false);
 	const todayStr = getShopDateString();
+	const yesterdayStr = getShopYesterdayString();
 	const [rangeStart, setRangeStart] = useState(todayStr);
 	const [rangeEnd, setRangeEnd] = useState(todayStr);
 	const isWithinActiveRange = (date: string) => {
@@ -554,7 +556,9 @@ export function GameSales() {
 						<CardDescription>
 							{rangeStart === todayStr && rangeEnd === todayStr
 								? "Recent game sales logged today."
-								: "Game sales in the selected range."}
+								: rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+									? "Game sales logged yesterday."
+									: "Game sales in the selected range."}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -603,6 +607,17 @@ export function GameSales() {
 								>
 									Today
 								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => {
+										setRangeStart(yesterdayStr);
+										setRangeEnd(yesterdayStr);
+									}}
+									disabled={listLoading}
+								>
+									Yesterday
+								</Button>
 							</div>
 						</div>
 						{rangeStart > rangeEnd && (
@@ -638,7 +653,9 @@ export function GameSales() {
 									<p>
 										{rangeStart === todayStr && rangeEnd === todayStr
 											? "No game sales logged today yet."
-											: "No game sales logged in this period."}
+											: rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+												? "No game sales logged yesterday."
+												: "No game sales logged in this period."}
 									</p>
 								</div>
 							) : (

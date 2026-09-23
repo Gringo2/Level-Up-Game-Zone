@@ -5,6 +5,7 @@ import {
 	getShopDateString,
 	getShopEndOfDay,
 	getShopStartOfDay,
+	getShopYesterdayString,
 	shopDateToInstant,
 } from "../../lib/dateUtils.js";
 
@@ -43,6 +44,12 @@ describe("dateUtils (Africa/Addis_Ababa)", () => {
 	it("formats the current shop date in Addis time rather than UTC", () => {
 		vi.setSystemTime(new Date("2026-01-01T21:00:00.000Z"));
 		expect(getShopDateString()).toBe("2026-01-02");
+		vi.useRealTimers();
+	});
+
+	it("formats yesterday shop date in Addis time rather than UTC", () => {
+		vi.setSystemTime(new Date("2026-01-01T21:00:00.000Z"));
+		expect(getShopYesterdayString()).toBe("2026-01-01");
 		vi.useRealTimers();
 	});
 

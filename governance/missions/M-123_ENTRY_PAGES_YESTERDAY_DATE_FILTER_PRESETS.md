@@ -1,9 +1,9 @@
-# CURRENT MISSION
+# Mission M-123: Entry Pages Yesterday Date Filter Presets
 
-**Type:** Feature / UX Polish  
-**Mission:** M-123 Entry Pages Yesterday Date Filter Presets  
 **Status:** Locked  
+**Type:** Feature / UX Polish  
 **Proposal:** ACP-031  
+**Owner:** Execution  
 
 ## 1. Objective
 Add a dedicated "Yesterday" date preset button alongside the existing "Today" button across Game Sales, Keno, and Sports Betting history toolbars, enabling one-click reconciliation and inspection of the previous day's operational entries.
@@ -40,7 +40,4 @@ Add a dedicated "Yesterday" date preset button alongside the existing "Today" bu
 - [x] Monorepo Build: Clean build across all workspaces.
 - [x] Biome Lint & Knip: Clean.
 - [x] Traceability: Authorized by ACP-031 and formal approval.
-
-
-
 

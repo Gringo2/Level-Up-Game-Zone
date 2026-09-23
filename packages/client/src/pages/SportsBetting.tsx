@@ -23,6 +23,7 @@ import {
 	getShopDateString,
 	getShopEndOfDay,
 	getShopStartOfDay,
+	getShopYesterdayString,
 } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -35,6 +36,7 @@ export function SportsBetting() {
 	const { user } = useAuth();
 	const [netAmount, setNetAmount] = useState("");
 	const todayStr = getShopDateString();
+	const yesterdayStr = getShopYesterdayString();
 	const [rangeStart, setRangeStart] = useState(todayStr);
 	const [rangeEnd, setRangeEnd] = useState(todayStr);
 	const [entryDate, setEntryDate] = useState(() => getShopDateString());
@@ -391,7 +393,9 @@ export function SportsBetting() {
 						<CardDescription>
 							{rangeStart === todayStr && rangeEnd === todayStr
 								? "Recent sports betting entries logged today."
-								: "Sports betting entries in the selected range."}
+								: rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+									? "Sports betting entries logged yesterday."
+									: "Sports betting entries in the selected range."}
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
@@ -442,6 +446,18 @@ export function SportsBetting() {
 								>
 									Today
 								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => {
+										setRangeStart(yesterdayStr);
+										setRangeEnd(yesterdayStr);
+									}}
+									disabled={listLoading}
+									className="flex-1 min-[400px]:flex-initial"
+								>
+									Yesterday
+								</Button>
 							</div>
 						</div>
 						{rangeStart > rangeEnd && (
@@ -475,7 +491,9 @@ export function SportsBetting() {
 									<p>
 										{rangeStart === todayStr && rangeEnd === todayStr
 											? "No sports betting logged today yet."
-											: "No sports betting logged in this period."}
+											: rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+												? "No sports betting logged yesterday."
+												: "No sports betting logged in this period."}
 									</p>
 								</div>
 							) : (

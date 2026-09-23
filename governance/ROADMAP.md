@@ -102,6 +102,8 @@
 *   [x] **Mission 120:** Sports Betting Income Stream Integration — integrate sports betting income stream full-stack with shared types, role-gated API endpoints, atomic audit logs, shift cash drawer balancing, dedicated management page (/betting), 5th Dashboard KPI card, safe slip line, and financial reports revenue mix (2026-09-23, Locked; ACP-028 / ADR-009).
 *   [x] **Mission 121:** Sports Betting Playwright E2E Suite & Mobile Touch Ergonomics Hardening — establish automated browser testing for sports betting RBAC isolation, manager navigation, positive/negative logging, verification badge transitions, and modal flows with reasons; harden mobile touch ergonomics with inputMode decimal and responsive From/To date toolbar wrapping (2026-09-23, Locked; ACP-029).
 *   [x] **Mission 122:** Reports Yesterday Date Filter Preset — add dedicated Yesterday date preset button to Historical Reports (/reports) directly following Today, computing yesterday's shop date anchored to shop timezone (Asia/Riyadh / UTC+3) via subDays and toShopDateStr (2026-09-24, Locked; ACP-030).
+*   [x] **Mission 123:** Entry Pages Yesterday Date Filter Presets — add dedicated Yesterday date preset button beside Today across Game Sales (/games), Keno (/keno), and Sports Betting (/betting) toolbars, backed by reusable getShopYesterdayString in dateUtils.ts, with contextual card descriptions and empty states (2026-09-24, Locked; ACP-031).
+
 
 
 
