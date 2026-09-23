@@ -361,8 +361,9 @@ describe("Sports Betting Integration Tests", () => {
 				.send({ net_profit: 80 });
 
 			expect(capturedAuditData).not.toBeNull();
-			expect(capturedAuditData?.action).toBe("CREATE");
-			expect(capturedAuditData?.table_affected).toBe("sports_betting_logs");
+			const audit = capturedAuditData as unknown as Record<string, unknown>;
+			expect(audit.action).toBe("CREATE");
+			expect(audit.table_affected).toBe("sports_betting_logs");
 		});
 	});
 });
