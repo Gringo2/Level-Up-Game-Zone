@@ -1,9 +1,9 @@
-# CURRENT MISSION
+# Mission M-124: Expenses and SalaryReport Yesterday Date Filter Presets
 
-**Type:** Feature / UX Polish  
-**Mission:** M-124 Expenses and SalaryReport Yesterday Date Filter Presets  
 **Status:** Locked  
+**Type:** Feature / UX Polish  
 **Proposal:** ACP-032  
+**Owner:** Execution  
 
 ## 1. Objective
 Add dedicated "Yesterday" (and "Today") date preset buttons across the Expenses history toolbar and the Salary Report toolbar, achieving complete date-filtering parity across all operational pages.

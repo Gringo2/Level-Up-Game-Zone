@@ -303,4 +303,51 @@ describe("SalaryReport", () => {
 			screen.getByText("From date must be on or before To date"),
 		).toBeInTheDocument();
 	});
+
+	it("ACP-032: Yesterday and Today preset buttons update input dates and immediately apply", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<SalaryReport />);
+		await waitFor(() => {
+			expect(
+				screen.getByRole("button", { name: "Yesterday" }),
+			).toBeInTheDocument();
+		});
+
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		expect(yesterdayBtn).toBeInTheDocument();
+		expect(todayBtn).toBeInTheDocument();
+
+		// Click Yesterday - immediate re-fetch without clicking Apply
+		fetchMock.mockClear();
+		fireEvent.click(yesterdayBtn);
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalled();
+		});
+
+		// Subtitle updates to contextually describe yesterday
+		expect(
+			screen.getByText(
+				"Yesterday's net salary calculations and itemized IOU deductions for store staff.",
+			),
+		).toBeInTheDocument();
+
+		// Click Today - immediate re-fetch
+		fetchMock.mockClear();
+		fireEvent.click(todayBtn);
+
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalled();
+		});
+		expect(
+			screen.getByText(
+				"Today's net salary calculations and itemized IOU deductions for store staff.",
+			),
+		).toBeInTheDocument();
+	});
 });

@@ -1,7 +1,6 @@
 import type { Credit, Employee } from "@level-up/shared";
 import { CREDIT_STATUSES } from "@level-up/shared";
 import { format } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 import { Loader2, Printer, Receipt } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -15,22 +14,23 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
-import { SHOP_TIMEZONE } from "../lib/dateUtils";
+import { getShopDateString, getShopYesterdayString } from "../lib/dateUtils";
 
 export function SalaryReport() {
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [employees, setEmployees] = useState<Employee[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	const [inputStartDate, setInputStartDate] = useState(
-		formatInTimeZone(new Date(), SHOP_TIMEZONE, "yyyy-MM-dd"),
+	const [inputStartDate, setInputStartDate] = useState(() =>
+		getShopDateString(),
 	);
-	const [inputEndDate, setInputEndDate] = useState(
-		formatInTimeZone(new Date(), SHOP_TIMEZONE, "yyyy-MM-dd"),
-	);
+	const [inputEndDate, setInputEndDate] = useState(() => getShopDateString());
 
 	const [appliedStartDate, setAppliedStartDate] = useState(inputStartDate);
 	const [appliedEndDate, setAppliedEndDate] = useState(inputEndDate);
+
+	const todayStr = getShopDateString();
+	const yesterdayStr = getShopYesterdayString();
 
 	useEffect(() => {
 		let mounted = true;
@@ -160,7 +160,12 @@ export function SalaryReport() {
 						Payroll & Salary Payout Report
 					</h2>
 					<p className="text-zinc-500">
-						Net salary calculations and itemized IOU deductions for store staff.
+						{appliedStartDate === todayStr && appliedEndDate === todayStr
+							? "Today's net salary calculations and itemized IOU deductions for store staff."
+							: appliedStartDate === yesterdayStr &&
+									appliedEndDate === yesterdayStr
+								? "Yesterday's net salary calculations and itemized IOU deductions for store staff."
+								: "Net salary calculations and itemized IOU deductions for store staff."}
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
@@ -182,6 +187,30 @@ export function SalaryReport() {
 					<div className="flex items-center gap-2">
 						<Button onClick={handleApply} disabled={!isRangeValid}>
 							Apply
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => {
+								setInputStartDate(todayStr);
+								setInputEndDate(todayStr);
+								setAppliedStartDate(todayStr);
+								setAppliedEndDate(todayStr);
+							}}
+						>
+							Today
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => {
+								setInputStartDate(yesterdayStr);
+								setInputEndDate(yesterdayStr);
+								setAppliedStartDate(yesterdayStr);
+								setAppliedEndDate(yesterdayStr);
+							}}
+						>
+							Yesterday
 						</Button>
 						<Button variant="outline" onClick={() => window.print()}>
 							<Printer className="mr-2 h-4 w-4" /> Print

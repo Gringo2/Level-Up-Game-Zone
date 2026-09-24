@@ -855,4 +855,27 @@ describe("Expenses", () => {
 		// With ACP-020, out-of-range backdated expense must NOT be prepended to the filtered list
 		expect(screen.queryByText("Backdated Oil")).toBeNull();
 	});
+
+	it("ACP-032: Yesterday and Today preset buttons update date bounds and contextual description", async () => {
+		mockFetch.mockImplementation(() => jsonResponse([expense]));
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		expect(yesterdayBtn).toBeInTheDocument();
+		expect(todayBtn).toBeInTheDocument();
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		await waitFor(() => {
+			expect(screen.getByText("Yesterday's expenses.")).toBeInTheDocument();
+		});
+
+		// Click Today
+		fireEvent.click(todayBtn);
+		await waitFor(() => {
+			expect(screen.getByText("Today's expenses.")).toBeInTheDocument();
+		});
+	});
 });

@@ -23,6 +23,7 @@ import {
 	getShopDateString,
 	getShopEndOfDay,
 	getShopStartOfDay,
+	getShopYesterdayString,
 } from "../lib/dateUtils";
 import {
 	groupLogsByDay,
@@ -57,6 +58,9 @@ export function Expenses() {
 		getShopDateString(),
 	);
 	const [filterDateTo, setFilterDateTo] = useState(() => getShopDateString());
+
+	const todayStr = getShopDateString();
+	const yesterdayStr = getShopYesterdayString();
 
 	const loadOlderExpenses = async () => {
 		if (!nextCursor || filterDateFrom > filterDateTo) return;
@@ -566,9 +570,14 @@ export function Expenses() {
 							<div>
 								<CardTitle>Expenses</CardTitle>
 								<CardDescription>
-									{filterDateFrom === filterDateTo
-										? `Expenses for ${filterDateFrom}`
-										: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
+									{filterDateFrom === todayStr && filterDateTo === todayStr
+										? "Today's expenses."
+										: filterDateFrom === yesterdayStr &&
+												filterDateTo === yesterdayStr
+											? "Yesterday's expenses."
+											: filterDateFrom === filterDateTo
+												? `Expenses for ${filterDateFrom}`
+												: `Expenses from ${filterDateFrom} to ${filterDateTo}`}
 								</CardDescription>
 							</div>
 							<div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
@@ -596,6 +605,32 @@ export function Expenses() {
 										className="h-8 w-full min-[400px]:w-[135px] text-xs"
 									/>
 								</div>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-8 text-xs"
+									onClick={() => {
+										setFilterDateFrom(todayStr);
+										setFilterDateTo(todayStr);
+									}}
+									disabled={listLoading}
+								>
+									Today
+								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-8 text-xs"
+									onClick={() => {
+										setFilterDateFrom(yesterdayStr);
+										setFilterDateTo(yesterdayStr);
+									}}
+									disabled={listLoading}
+								>
+									Yesterday
+								</Button>
 								{listLoading && (
 									<Loader2
 										data-testid="history-loading"
