@@ -105,6 +105,8 @@
 *   [x] **Mission 123:** Entry Pages Yesterday Date Filter Presets — add dedicated Yesterday date preset button beside Today across Game Sales (/games), Keno (/keno), and Sports Betting (/betting) toolbars, backed by reusable getShopYesterdayString in dateUtils.ts, with contextual card descriptions and empty states (2026-09-24, Locked; ACP-031).
 *   [x] **Mission 124:** Expenses & SalaryReport Yesterday Date Filter Presets — add dedicated Yesterday (and Today) date presets to Expenses and SalaryReport toolbars with period-aware descriptions and immediate apply behavior (2026-09-24, Locked; ACP-032).
 *   [x] **Mission 125:** Credits Yesterday & Date Filter Presets — add From/To date range filtering and Yesterday & Today presets to Store Credits (Credits.tsx) with period-aware descriptions, active range summary banner, and ACP-020 range guard (2026-09-24, Locked; ACP-033).
+*   [x] **Mission 126:** Calendar Period Presets in Reports & Salary Report — add Last Week and Last Month to Reports, and This Month, Last Month, and This Week to SalaryReport, backed by pure range helpers in dateUtils.ts (2026-09-24, Locked; ACP-034).
+
 
 
 

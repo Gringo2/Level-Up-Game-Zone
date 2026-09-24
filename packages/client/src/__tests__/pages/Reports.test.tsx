@@ -576,4 +576,31 @@ describe("Reports", () => {
 		expect(startDateInput.value).toBe(endDateInput.value);
 		expect(startDateInput.value).not.toBe("");
 	});
+
+	it("ACP-034: sets range to Last Week and Last Month when corresponding preset buttons are clicked", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+
+		await waitFor(() => {
+			expect(screen.getByText("Historical Reports")).toBeDefined();
+		});
+
+		const lastWeekBtn = screen.getByRole("button", { name: "Last Week" });
+		const lastMonthBtn = screen.getByRole("button", { name: "Last Month" });
+		expect(lastWeekBtn).toBeInTheDocument();
+		expect(lastMonthBtn).toBeInTheDocument();
+
+		fireEvent.click(lastWeekBtn);
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		const startDateInput = dateInputs[0] as HTMLInputElement;
+		const endDateInput = dateInputs[1] as HTMLInputElement;
+		expect(startDateInput.value).not.toBe(endDateInput.value);
+
+		fireEvent.click(lastMonthBtn);
+		expect(startDateInput.value).not.toBe(endDateInput.value);
+	});
 });

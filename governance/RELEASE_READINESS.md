@@ -21,13 +21,13 @@
 | Metric | Target | Current | Status |
 |--------|--------|---------|--------|
 | Total Test Files | — | 42 | ✅ PASS |
-| Total Tests | — | 700 | ✅ PASS |
+| Total Tests | — | 706 | ✅ PASS |
 | Statement Coverage | 80%+ | 93.47% | ✅ PASS |
 | Branch Coverage | 75%+ | 79.47% | ✅ PASS |
 | Function Coverage | 90%+ | 96.60% | ✅ PASS |
 | Line Coverage | 85%+ | 94.80% | ✅ PASS |
 
-**Test Exit Code:** 0 (all passed, no failures: 304 server, 396 client)
+**Test Exit Code:** 0 (all passed, no failures: 304 server, 402 client)
 
 ### Per-Area Coverage Details
 
@@ -90,7 +90,7 @@
 ## 🎯 Release Sign-Off Checklist
 
 - [x] Build compiles cleanly (tsc, vite)
-- [x] Full test suite passes (700/700 tests)
+- [x] Full test suite passes (706/706 tests)
 - [x] E2E browser test suite passes (26/26 tests across 7 suites)
 - [x] Coverage thresholds met (branches 77%+, statements 92%+)
 - [x] Linting clean (biome, knip, depcruise)

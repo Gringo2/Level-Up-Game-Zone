@@ -11,14 +11,7 @@ import {
 	DEFAULT_EXPENSE_CATEGORY,
 	SHIFT_STATUSES,
 } from "@level-up/shared";
-import {
-	endOfMonth,
-	endOfWeek,
-	format,
-	startOfMonth,
-	startOfWeek,
-	subDays,
-} from "date-fns";
+import { format, subDays } from "date-fns";
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -42,7 +35,13 @@ import {
 import { Input } from "../components/ui/input";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
-import { SHOP_TIMEZONE } from "../lib/dateUtils";
+import {
+	getShopLastMonthRange,
+	getShopLastWeekRange,
+	getShopThisMonthRange,
+	getShopThisWeekRange,
+	SHOP_TIMEZONE,
+} from "../lib/dateUtils";
 
 const toShopDateStr = (d: Date) =>
 	formatInTimeZone(toZonedTime(d, SHOP_TIMEZONE), SHOP_TIMEZONE, "yyyy-MM-dd");
@@ -57,18 +56,33 @@ export function Reports() {
 	const todayStr = toShopDateStr(today);
 	const yesterdayStr = toShopDateStr(subDays(shopToday, 1));
 
+	const thisWeek = getShopThisWeekRange(today);
+	const lastWeek = getShopLastWeekRange(today);
+	const thisMonth = getShopThisMonthRange(today);
+	const lastMonth = getShopLastMonthRange(today);
+
 	const presets: Preset[] = [
 		{ label: "Today", from: todayStr, to: todayStr },
 		{ label: "Yesterday", from: yesterdayStr, to: yesterdayStr },
 		{
 			label: "This Week",
-			from: toShopDateStr(startOfWeek(shopToday, { weekStartsOn: 1 })),
-			to: toShopDateStr(endOfWeek(shopToday, { weekStartsOn: 1 })),
+			from: thisWeek.from,
+			to: thisWeek.to,
+		},
+		{
+			label: "Last Week",
+			from: lastWeek.from,
+			to: lastWeek.to,
 		},
 		{
 			label: "This Month",
-			from: toShopDateStr(startOfMonth(shopToday)),
-			to: toShopDateStr(endOfMonth(shopToday)),
+			from: thisMonth.from,
+			to: thisMonth.to,
+		},
+		{
+			label: "Last Month",
+			from: lastMonth.from,
+			to: lastMonth.to,
 		},
 		{
 			label: "Last 7 Days",

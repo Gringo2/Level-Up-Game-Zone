@@ -14,7 +14,13 @@ import {
 } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
-import { getShopDateString, getShopYesterdayString } from "../lib/dateUtils";
+import {
+	getShopDateString,
+	getShopLastMonthRange,
+	getShopThisMonthRange,
+	getShopThisWeekRange,
+	getShopYesterdayString,
+} from "../lib/dateUtils";
 
 export function SalaryReport() {
 	const [credits, setCredits] = useState<Credit[]>([]);
@@ -31,6 +37,9 @@ export function SalaryReport() {
 
 	const todayStr = getShopDateString();
 	const yesterdayStr = getShopYesterdayString();
+	const thisMonth = getShopThisMonthRange();
+	const lastMonth = getShopLastMonthRange();
+	const thisWeek = getShopThisWeekRange();
 
 	useEffect(() => {
 		let mounted = true;
@@ -165,7 +174,16 @@ export function SalaryReport() {
 							: appliedStartDate === yesterdayStr &&
 									appliedEndDate === yesterdayStr
 								? "Yesterday's net salary calculations and itemized IOU deductions for store staff."
-								: "Net salary calculations and itemized IOU deductions for store staff."}
+								: appliedStartDate === thisMonth.from &&
+										appliedEndDate === thisMonth.to
+									? "This month's net salary calculations and itemized IOU deductions for store staff."
+									: appliedStartDate === lastMonth.from &&
+											appliedEndDate === lastMonth.to
+										? "Last month's net salary calculations and itemized IOU deductions for store staff."
+										: appliedStartDate === thisWeek.from &&
+												appliedEndDate === thisWeek.to
+											? "This week's net salary calculations and itemized IOU deductions for store staff."
+											: "Net salary calculations and itemized IOU deductions for store staff."}
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
@@ -184,9 +202,45 @@ export function SalaryReport() {
 							className="w-full sm:w-auto min-w-[130px]"
 						/>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2">
 						<Button onClick={handleApply} disabled={!isRangeValid}>
 							Apply
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => {
+								setInputStartDate(thisMonth.from);
+								setInputEndDate(thisMonth.to);
+								setAppliedStartDate(thisMonth.from);
+								setAppliedEndDate(thisMonth.to);
+							}}
+						>
+							This Month
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => {
+								setInputStartDate(lastMonth.from);
+								setInputEndDate(lastMonth.to);
+								setAppliedStartDate(lastMonth.from);
+								setAppliedEndDate(lastMonth.to);
+							}}
+						>
+							Last Month
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => {
+								setInputStartDate(thisWeek.from);
+								setInputEndDate(thisWeek.to);
+								setAppliedStartDate(thisWeek.from);
+								setAppliedEndDate(thisWeek.to);
+							}}
+						>
+							This Week
 						</Button>
 						<Button
 							type="button"

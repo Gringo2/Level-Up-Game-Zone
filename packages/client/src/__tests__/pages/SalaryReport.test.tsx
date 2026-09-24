@@ -350,4 +350,62 @@ describe("SalaryReport", () => {
 			),
 		).toBeInTheDocument();
 	});
+
+	it("ACP-034: This Month, Last Month, and This Week preset buttons update input dates, trigger fetch, and update subtitle", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<SalaryReport />);
+		await waitFor(() => {
+			expect(
+				screen.getByRole("button", { name: "This Month" }),
+			).toBeInTheDocument();
+		});
+
+		const thisMonthBtn = screen.getByRole("button", { name: "This Month" });
+		const lastMonthBtn = screen.getByRole("button", { name: "Last Month" });
+		const thisWeekBtn = screen.getByRole("button", { name: "This Week" });
+
+		expect(thisMonthBtn).toBeInTheDocument();
+		expect(lastMonthBtn).toBeInTheDocument();
+		expect(thisWeekBtn).toBeInTheDocument();
+
+		// Click This Month
+		fetchMock.mockClear();
+		fireEvent.click(thisMonthBtn);
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalled();
+		});
+		expect(
+			screen.getByText(
+				"This month's net salary calculations and itemized IOU deductions for store staff.",
+			),
+		).toBeInTheDocument();
+
+		// Click Last Month
+		fetchMock.mockClear();
+		fireEvent.click(lastMonthBtn);
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalled();
+		});
+		expect(
+			screen.getByText(
+				"Last month's net salary calculations and itemized IOU deductions for store staff.",
+			),
+		).toBeInTheDocument();
+
+		// Click This Week
+		fetchMock.mockClear();
+		fireEvent.click(thisWeekBtn);
+		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalled();
+		});
+		expect(
+			screen.getByText(
+				"This week's net salary calculations and itemized IOU deductions for store staff.",
+			),
+		).toBeInTheDocument();
+	});
 });

@@ -1,9 +1,9 @@
-# CURRENT MISSION
+# Mission M-126: Calendar Period Presets in Reports & Salary Report
 
-**Type:** Feature / UX Polish  
-**Mission:** M-126 Calendar Period Presets in Reports & Salary Report  
 **Status:** Locked  
+**Type:** Feature / UX Polish  
 **Proposal:** ACP-034  
+**Owner:** Execution  
 
 ## 1. Objective
 Add comprehensive weekly and monthly calendar presets ("Last Week", "This Month", "Last Month", "This Week") across Historical Reports (`/reports`) and Payroll & Salary Slips (`/salary`), backed by centralized, shop-timezone-anchored date utilities in `dateUtils.ts`.

@@ -4,7 +4,11 @@ import {
 	getShopDate,
 	getShopDateString,
 	getShopEndOfDay,
+	getShopLastMonthRange,
+	getShopLastWeekRange,
 	getShopStartOfDay,
+	getShopThisMonthRange,
+	getShopThisWeekRange,
 	getShopYesterdayString,
 	shopDateToInstant,
 } from "../../lib/dateUtils.js";
@@ -73,5 +77,38 @@ describe("dateUtils (Africa/Addis_Ababa)", () => {
 		expect(formatSafeDate(undefined, "yyyy-MM-dd")).toBe("—");
 		expect(formatSafeDate("not-a-date", "yyyy-MM-dd")).toBe("—");
 		expect(formatSafeDate("", "yyyy-MM-dd", "N/A")).toBe("N/A");
+	});
+
+	it("computes This Week range (Monday to Sunday) in shop timezone", () => {
+		const fixedDate = new Date("2026-09-24T12:00:00.000Z"); // Thursday
+		const range = getShopThisWeekRange(fixedDate);
+		expect(range).toEqual({ from: "2026-09-21", to: "2026-09-27" });
+	});
+
+	it("computes Last Week range (previous Monday to Sunday) in shop timezone", () => {
+		const fixedDate = new Date("2026-09-24T12:00:00.000Z"); // Thursday
+		const range = getShopLastWeekRange(fixedDate);
+		expect(range).toEqual({ from: "2026-09-14", to: "2026-09-20" });
+	});
+
+	it("computes This Month range (first to last day) in shop timezone", () => {
+		const fixedDate = new Date("2026-09-24T12:00:00.000Z");
+		const range = getShopThisMonthRange(fixedDate);
+		expect(range).toEqual({ from: "2026-09-01", to: "2026-09-30" });
+	});
+
+	it("computes Last Month range in shop timezone, handling year rollover", () => {
+		const fixedDate = new Date("2026-09-24T12:00:00.000Z");
+		expect(getShopLastMonthRange(fixedDate)).toEqual({
+			from: "2026-08-01",
+			to: "2026-08-31",
+		});
+
+		// Year rollover: January 2026 -> December 2025
+		const janDate = new Date("2026-01-15T12:00:00.000Z");
+		expect(getShopLastMonthRange(janDate)).toEqual({
+			from: "2025-12-01",
+			to: "2025-12-31",
+		});
 	});
 });
