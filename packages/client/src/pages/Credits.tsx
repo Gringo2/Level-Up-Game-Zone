@@ -19,7 +19,12 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { API_BASE, authFetch, listFromPayload, safeJson } from "../lib/api";
-import { getShopDateString } from "../lib/dateUtils";
+import {
+	getShopDateString,
+	getShopEndOfDay,
+	getShopStartOfDay,
+	getShopYesterdayString,
+} from "../lib/dateUtils";
 
 export function Credits() {
 	const { user } = useAuth();
@@ -28,22 +33,40 @@ export function Credits() {
 	const [amount, setAmount] = useState("");
 	const [entryDate, setEntryDate] = useState(() => getShopDateString());
 	const [loading, setLoading] = useState(false);
+	const [listLoading, setListLoading] = useState(false);
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);
 	const [employeeRoster, setEmployeeRoster] = useState<Employee[]>([]);
 	const [filterEmployeeId, setFilterEmployeeId] = useState("");
+	const [filterDateFrom, setFilterDateFrom] = useState(() =>
+		getShopDateString(),
+	);
+	const [filterDateTo, setFilterDateTo] = useState(() => getShopDateString());
 	const [editingId, setEditingId] = useState<string | null>(null);
+
+	const todayStr = getShopDateString();
+	const yesterdayStr = getShopYesterdayString();
 	const [deletingId, setDeletingId] = useState<string | null>(null);
 	const [editReason, setEditReason] = useState("");
 	const [deleteReason, setDeleteReason] = useState("");
 	const [reason, setReason] = useState("");
 
 	const loadOlderCredits = async () => {
-		if (!nextCursor) return;
+		if (!nextCursor || filterDateFrom > filterDateTo) return;
 		setLoading(true);
 		try {
 			const params = new URLSearchParams();
 			if (filterEmployeeId) params.set("employee_id", filterEmployeeId);
+			if (filterDateFrom <= filterDateTo) {
+				params.set(
+					"startDate",
+					getShopStartOfDay(new Date(filterDateFrom)).toISOString(),
+				);
+				params.set(
+					"endDate",
+					getShopEndOfDay(new Date(filterDateTo)).toISOString(),
+				);
+			}
 			params.set("limit", "200");
 			params.set("cursor", nextCursor);
 			const res = await authFetch(
@@ -72,10 +95,22 @@ export function Credits() {
 		let mounted = true;
 
 		const loadCredits = async () => {
+			if (filterDateFrom > filterDateTo) return;
+			setListLoading(true);
 			try {
 				const params = new URLSearchParams();
 				if (filterEmployeeId) {
 					params.set("employee_id", filterEmployeeId);
+				}
+				if (filterDateFrom <= filterDateTo) {
+					params.set(
+						"startDate",
+						getShopStartOfDay(new Date(filterDateFrom)).toISOString(),
+					);
+					params.set(
+						"endDate",
+						getShopEndOfDay(new Date(filterDateTo)).toISOString(),
+					);
 				}
 				params.set("limit", "200");
 
@@ -110,6 +145,10 @@ export function Credits() {
 				if (mounted) {
 					toast.error("Failed to load credits");
 				}
+			} finally {
+				if (mounted) {
+					setListLoading(false);
+				}
 			}
 		};
 
@@ -126,7 +165,7 @@ export function Credits() {
 			mounted = false;
 			document.removeEventListener("visibilitychange", handleVisibility);
 		};
-	}, [filterEmployeeId]);
+	}, [filterEmployeeId, filterDateFrom, filterDateTo]);
 
 	const handleResolve = async (
 		id: string,
@@ -265,7 +304,16 @@ export function Credits() {
 						(await safeJson(response)).error || "Failed to log credit",
 					);
 				const newCredit = await safeJson<Credit>(response);
-				if (!filterEmployeeId || newCredit.employee_id === filterEmployeeId) {
+				const isWithinActiveRange = (dateStr: string) => {
+					const d = dateStr.slice(0, 10);
+					const matchesFrom = !filterDateFrom || d >= filterDateFrom;
+					const matchesTo = !filterDateTo || d <= filterDateTo;
+					return matchesFrom && matchesTo;
+				};
+				const matchesEmployee =
+					!filterEmployeeId || newCredit.employee_id === filterEmployeeId;
+				const matchesDate = isWithinActiveRange(entryDate);
+				if (matchesEmployee && matchesDate) {
 					setCredits((prev) => [newCredit, ...prev]);
 				}
 				setEmployeeId("");
@@ -406,28 +454,120 @@ export function Credits() {
 
 				<Card className="lg:col-span-2">
 					<CardHeader>
-						<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+						<div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap sm:items-center sm:justify-between gap-2">
 							<div>
 								<CardTitle>Recent Credits</CardTitle>
-								<CardDescription>Manage employee IOUs.</CardDescription>
+								<CardDescription>
+									{filterDateFrom === todayStr && filterDateTo === todayStr
+										? "Today's employee IOUs."
+										: filterDateFrom === yesterdayStr &&
+												filterDateTo === yesterdayStr
+											? "Yesterday's employee IOUs."
+											: filterDateFrom === filterDateTo
+												? `Employee IOUs for ${filterDateFrom}.`
+												: `Employee IOUs from ${filterDateFrom} to ${filterDateTo}.`}
+								</CardDescription>
 							</div>
-							{employeeRoster.length > 0 && (
-								<select
-									value={filterEmployeeId}
-									onChange={(e) => setFilterEmployeeId(e.target.value)}
-									className="flex h-9 rounded-md border border-zinc-200 bg-white px-3 py-1 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+							<div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+								{employeeRoster.length > 0 && (
+									<select
+										value={filterEmployeeId}
+										onChange={(e) => setFilterEmployeeId(e.target.value)}
+										className="flex h-8 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+									>
+										<option value="">All Employees</option>
+										{employeeRoster.map((emp) => (
+											<option key={emp.id} value={emp.id}>
+												{emp.name}
+											</option>
+										))}
+									</select>
+								)}
+								<div className="flex items-center gap-1 flex-1 sm:flex-initial">
+									<Label
+										htmlFor="creditFilterFrom"
+										className="text-xs text-zinc-500"
+									>
+										From
+									</Label>
+									<Input
+										id="creditFilterFrom"
+										type="date"
+										value={filterDateFrom}
+										onChange={(e) => setFilterDateFrom(e.target.value)}
+										className="h-8 w-full min-[400px]:w-[135px] text-xs"
+									/>
+								</div>
+								<div className="flex items-center gap-1 flex-1 sm:flex-initial">
+									<Label
+										htmlFor="creditFilterTo"
+										className="text-xs text-zinc-500"
+									>
+										To
+									</Label>
+									<Input
+										id="creditFilterTo"
+										type="date"
+										value={filterDateTo}
+										onChange={(e) => setFilterDateTo(e.target.value)}
+										className="h-8 w-full min-[400px]:w-[135px] text-xs"
+									/>
+								</div>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-8 text-xs"
+									onClick={() => {
+										setFilterDateFrom(todayStr);
+										setFilterDateTo(todayStr);
+									}}
+									disabled={listLoading}
 								>
-									<option value="">All Employees</option>
-									{employeeRoster.map((emp) => (
-										<option key={emp.id} value={emp.id}>
-											{emp.name}
-										</option>
-									))}
-								</select>
-							)}
+									Today
+								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-8 text-xs"
+									onClick={() => {
+										setFilterDateFrom(yesterdayStr);
+										setFilterDateTo(yesterdayStr);
+									}}
+									disabled={listLoading}
+								>
+									Yesterday
+								</Button>
+								{listLoading && (
+									<Loader2
+										data-testid="history-loading"
+										className="h-4 w-4 animate-spin text-zinc-400"
+									/>
+								)}
+							</div>
 						</div>
+						{filterDateFrom > filterDateTo && (
+							<p className="text-xs text-red-500 mt-1">
+								From date must be on or before To
+							</p>
+						)}
 					</CardHeader>
 					<CardContent>
+						{credits.length > 0 && (
+							<div
+								className="mb-3 flex items-center justify-between rounded-md bg-zinc-50 px-3 py-2 border"
+								data-testid="credits-range-summary"
+							>
+								<span className="text-sm font-medium text-zinc-600">
+									{credits.length} {credits.length === 1 ? "credit" : "credits"}
+								</span>
+								<span className="text-base font-semibold text-zinc-900">
+									Total $
+									{credits.reduce((sum, c) => sum + c.amount, 0).toFixed(2)}
+								</span>
+							</div>
+						)}
 						<div className="space-y-3">
 							{credits.length === 0 ? (
 								<div className="text-center text-zinc-500 py-8">

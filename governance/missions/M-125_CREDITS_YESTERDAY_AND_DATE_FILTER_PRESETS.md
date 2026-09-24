@@ -1,9 +1,9 @@
-# CURRENT MISSION
+# Mission M-125: Credits Yesterday and Date Filter Presets
 
-**Type:** Feature / UX Polish  
-**Mission:** M-125 Credits Yesterday and Date Filter Presets  
 **Status:** Locked  
+**Type:** Feature / UX Polish  
 **Proposal:** ACP-033  
+**Owner:** Execution  
 
 ## 1. Objective
 Add dedicated "From" and "To" date range pickers along with "Today" and "Yesterday" quick-set preset buttons to the Recent Credits card on Store Credits (`/credits`), achieving 100% complete date filter parity across the entire application.

@@ -915,4 +915,146 @@ describe("Credits - Edit & Failure Paths", () => {
 			);
 		});
 	});
+
+	it("ACP-033: Yesterday and Today preset buttons update date bounds, description, and query params", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(jsonResponse([credit]))
+			.mockResolvedValueOnce(jsonResponse(employees))
+			.mockImplementation(() => Promise.resolve(jsonResponse([credit])));
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+		await waitFor(() => {
+			expect(screen.getByText("Bob (Cashier)")).toBeInTheDocument();
+		});
+
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		expect(yesterdayBtn).toBeInTheDocument();
+		expect(todayBtn).toBeInTheDocument();
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		await waitFor(() => {
+			expect(
+				screen.getByText("Yesterday's employee IOUs."),
+			).toBeInTheDocument();
+		});
+
+		// Verify fetch was called with startDate and endDate
+		expect(fetchMock).toHaveBeenCalledWith(
+			expect.stringContaining("startDate="),
+			expect.anything(),
+		);
+
+		// Click Today
+		fireEvent.click(todayBtn);
+		await waitFor(() => {
+			expect(screen.getByText("Today's employee IOUs.")).toBeInTheDocument();
+		});
+	});
+
+	it("ACP-033: Custom date range inputs update bounds, trigger fetch, and render summary banner", async () => {
+		const fetchMock = vi.fn((url: string) => {
+			if (String(url).includes("/api/employees")) {
+				return Promise.resolve(jsonResponse(employees));
+			}
+			return Promise.resolve(jsonResponse([credit]));
+		});
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+		await waitFor(() => {
+			expect(screen.getByText("Bob (Cashier)")).toBeInTheDocument();
+		});
+
+		const summaryBanner = screen.getByTestId("credits-range-summary");
+		expect(summaryBanner).toHaveTextContent("1 credit");
+		expect(summaryBanner).toHaveTextContent("$20.00");
+
+		const fromInput = screen.getByLabelText("From");
+		const toInput = screen.getByLabelText("To");
+
+		fireEvent.change(fromInput, { target: { value: "2026-09-01" } });
+		fireEvent.change(toInput, { target: { value: "2026-09-10" } });
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Employee IOUs from 2026-09-01 to 2026-09-10."),
+			).toBeInTheDocument();
+		});
+
+		expect(fetchMock).toHaveBeenCalledWith(
+			expect.stringContaining("startDate="),
+			expect.anything(),
+		);
+	});
+
+	it("ACP-033: does not prepend new credit when its date falls outside active date filter range", async () => {
+		const today = new Date().toISOString().slice(0, 10);
+		const newCreditToday = {
+			id: "c-new-today",
+			amount: 50,
+			employee_id: "e1",
+			employee_name: "Bob",
+			status: "Pending" as const,
+			user_id: "u1",
+			date: `${today}T12:00:00.000Z`,
+		};
+
+		const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+			if (init?.method === "POST") {
+				return Promise.resolve(jsonResponse(newCreditToday));
+			}
+			if (String(url).includes("/api/employees")) {
+				return Promise.resolve(jsonResponse(employees));
+			}
+			return Promise.resolve(jsonResponse([credit]));
+		});
+
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Credits />);
+		await waitFor(() => {
+			expect(screen.getByText("Bob (Cashier)")).toBeInTheDocument();
+		});
+
+		// Switch to Yesterday preset
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+		fireEvent.click(yesterdayBtn);
+
+		await waitFor(() => {
+			expect(
+				screen.getByText("Yesterday's employee IOUs."),
+			).toBeInTheDocument();
+		});
+
+		// Log a new credit for today
+		fireEvent.change(screen.getByLabelText("Employee Name"), {
+			target: { value: "e1" },
+		});
+		fireEvent.change(screen.getByLabelText("Amount ($)"), {
+			target: { value: "50" },
+		});
+		fireEvent.change(screen.getByLabelText("Date"), {
+			target: { value: today },
+		});
+
+		fireEvent.click(screen.getByText("Log Credit"));
+
+		await waitFor(() => {
+			expect(toast.success).toHaveBeenCalledWith("Credit logged successfully!");
+		});
+
+		// Ensure the new credit (amount 50) was NOT prepended into the list since active filter is Yesterday
+		const recentCreditsCard = screen
+			.getByText("Recent Credits")
+			.closest(".rounded-xl");
+		expect(
+			within(recentCreditsCard as HTMLElement).queryByText("$50.00"),
+		).toBeNull();
+	});
 });
