@@ -917,4 +917,42 @@ describe("Expenses", () => {
 		expect(yesterdayBtn).toHaveClass("border-zinc-200");
 		expect(yesterdayBtn).not.toHaveClass("bg-zinc-900");
 	});
+
+	it("ACP-038: Today and Yesterday preset buttons expose aria-pressed semantic states and group role", async () => {
+		mockFetch.mockImplementation(() => jsonResponse([expense]));
+		render(<Expenses />);
+		await screen.findByText("Cleaning supplies");
+
+		const group = screen.getByRole("group", { name: "Date range presets" });
+		expect(group).toBeInTheDocument();
+
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+
+		// Default state is Today active
+		expect(todayBtn).toHaveAttribute("aria-pressed", "true");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		await waitFor(() => {
+			expect(yesterdayBtn).toHaveAttribute("aria-pressed", "true");
+			expect(todayBtn).not.toBeDisabled();
+		});
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Click Today
+		fireEvent.click(todayBtn);
+		await waitFor(() => {
+			expect(todayBtn).toHaveAttribute("aria-pressed", "true");
+			expect(yesterdayBtn).not.toBeDisabled();
+		});
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Change date input to custom range
+		const toInput = screen.getByLabelText("To") as HTMLInputElement;
+		fireEvent.change(toInput, { target: { value: "2099-01-01" } });
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+	});
 });

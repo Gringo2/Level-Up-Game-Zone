@@ -109,6 +109,7 @@
 *   [x] **Mission 127:** P0 UI/UX Critical Defect Remediation — eliminate negative zero (-$0.00) in Dashboard and Reports zero balances, un-nest Add Store Employee card from Manage Categories card in Admin Settings, and fix Quantity column header in Reports (2026-09-24, Locked; ACP-035).
 *   [x] **Mission 128:** Game Sales Unit Decoupling & Elimination of Hardcoded "Hour" — decouple game sales unit from hours to games and matches, dynamic pluralization on Safe Slip and Dashboard without hardcoding "hrs" (2026-09-25, Locked; ACP-036).
 *   [x] **Mission 129:** Preset Filter Active State Highlighting across Entry Pages & Salary Report — replace static variant="ghost" with dynamic active-state variant={isActive ? "default" : "outline"} across GameSales, Keno, SportsBetting, Expenses, Credits, and SalaryReport to match Reports.tsx standard (2026-09-26, Locked; ACP-037).
+*   [x] **Mission 130:** Preset Filter Accessibility & ARIA State Attributes across All Pages — add aria-pressed={isActive} and role="group" with aria-label="Date range presets" across Reports, GameSales, Keno, SportsBetting, Expenses, Credits, and SalaryReport (2026-09-26, Locked; ACP-038). Red-Green proven (727/727 vitest green, 26/26 playwright green).
 
 
 

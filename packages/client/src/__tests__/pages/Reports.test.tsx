@@ -646,4 +646,38 @@ describe("Reports", () => {
 		).toBeInTheDocument();
 		expect(screen.queryByText("Quantity (Mins)")).not.toBeInTheDocument();
 	});
+
+	it("ACP-038: preset buttons expose aria-pressed semantic states and group role", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+		await waitFor(() => {
+			expect(screen.getByText("Historical Reports")).toBeDefined();
+		});
+
+		const group = screen.getByRole("group", { name: "Date range presets" });
+		expect(group).toBeInTheDocument();
+
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+
+		// Default state is Today active
+		expect(todayBtn).toHaveAttribute("aria-pressed", "true");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "true");
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Custom range deselects
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		const endDateInput = dateInputs[1] as HTMLInputElement;
+		fireEvent.change(endDateInput, { target: { value: "2099-01-01" } });
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+	});
 });

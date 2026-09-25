@@ -605,41 +605,55 @@ export function Expenses() {
 										className="h-8 w-full min-[400px]:w-[135px] text-xs"
 									/>
 								</div>
-								<Button
-									type="button"
-									variant={
-										filterDateFrom === todayStr && filterDateTo === todayStr
-											? "default"
-											: "outline"
-									}
-									size="sm"
-									className="h-8 text-xs"
-									onClick={() => {
-										setFilterDateFrom(todayStr);
-										setFilterDateTo(todayStr);
-									}}
-									disabled={listLoading}
+								{/* biome-ignore lint/a11y/useSemanticElements: Date presets are a button group, not a form fieldset */}
+								<div
+									className="flex items-center gap-1"
+									role="group"
+									aria-label="Date range presets"
 								>
-									Today
-								</Button>
-								<Button
-									type="button"
-									variant={
-										filterDateFrom === yesterdayStr &&
-										filterDateTo === yesterdayStr
-											? "default"
-											: "outline"
-									}
-									size="sm"
-									className="h-8 text-xs"
-									onClick={() => {
-										setFilterDateFrom(yesterdayStr);
-										setFilterDateTo(yesterdayStr);
-									}}
-									disabled={listLoading}
-								>
-									Yesterday
-								</Button>
+									<Button
+										type="button"
+										variant={
+											filterDateFrom === todayStr && filterDateTo === todayStr
+												? "default"
+												: "outline"
+										}
+										aria-pressed={
+											filterDateFrom === todayStr && filterDateTo === todayStr
+										}
+										size="sm"
+										className="h-8 text-xs"
+										onClick={() => {
+											setFilterDateFrom(todayStr);
+											setFilterDateTo(todayStr);
+										}}
+										disabled={listLoading}
+									>
+										Today
+									</Button>
+									<Button
+										type="button"
+										variant={
+											filterDateFrom === yesterdayStr &&
+											filterDateTo === yesterdayStr
+												? "default"
+												: "outline"
+										}
+										aria-pressed={
+											filterDateFrom === yesterdayStr &&
+											filterDateTo === yesterdayStr
+										}
+										size="sm"
+										className="h-8 text-xs"
+										onClick={() => {
+											setFilterDateFrom(yesterdayStr);
+											setFilterDateTo(yesterdayStr);
+										}}
+										disabled={listLoading}
+									>
+										Yesterday
+									</Button>
+								</div>
 								{listLoading && (
 									<Loader2
 										data-testid="history-loading"

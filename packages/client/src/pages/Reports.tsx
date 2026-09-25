@@ -332,27 +332,33 @@ export function Reports() {
 					</p>
 				</div>
 				<div className="flex flex-col items-start lg:items-end gap-2 w-full lg:w-auto">
-					<div className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0">
-						{presets.map((p) => (
-							<Button
-								key={p.label}
-								size="sm"
-								className="whitespace-nowrap flex-shrink-0"
-								variant={
-									inputStartDate === p.from && inputEndDate === p.to
-										? "default"
-										: "outline"
-								}
-								onClick={() => {
-									setInputStartDate(p.from);
-									setInputEndDate(p.to);
-									setAppliedStartDate(p.from);
-									setAppliedEndDate(p.to);
-								}}
-							>
-								{p.label}
-							</Button>
-						))}
+					{/* biome-ignore lint/a11y/useSemanticElements: Date presets are a button group, not a form fieldset */}
+					<div
+						className="flex items-center gap-1 overflow-x-auto max-w-full pb-1 sm:pb-0"
+						role="group"
+						aria-label="Date range presets"
+					>
+						{presets.map((p) => {
+							const isActive =
+								inputStartDate === p.from && inputEndDate === p.to;
+							return (
+								<Button
+									key={p.label}
+									size="sm"
+									className="whitespace-nowrap flex-shrink-0"
+									variant={isActive ? "default" : "outline"}
+									aria-pressed={isActive}
+									onClick={() => {
+										setInputStartDate(p.from);
+										setInputEndDate(p.to);
+										setAppliedStartDate(p.from);
+										setAppliedEndDate(p.to);
+									}}
+								>
+									{p.label}
+								</Button>
+							);
+						})}
 					</div>
 					<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
 						<div className="flex flex-col min-[360px]:flex-row items-stretch min-[360px]:items-center gap-2 w-full sm:w-auto flex-1 sm:flex-initial">

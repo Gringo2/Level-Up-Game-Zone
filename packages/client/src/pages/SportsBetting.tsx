@@ -434,38 +434,51 @@ export function SportsBetting() {
 									)}
 									Apply
 								</Button>
-								<Button
-									type="button"
-									variant={
-										rangeStart === todayStr && rangeEnd === todayStr
-											? "default"
-											: "outline"
-									}
-									onClick={() => {
-										setRangeStart(todayStr);
-										setRangeEnd(todayStr);
-									}}
-									disabled={listLoading}
-									className="flex-1 min-[400px]:flex-initial"
+								{/* biome-ignore lint/a11y/useSemanticElements: Date presets are a button group, not a form fieldset */}
+								<div
+									className="flex gap-2 flex-1 min-[400px]:flex-initial"
+									role="group"
+									aria-label="Date range presets"
 								>
-									Today
-								</Button>
-								<Button
-									type="button"
-									variant={
-										rangeStart === yesterdayStr && rangeEnd === yesterdayStr
-											? "default"
-											: "outline"
-									}
-									onClick={() => {
-										setRangeStart(yesterdayStr);
-										setRangeEnd(yesterdayStr);
-									}}
-									disabled={listLoading}
-									className="flex-1 min-[400px]:flex-initial"
-								>
-									Yesterday
-								</Button>
+									<Button
+										type="button"
+										variant={
+											rangeStart === todayStr && rangeEnd === todayStr
+												? "default"
+												: "outline"
+										}
+										aria-pressed={
+											rangeStart === todayStr && rangeEnd === todayStr
+										}
+										onClick={() => {
+											setRangeStart(todayStr);
+											setRangeEnd(todayStr);
+										}}
+										disabled={listLoading}
+										className="flex-1 min-[400px]:flex-initial"
+									>
+										Today
+									</Button>
+									<Button
+										type="button"
+										variant={
+											rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+												? "default"
+												: "outline"
+										}
+										aria-pressed={
+											rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+										}
+										onClick={() => {
+											setRangeStart(yesterdayStr);
+											setRangeEnd(yesterdayStr);
+										}}
+										disabled={listLoading}
+										className="flex-1 min-[400px]:flex-initial"
+									>
+										Yesterday
+									</Button>
+								</div>
 							</div>
 						</div>
 						{rangeStart > rangeEnd && (

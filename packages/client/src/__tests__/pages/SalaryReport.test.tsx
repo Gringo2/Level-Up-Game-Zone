@@ -482,4 +482,58 @@ describe("SalaryReport", () => {
 		expect(thisWeekBtn).toHaveClass("border-zinc-200");
 		expect(thisWeekBtn).not.toHaveClass("bg-zinc-900");
 	});
+
+	it("ACP-038: preset buttons expose aria-pressed semantic states and group role across all 5 presets", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<SalaryReport />);
+		await waitFor(() => {
+			expect(
+				screen.getByRole("button", { name: "This Month" }),
+			).toBeInTheDocument();
+		});
+
+		const group = screen.getByRole("group", { name: "Date range presets" });
+		expect(group).toBeInTheDocument();
+
+		const thisMonthBtn = screen.getByRole("button", { name: "This Month" });
+		const lastMonthBtn = screen.getByRole("button", { name: "Last Month" });
+		const thisWeekBtn = screen.getByRole("button", { name: "This Week" });
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+
+		// Default state is Today active
+		expect(todayBtn).toHaveAttribute("aria-pressed", "true");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(thisMonthBtn).toHaveAttribute("aria-pressed", "false");
+		expect(lastMonthBtn).toHaveAttribute("aria-pressed", "false");
+		expect(thisWeekBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Click This Month
+		fireEvent.click(thisMonthBtn);
+		expect(thisMonthBtn).toHaveAttribute("aria-pressed", "true");
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(lastMonthBtn).toHaveAttribute("aria-pressed", "false");
+		expect(thisWeekBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "true");
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(thisMonthBtn).toHaveAttribute("aria-pressed", "false");
+
+		// Change date input to custom range
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		const toInput = dateInputs[1] as HTMLInputElement;
+		fireEvent.change(toInput, { target: { value: "2099-01-01" } });
+		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
+		expect(thisMonthBtn).toHaveAttribute("aria-pressed", "false");
+		expect(lastMonthBtn).toHaveAttribute("aria-pressed", "false");
+		expect(thisWeekBtn).toHaveAttribute("aria-pressed", "false");
+	});
 });

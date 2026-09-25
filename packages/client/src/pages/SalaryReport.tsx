@@ -206,88 +206,116 @@ export function SalaryReport() {
 						<Button onClick={handleApply} disabled={!isRangeValid}>
 							Apply
 						</Button>
-						<Button
-							type="button"
-							variant={
-								inputStartDate === thisMonth.from &&
-								inputEndDate === thisMonth.to
-									? "default"
-									: "outline"
-							}
-							onClick={() => {
-								setInputStartDate(thisMonth.from);
-								setInputEndDate(thisMonth.to);
-								setAppliedStartDate(thisMonth.from);
-								setAppliedEndDate(thisMonth.to);
-							}}
+						{/* biome-ignore lint/a11y/useSemanticElements: Date presets are a button group, not a form fieldset */}
+						<div
+							className="flex flex-wrap items-center gap-2"
+							role="group"
+							aria-label="Date range presets"
 						>
-							This Month
-						</Button>
-						<Button
-							type="button"
-							variant={
-								inputStartDate === lastMonth.from &&
-								inputEndDate === lastMonth.to
-									? "default"
-									: "outline"
-							}
-							onClick={() => {
-								setInputStartDate(lastMonth.from);
-								setInputEndDate(lastMonth.to);
-								setAppliedStartDate(lastMonth.from);
-								setAppliedEndDate(lastMonth.to);
-							}}
-						>
-							Last Month
-						</Button>
-						<Button
-							type="button"
-							variant={
-								inputStartDate === thisWeek.from && inputEndDate === thisWeek.to
-									? "default"
-									: "outline"
-							}
-							onClick={() => {
-								setInputStartDate(thisWeek.from);
-								setInputEndDate(thisWeek.to);
-								setAppliedStartDate(thisWeek.from);
-								setAppliedEndDate(thisWeek.to);
-							}}
-						>
-							This Week
-						</Button>
-						<Button
-							type="button"
-							variant={
-								inputStartDate === todayStr && inputEndDate === todayStr
-									? "default"
-									: "outline"
-							}
-							onClick={() => {
-								setInputStartDate(todayStr);
-								setInputEndDate(todayStr);
-								setAppliedStartDate(todayStr);
-								setAppliedEndDate(todayStr);
-							}}
-						>
-							Today
-						</Button>
-						<Button
-							type="button"
-							variant={
-								inputStartDate === yesterdayStr && inputEndDate === yesterdayStr
-									? "default"
-									: "outline"
-							}
-							onClick={() => {
-								setInputStartDate(yesterdayStr);
-								setInputEndDate(yesterdayStr);
-								setAppliedStartDate(yesterdayStr);
-								setAppliedEndDate(yesterdayStr);
-							}}
-						>
-							Yesterday
-						</Button>
+							<Button
+								type="button"
+								variant={
+									inputStartDate === thisMonth.from &&
+									inputEndDate === thisMonth.to
+										? "default"
+										: "outline"
+								}
+								aria-pressed={
+									inputStartDate === thisMonth.from &&
+									inputEndDate === thisMonth.to
+								}
+								onClick={() => {
+									setInputStartDate(thisMonth.from);
+									setInputEndDate(thisMonth.to);
+									setAppliedStartDate(thisMonth.from);
+									setAppliedEndDate(thisMonth.to);
+								}}
+							>
+								This Month
+							</Button>
+							<Button
+								type="button"
+								variant={
+									inputStartDate === lastMonth.from &&
+									inputEndDate === lastMonth.to
+										? "default"
+										: "outline"
+								}
+								aria-pressed={
+									inputStartDate === lastMonth.from &&
+									inputEndDate === lastMonth.to
+								}
+								onClick={() => {
+									setInputStartDate(lastMonth.from);
+									setInputEndDate(lastMonth.to);
+									setAppliedStartDate(lastMonth.from);
+									setAppliedEndDate(lastMonth.to);
+								}}
+							>
+								Last Month
+							</Button>
+							<Button
+								type="button"
+								variant={
+									inputStartDate === thisWeek.from &&
+									inputEndDate === thisWeek.to
+										? "default"
+										: "outline"
+								}
+								aria-pressed={
+									inputStartDate === thisWeek.from &&
+									inputEndDate === thisWeek.to
+								}
+								onClick={() => {
+									setInputStartDate(thisWeek.from);
+									setInputEndDate(thisWeek.to);
+									setAppliedStartDate(thisWeek.from);
+									setAppliedEndDate(thisWeek.to);
+								}}
+							>
+								This Week
+							</Button>
+							<Button
+								type="button"
+								variant={
+									inputStartDate === todayStr && inputEndDate === todayStr
+										? "default"
+										: "outline"
+								}
+								aria-pressed={
+									inputStartDate === todayStr && inputEndDate === todayStr
+								}
+								onClick={() => {
+									setInputStartDate(todayStr);
+									setInputEndDate(todayStr);
+									setAppliedStartDate(todayStr);
+									setAppliedEndDate(todayStr);
+								}}
+							>
+								Today
+							</Button>
+							<Button
+								type="button"
+								variant={
+									inputStartDate === yesterdayStr &&
+									inputEndDate === yesterdayStr
+										? "default"
+										: "outline"
+								}
+								aria-pressed={
+									inputStartDate === yesterdayStr &&
+									inputEndDate === yesterdayStr
+								}
+								onClick={() => {
+									setInputStartDate(yesterdayStr);
+									setInputEndDate(yesterdayStr);
+									setAppliedStartDate(yesterdayStr);
+									setAppliedEndDate(yesterdayStr);
+								}}
+							>
+								Yesterday
+							</Button>
+						</div>
 						<Button variant="outline" onClick={() => window.print()}>
 							<Printer className="mr-2 h-4 w-4" /> Print
 						</Button>
