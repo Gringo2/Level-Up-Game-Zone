@@ -784,4 +784,48 @@ describe("Dashboard", () => {
 		expect(safeSlip).toBeInTheDocument();
 		expect(safeSlip).toHaveTextContent("Sports Betting Net: $50.00");
 	});
+
+	it("ACP-035: renders $0.00 with neutral styling and no negative sign when pending credits and expenses are zero", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/credits")) return jsonResponse([]);
+			if (url.includes("/api/expenses")) return jsonResponse([]);
+			if (url.includes("/api/sales")) return jsonResponse([]);
+			if (url.includes("/api/keno")) return jsonResponse([]);
+			if (url.includes("/api/sports-betting")) return jsonResponse([]);
+			return jsonResponse([]);
+		});
+
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		// Pending Credits card
+		const pendingCreditsCard = screen
+			.getByText("Pending Credits")
+			.closest("div[class*='rounded']");
+		expect(pendingCreditsCard).toBeInTheDocument();
+		expect(
+			within(pendingCreditsCard as HTMLElement).getByText("$0.00"),
+		).toBeInTheDocument();
+		expect(
+			within(pendingCreditsCard as HTMLElement).queryByText("-$0.00"),
+		).not.toBeInTheDocument();
+		expect(
+			within(pendingCreditsCard as HTMLElement).getByText("$0.00"),
+		).not.toHaveClass("text-red-500");
+
+		// Expenses card
+		const expensesCard = screen
+			.getByText("Expenses")
+			.closest("div[class*='rounded']");
+		expect(expensesCard).toBeInTheDocument();
+		expect(
+			within(expensesCard as HTMLElement).getByText("$0.00"),
+		).toBeInTheDocument();
+		expect(
+			within(expensesCard as HTMLElement).queryByText("-$0.00"),
+		).not.toBeInTheDocument();
+		expect(
+			within(expensesCard as HTMLElement).getByText("$0.00"),
+		).not.toHaveClass("text-red-500");
+	});
 });

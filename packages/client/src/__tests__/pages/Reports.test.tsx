@@ -2,7 +2,13 @@
  * @vitest-environment jsdom
  */
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+	within,
+} from "@testing-library/react";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
@@ -602,5 +608,42 @@ describe("Reports", () => {
 
 		fireEvent.click(lastMonthBtn);
 		expect(startDateInput.value).not.toBe(endDateInput.value);
+	});
+
+	it("ACP-035: renders $0.00 for total expenses when empty, and Quantity table header without Mins", async () => {
+		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.includes("/api/expenses"))
+				return Promise.resolve(jsonResponse([]));
+			if (url.includes("/api/sales"))
+				return Promise.resolve(jsonResponse([salesLog]));
+			return Promise.resolve(jsonResponse([]));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+		await waitFor(() => {
+			expect(screen.getByText("Historical Reports")).toBeDefined();
+		});
+
+		// Expenses card should render $0.00 without negative sign or text-red-600
+		const expensesCard = screen
+			.getByText("Total Expenses")
+			.closest("div[class*='rounded']");
+		expect(expensesCard).toBeInTheDocument();
+		expect(
+			within(expensesCard as HTMLElement).getByText("$0.00"),
+		).toBeInTheDocument();
+		expect(
+			within(expensesCard as HTMLElement).queryByText("-$0.00"),
+		).not.toBeInTheDocument();
+		expect(
+			within(expensesCard as HTMLElement).getByText("$0.00"),
+		).not.toHaveClass("text-red-600");
+
+		// Table header should be "Quantity", not "Quantity (Mins)"
+		expect(
+			screen.getByRole("columnheader", { name: "Quantity" }),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Quantity (Mins)")).not.toBeInTheDocument();
 	});
 });

@@ -227,12 +227,15 @@ export function Reports() {
 	const totalExpenses = expenses.reduce((sum, log) => sum + log.amount, 0);
 
 	const closedShifts = shifts.filter((s) => s.status === SHIFT_STATUSES.CLOSED);
-	const totalVariance = closedShifts.reduce(
+	const rawTotalVariance = closedShifts.reduce(
 		(sum, s) => sum + (s.variance || 0),
 		0,
 	);
-	const avgVariance =
+	const totalVariance =
+		Math.abs(rawTotalVariance) < 0.005 ? 0 : rawTotalVariance;
+	const rawAvgVariance =
 		closedShifts.length > 0 ? totalVariance / closedShifts.length : 0;
+	const avgVariance = Math.abs(rawAvgVariance) < 0.005 ? 0 : rawAvgVariance;
 	const balancedShiftsCount = closedShifts.filter(
 		(s) => (s.variance || 0) === 0,
 	).length;
@@ -445,8 +448,12 @@ export function Reports() {
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
-								<div className="text-2xl font-bold text-red-600">
-									-${totalExpenses.toFixed(2)}
+								<div
+									className={`text-2xl font-bold ${totalExpenses > 0 ? "text-red-600" : ""}`}
+								>
+									{totalExpenses > 0
+										? `-$${totalExpenses.toFixed(2)}`
+										: "$0.00"}
 								</div>
 							</CardContent>
 						</Card>
@@ -852,7 +859,7 @@ export function Reports() {
 													<th className="px-4 py-3 font-medium">Date & Time</th>
 													<th className="px-4 py-3 font-medium">Game</th>
 													<th className="px-4 py-3 font-medium text-right">
-														Quantity (Mins)
+														Quantity
 													</th>
 													<th className="px-4 py-3 font-medium text-right">
 														Total

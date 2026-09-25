@@ -1,37 +1,41 @@
 # CURRENT MISSION
 
-**Type:** Feature / UX Polish  
-**Mission:** M-126 Calendar Period Presets in Reports & Salary Report  
-**Status:** Locked  
-**Proposal:** ACP-034  
+**Type:** Feature / UI Polish  
+**Mission:** M-127 P0 UI/UX Critical Defect Remediation  
+**Status:** Locked
+**Proposal:** ACP-035  
 
 ## 1. Objective
-Add comprehensive weekly and monthly calendar presets ("Last Week", "This Month", "Last Month", "This Week") across Historical Reports (`/reports`) and Payroll & Salary Slips (`/salary`), backed by centralized, shop-timezone-anchored date utilities in `dateUtils.ts`.
+Remediate the highest-priority (P0) data presentation defects identified in the Senior UI/UX Design Audit:
+1. Eliminate negative zero (`-$0.00`) and false red alarms on zero balances in Dashboard and Reports.
+2. Correct the accidental DOM card nesting defect in Admin Settings (`Add Store Employee` rendered inside `Manage Categories`).
+3. Correct the game sales column header in Reports from `Quantity (Mins)` to `Quantity`.
 
 ## 2. Context & Root Cause
-- Historical Reports (`/reports`) had "This Week" and "This Month", but lacked "Last Week" (the completed retail operational cycle) and "Last Month" (closed accounting period), forcing managers to manually select dates for standard retrospective audits.
-- Salary Report (`/salary`) only had "Today" and "Yesterday", which do not align with payroll cycles (typically monthly or weekly), requiring repetitive manual date picking.
-- Mission M-126 introduces reusable range generators in `dateUtils.ts` (Rule 25) and integrates them into both managerial reporting interfaces.
+- In `Dashboard.tsx` and `Reports.tsx`, negative prefixes were unconditionally concatenated (`-${amount.toFixed(2)}`), rendering `-$0.00` in bright red when pending credits or expenses are zero. This creates visual panic and violates accounting presentation norms.
+- In `Admin.tsx`, the `<Card>` for `Add Store Employee` was placed inside the `Manage Categories` card before the outer card was closed, leading to a broken double-bordered UI layout.
+- In `Reports.tsx`, table header line 855 hardcoded `Quantity (Mins)` for game sales, which was a legacy leftover from the initial prototype and does not match game sales units.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
-  - `packages/client/src/lib/dateUtils.ts`: Reusable shop-anchored range generators (`getShopThisWeekRange`, `getShopLastWeekRange`, `getShopThisMonthRange`, `getShopLastMonthRange`).
-  - `packages/client/src/pages/Reports.tsx`: Add "Last Week" and "Last Month" presets to horizontal scrollbar.
-  - `packages/client/src/pages/SalaryReport.tsx`: Add "This Month", "Last Month", and "This Week" presets with contextual period descriptions.
-  - Test suites: `dateUtils.test.ts`, `Reports.test.tsx`, `SalaryReport.test.tsx` with Rule 28 Red-Green proofs.
-  - Governance tracking: `MISSION.md`, `SYSTEM_CONTEXT.md`, `TASKS.md`, `ROADMAP.md`, `M-126_Blast_Radius_Report.md`.
+  - `packages/client/src/pages/Dashboard.tsx`: Safe zero formatting for pending credits, expenses, and variance.
+  - `packages/client/src/pages/Reports.tsx`: Safe zero formatting for expenses and variances; update game sales table header.
+  - `packages/client/src/pages/Admin.tsx`: Un-nest the `Add Store Employee` `<Card>` from the `Manage Categories` `<Card>`.
+  - Red-Green unit tests in `Dashboard.test.tsx`, `Reports.test.tsx`, and `Admin.test.tsx`.
+  - Governance tracking: `MISSION.md`, `SYSTEM_CONTEXT.md`, `TASKS.md`, `ROADMAP.md`, `M-127_Blast_Radius_Report.md`.
 - **Out of Scope:**
-  - Backend schema or Express controller changes (endpoints already support arbitrary date ranges).
+  - Client-wide currency formatter refactor (allocated to follow-up P1 ACP).
+  - Server controllers, database schemas, or Firestore rules.
   - Mutating git commands (Rule 1).
 
 ## 4. Execution & Verification Gates
-- [x] Red-Green Test Verification: Proved failing assertions prior to implementation, followed by 100% green pass (Reports 14/14, SalaryReport 14/14, dateUtils 13/13).
-- [x] Responsive Hardening: Verified preset bars and toolbar buttons remain cleanly wrapping without overflow across mobile, tablet, and desktop viewports.
+- [x] Red-Green Test Verification: Proved failing assertions prior to implementation, followed by 100% green pass.
+- [x] Layout Verification: Confirmed Manage Categories and Add Store Employee render as separate sibling cards.
 - [x] Monorepo Fitness Gates: Biome lint (0 errors, 0 warnings), Knip (0 issues), clean TypeScript build across shared, client, and server.
 
 ## 5. Evidence Payload
-- [x] Vitest Unit Tests: 706 / 706 tests passing green across 42 suites.
-- [x] Playwright E2E Suite: 26 / 26 tests passing green across 4 workers (23.3s).
-- [x] Monorepo Build: Clean build across `@level-up/shared`, `@level-up/client`, and `@level-up/server`.
-- [x] Biome Lint & Knip: 0 errors, 0 warnings, 0 unused dependencies/exports.
-- [x] Traceability: Authorized by ACP-034, documented in `M-126_Blast_Radius_Report.md`, and formally reviewed.
+- [x] Functional Verification: All 709 Vitest unit tests across 42 suites and 26 Playwright E2E tests passed 100% green.
+- [x] Architectural Verification (AVP-001): Clean compilation across packages/client, packages/server, and packages/shared.
+- [x] Dependency Graph Clean: Biome check (0 errors, 0 warnings) and Knip report zero unused dependencies or zombie exports.
+- [x] ADR Compliance: Full compliance with ADR-001, ADR-006, and approved ACP-035.
+- [x] Traceability: Authorized by ACP-035, documented in `M-127_Blast_Radius_Report.md`.

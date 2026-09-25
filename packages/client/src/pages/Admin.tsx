@@ -813,128 +813,129 @@ export function Admin() {
 						)}
 					</div>
 				</CardContent>
-				{/* Add Employee Form */}
-				<Card className="max-w-2xl">
-					<form onSubmit={handleAddEmployee}>
-						<CardHeader>
-							<CardTitle>Add Store Employee</CardTitle>
-							<CardDescription>
-								Register a staff member to enable clean credit logging and
-								salary deduction reporting.
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div className="space-y-2">
-									<Label htmlFor="name">Full Name</Label>
-									<Input
-										id="name"
-										placeholder="e.g. John Doe"
-										value={name}
-										onChange={(e) => setName(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="position">Position / Role</Label>
-									<Input
-										id="position"
-										placeholder="e.g. Cashier, Floor Attendant"
-										value={position}
-										onChange={(e) => setPosition(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="baseSalary">Base Monthly Salary ($)</Label>
-									<Input
-										id="baseSalary"
-										type="number"
-										step="0.01"
-										min="0"
-										placeholder="e.g. 500.00"
-										value={baseSalary}
-										onChange={(e) => setBaseSalary(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2">
-									<Label htmlFor="hiredDate">Date of Hiring</Label>
-									<Input
-										id="hiredDate"
-										type="date"
-										value={hiredDate}
-										onChange={(e) => setHiredDate(e.target.value)}
-										required
-									/>
-								</div>
-								<div className="space-y-2 md:col-span-2">
-									<Label htmlFor="breakDay">Break Day (Rest Day)</Label>
-									<select
-										id="breakDay"
-										value={breakDay || ""}
-										onChange={(e) =>
-											setBreakDay((e.target.value as BreakDay) || null)
-										}
-										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
-									>
-										<option value="">None / Flexible</option>
-										<option value="Monday">Monday</option>
-										<option value="Tuesday">Tuesday</option>
-										<option value="Wednesday">Wednesday</option>
-										<option value="Thursday">Thursday</option>
-										<option value="Friday">Friday</option>
-										<option value="Saturday">Saturday</option>
-										<option value="Sunday">Sunday</option>
-									</select>
-								</div>
-								<div className="space-y-2 md:col-span-2">
-									<Label htmlFor="linkedUser">
-										Linked System Account (Optional)
-									</Label>
-									<select
-										id="linkedUser"
-										value={linkedUserUid}
-										onChange={(e) => setLinkedUserUid(e.target.value)}
-										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
-									>
-										<option value="">None (Unlinked)</option>
-										{users.map((u) => {
-											const linkedEmp = existingEmployees.find(
-												(e) => e.isActive && e.user_uid === u.uid,
-											);
-											return (
-												<option
-													key={u.uid}
-													value={u.uid}
-													disabled={Boolean(linkedEmp)}
-												>
-													{u.displayName || u.email} ({u.role})
-													{linkedEmp
-														? ` — Already linked to ${linkedEmp.name}`
-														: ""}
-												</option>
-											);
-										})}
-									</select>
-									<p className="text-xs text-zinc-500">
-										Connecting a system login links active shift floats and
-										audit reporting directly to this store employee.
-									</p>
-								</div>
+			</Card>
+
+			{/* Add Employee Form */}
+			<Card className="max-w-2xl">
+				<form onSubmit={handleAddEmployee}>
+					<CardHeader>
+						<CardTitle>Add Store Employee</CardTitle>
+						<CardDescription>
+							Register a staff member to enable clean credit logging and salary
+							deduction reporting.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-4">
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div className="space-y-2">
+								<Label htmlFor="name">Full Name</Label>
+								<Input
+									id="name"
+									placeholder="e.g. John Doe"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									required
+								/>
 							</div>
-							<Button
-								type="submit"
-								disabled={submitLoading || !name || !position}
-							>
-								{submitLoading ? (
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								) : null}
-								Add Employee
-							</Button>
-						</CardContent>
-					</form>
-				</Card>
+							<div className="space-y-2">
+								<Label htmlFor="position">Position / Role</Label>
+								<Input
+									id="position"
+									placeholder="e.g. Cashier, Floor Attendant"
+									value={position}
+									onChange={(e) => setPosition(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="baseSalary">Base Monthly Salary ($)</Label>
+								<Input
+									id="baseSalary"
+									type="number"
+									step="0.01"
+									min="0"
+									placeholder="e.g. 500.00"
+									value={baseSalary}
+									onChange={(e) => setBaseSalary(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="hiredDate">Date of Hiring</Label>
+								<Input
+									id="hiredDate"
+									type="date"
+									value={hiredDate}
+									onChange={(e) => setHiredDate(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="space-y-2 md:col-span-2">
+								<Label htmlFor="breakDay">Break Day (Rest Day)</Label>
+								<select
+									id="breakDay"
+									value={breakDay || ""}
+									onChange={(e) =>
+										setBreakDay((e.target.value as BreakDay) || null)
+									}
+									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+								>
+									<option value="">None / Flexible</option>
+									<option value="Monday">Monday</option>
+									<option value="Tuesday">Tuesday</option>
+									<option value="Wednesday">Wednesday</option>
+									<option value="Thursday">Thursday</option>
+									<option value="Friday">Friday</option>
+									<option value="Saturday">Saturday</option>
+									<option value="Sunday">Sunday</option>
+								</select>
+							</div>
+							<div className="space-y-2 md:col-span-2">
+								<Label htmlFor="linkedUser">
+									Linked System Account (Optional)
+								</Label>
+								<select
+									id="linkedUser"
+									value={linkedUserUid}
+									onChange={(e) => setLinkedUserUid(e.target.value)}
+									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+								>
+									<option value="">None (Unlinked)</option>
+									{users.map((u) => {
+										const linkedEmp = existingEmployees.find(
+											(e) => e.isActive && e.user_uid === u.uid,
+										);
+										return (
+											<option
+												key={u.uid}
+												value={u.uid}
+												disabled={Boolean(linkedEmp)}
+											>
+												{u.displayName || u.email} ({u.role})
+												{linkedEmp
+													? ` — Already linked to ${linkedEmp.name}`
+													: ""}
+											</option>
+										);
+									})}
+								</select>
+								<p className="text-xs text-zinc-500">
+									Connecting a system login links active shift floats and audit
+									reporting directly to this store employee.
+								</p>
+							</div>
+						</div>
+						<Button
+							type="submit"
+							disabled={submitLoading || !name || !position}
+						>
+							{submitLoading ? (
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+							) : null}
+							Add Employee
+						</Button>
+					</CardContent>
+				</form>
 			</Card>
 		</div>
 	);

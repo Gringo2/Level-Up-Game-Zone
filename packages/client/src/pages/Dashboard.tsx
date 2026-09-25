@@ -188,7 +188,8 @@ export function Dashboard() {
 		totalExpenses -
 		pendingCredits;
 	const variance = closingCash ? parseFloat(closingCash) - expectedCash : 0;
-	const safeVariance = Number.isNaN(variance) ? 0 : variance;
+	const rawVariance = Number.isNaN(variance) ? 0 : variance;
+	const safeVariance = Math.abs(rawVariance) < 0.005 ? 0 : rawVariance;
 
 	const handleCloseShift = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -508,8 +509,12 @@ export function Dashboard() {
 							<CreditCard className="h-4 w-4 text-zinc-500" />
 						</CardHeader>
 						<CardContent>
-							<div className="text-2xl font-bold text-red-500">
-								-${pendingCredits.toFixed(2)}
+							<div
+								className={`text-2xl font-bold ${pendingCredits > 0 ? "text-red-500" : "text-zinc-900"}`}
+							>
+								{pendingCredits > 0
+									? `-$${pendingCredits.toFixed(2)}`
+									: "$0.00"}
 							</div>
 						</CardContent>
 					</Card>
@@ -519,8 +524,10 @@ export function Dashboard() {
 							<Receipt className="h-4 w-4 text-zinc-500" />
 						</CardHeader>
 						<CardContent>
-							<div className="text-2xl font-bold text-red-500">
-								-${totalExpenses.toFixed(2)}
+							<div
+								className={`text-2xl font-bold ${totalExpenses > 0 ? "text-red-500" : "text-zinc-900"}`}
+							>
+								{totalExpenses > 0 ? `-$${totalExpenses.toFixed(2)}` : "$0.00"}
 							</div>
 						</CardContent>
 					</Card>

@@ -1068,4 +1068,29 @@ describe("Admin", () => {
 			}
 		});
 	});
+
+	describe("ACP-035: Card Layout Structure", () => {
+		it("renders Manage Categories and Add Store Employee as separate sibling cards", async () => {
+			const fetchMock = vi.fn().mockImplementation((url: string) => {
+				if (url.includes("/api/rates")) return jsonResponse([]);
+				if (url.includes("/api/expense-categories")) return jsonResponse([]);
+				if (url.includes("/api/employees")) return jsonResponse([]);
+				if (url.includes("/api/users")) return jsonResponse([]);
+				return jsonResponse([]);
+			});
+			vi.stubGlobal("fetch", fetchMock);
+
+			render(<Admin />);
+			await screen.findByText("Manage Categories");
+			await screen.findByText("Add Store Employee");
+
+			const categoriesHeading = screen.getByText("Manage Categories");
+			const categoriesCard = categoriesHeading.closest("div[class*='rounded']");
+			const employeeHeading = screen.getByText("Add Store Employee");
+
+			expect(categoriesCard).toBeInTheDocument();
+			// The Add Store Employee form must NOT be inside the Manage Categories card
+			expect(categoriesCard).not.toContainElement(employeeHeading);
+		});
+	});
 });
