@@ -1,17 +1,15 @@
-# CURRENT MISSION
+# Active Mission: M-129 Preset Filter Active State Highlighting across Entry Pages & Salary Report
 
+## 1. Mission Context
+**Status:** Active  
 **Type:** UI / UX Enhancement  
-**Mission:** M-129 Preset Filter Active State Highlighting across Entry Pages & Salary Report  
-**Status:** Locked
-**Proposal:** ACP-037  
+**Phase:** Implementation  
+**Primary Owner:** AI Implementor  
+**Governing Proposal:** [ACP-037](file:///home/gringo2/Desktop/ProjectX/Level-Up-Game-Zone/governance/proposals/ACP-037_Preset_Filter_Active_State_Highlighting.md)  
+**Evidence Source:** Senior UI/UX Data Presentation Audit (P1 Recommendation)
 
-## 1. Objective
+## 2. Objective
 Establish complete UI visual parity with `Reports.tsx` by adding dynamic active-state highlighting to date filter preset buttons ("Today", "Yesterday", "This Month", "Last Month", "This Week") across `GameSales.tsx`, `Keno.tsx`, `SportsBetting.tsx`, `Expenses.tsx`, `Credits.tsx`, and `SalaryReport.tsx`.
-
-## 2. Context & Root Cause
-- In `Reports.tsx:341-345`, presets dynamically reflect their active state via `variant={inputStartDate === p.from && inputEndDate === p.to ? "default" : "outline"}`.
-- In `GameSales.tsx`, `Keno.tsx`, `SportsBetting.tsx`, `Expenses.tsx`, `Credits.tsx`, and `SalaryReport.tsx`, all preset buttons use static `variant="ghost"`.
-- When an operator is on an entry page (defaulting to "Today") or selects "Yesterday", there is no visual feedback indicating which preset is currently applied.
 
 ## 3. Scope & Boundaries
 - **In Scope:**
@@ -28,10 +26,12 @@ Establish complete UI visual parity with `Reports.tsx` by adding dynamic active-
   - Modifying date computation algorithms in `dateUtils.ts`.
   - Mutating git commands (Rule 1).
 
-## 4. Execution & Verification Gates
-- [x] Red-Green Test Verification: Proved failing assertions prior to implementation, followed by 100% green pass.
-- [x] Visual Highlighting Verification: Confirmed active preset renders with high-contrast active style (`bg-zinc-900` / `variant="default"` vs `border-zinc-200` / `variant="outline"`).
-- [x] Monorepo Fitness Gates: Biome lint (0 errors, 0 warnings), Knip (0 issues), clean TypeScript build across shared, client, and server.
+## 4. Execution Gates
+- [x] Functional Verification: Prove red state before fix, green after fix.
+- [x] Architectural Verification (AVP-001)
+- [x] Dependency Graph Clean
+- [x] ADR Compliance
+- [ ] User Approval (pending PO review)
 
 ## 5. Evidence Payload
 - [x] Functional Verification: 720/720 Vitest unit tests and 26/26 Playwright E2E tests passing.
@@ -39,4 +39,3 @@ Establish complete UI visual parity with `Reports.tsx` by adding dynamic active-
 - [x] Dependency Graph Clean: No forbidden boundaries crossed.
 - [x] ADR Compliance: Fully conforms to ADR-001 (Thin Client), ADR-006 (Test Constitution), and ACP-037.
 - [x] Traceability: Authorized by ACP-037, documented in `M-129_Blast_Radius_Report.md`.
-

@@ -408,4 +408,78 @@ describe("SalaryReport", () => {
 			),
 		).toBeInTheDocument();
 	});
+
+	it("ACP-037: preset buttons dynamically highlight active state across all 5 period presets and deselect on custom range", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<SalaryReport />);
+		await waitFor(() => {
+			expect(
+				screen.getByRole("button", { name: "This Month" }),
+			).toBeInTheDocument();
+		});
+
+		const thisMonthBtn = screen.getByRole("button", { name: "This Month" });
+		const lastMonthBtn = screen.getByRole("button", { name: "Last Month" });
+		const thisWeekBtn = screen.getByRole("button", { name: "This Week" });
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+
+		// Default state is Today active
+		expect(todayBtn).toHaveClass("bg-zinc-900");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+		expect(thisMonthBtn).toHaveClass("border-zinc-200");
+		expect(lastMonthBtn).toHaveClass("border-zinc-200");
+		expect(thisWeekBtn).toHaveClass("border-zinc-200");
+
+		// Click This Month
+		fireEvent.click(thisMonthBtn);
+		expect(thisMonthBtn).toHaveClass("bg-zinc-900");
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+		expect(lastMonthBtn).toHaveClass("border-zinc-200");
+		expect(thisWeekBtn).toHaveClass("border-zinc-200");
+
+		// Click Last Month
+		fireEvent.click(lastMonthBtn);
+		expect(lastMonthBtn).toHaveClass("bg-zinc-900");
+		expect(thisMonthBtn).toHaveClass("border-zinc-200");
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+		expect(thisWeekBtn).toHaveClass("border-zinc-200");
+
+		// Click This Week
+		fireEvent.click(thisWeekBtn);
+		expect(thisWeekBtn).toHaveClass("bg-zinc-900");
+		expect(thisMonthBtn).toHaveClass("border-zinc-200");
+		expect(lastMonthBtn).toHaveClass("border-zinc-200");
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		expect(yesterdayBtn).toHaveClass("bg-zinc-900");
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(thisMonthBtn).toHaveClass("border-zinc-200");
+		expect(lastMonthBtn).toHaveClass("border-zinc-200");
+		expect(thisWeekBtn).toHaveClass("border-zinc-200");
+
+		// Change date input to custom range
+		const dateInputs = document.querySelectorAll('input[type="date"]');
+		const toInput = dateInputs[1] as HTMLInputElement;
+		fireEvent.change(toInput, { target: { value: "2099-01-01" } });
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(todayBtn).not.toHaveClass("bg-zinc-900");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+		expect(yesterdayBtn).not.toHaveClass("bg-zinc-900");
+		expect(thisMonthBtn).toHaveClass("border-zinc-200");
+		expect(thisMonthBtn).not.toHaveClass("bg-zinc-900");
+		expect(lastMonthBtn).toHaveClass("border-zinc-200");
+		expect(lastMonthBtn).not.toHaveClass("bg-zinc-900");
+		expect(thisWeekBtn).toHaveClass("border-zinc-200");
+		expect(thisWeekBtn).not.toHaveClass("bg-zinc-900");
+	});
 });

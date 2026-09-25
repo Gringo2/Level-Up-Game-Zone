@@ -607,7 +607,11 @@ export function Expenses() {
 								</div>
 								<Button
 									type="button"
-									variant="ghost"
+									variant={
+										filterDateFrom === todayStr && filterDateTo === todayStr
+											? "default"
+											: "outline"
+									}
 									size="sm"
 									className="h-8 text-xs"
 									onClick={() => {
@@ -620,7 +624,12 @@ export function Expenses() {
 								</Button>
 								<Button
 									type="button"
-									variant="ghost"
+									variant={
+										filterDateFrom === yesterdayStr &&
+										filterDateTo === yesterdayStr
+											? "default"
+											: "outline"
+									}
 									size="sm"
 									className="h-8 text-xs"
 									onClick={() => {

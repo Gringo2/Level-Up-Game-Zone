@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../contexts/AuthContext.js";
+import { getShopDateString } from "../../lib/dateUtils.js";
 import { Credits } from "../../pages/Credits.js";
 
 const { mockGetIdToken } = vi.hoisted(() => ({
@@ -994,7 +995,7 @@ describe("Credits - Edit & Failure Paths", () => {
 	});
 
 	it("ACP-033: does not prepend new credit when its date falls outside active date filter range", async () => {
-		const today = new Date().toISOString().slice(0, 10);
+		const today = getShopDateString();
 		const newCreditToday = {
 			id: "c-new-today",
 			amount: 50,
@@ -1002,7 +1003,7 @@ describe("Credits - Edit & Failure Paths", () => {
 			employee_name: "Bob",
 			status: "Pending" as const,
 			user_id: "u1",
-			date: `${today}T12:00:00.000Z`,
+			date: `${today}T12:00:00+03:00`,
 		};
 
 		const fetchMock = vi.fn((url: string, init?: RequestInit) => {
@@ -1056,5 +1057,47 @@ describe("Credits - Edit & Failure Paths", () => {
 		expect(
 			within(recentCreditsCard as HTMLElement).queryByText("$50.00"),
 		).toBeNull();
+	});
+
+	it("ACP-037: Today and Yesterday preset buttons highlight active state", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+		render(<Credits />);
+		await screen.findByText("Recent Credits");
+
+		const todayBtn = screen.getByRole("button", { name: "Today" });
+		const yesterdayBtn = screen.getByRole("button", { name: "Yesterday" });
+
+		// Default state is Today active
+		expect(todayBtn).toHaveClass("bg-zinc-900");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+		expect(yesterdayBtn).not.toHaveClass("bg-zinc-900");
+
+		// Click Yesterday
+		fireEvent.click(yesterdayBtn);
+		await waitFor(() => {
+			expect(yesterdayBtn).toHaveClass("bg-zinc-900");
+			expect(todayBtn).not.toBeDisabled();
+		});
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(todayBtn).not.toHaveClass("bg-zinc-900");
+
+		// Click Today
+		fireEvent.click(todayBtn);
+		await waitFor(() => {
+			expect(todayBtn).toHaveClass("bg-zinc-900");
+			expect(yesterdayBtn).not.toBeDisabled();
+		});
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+
+		// Change date input to custom range
+		const toInput = screen.getByLabelText("To") as HTMLInputElement;
+		fireEvent.change(toInput, { target: { value: "2099-01-01" } });
+		expect(todayBtn).toHaveClass("border-zinc-200");
+		expect(todayBtn).not.toHaveClass("bg-zinc-900");
+		expect(yesterdayBtn).toHaveClass("border-zinc-200");
+		expect(yesterdayBtn).not.toHaveClass("bg-zinc-900");
 	});
 });

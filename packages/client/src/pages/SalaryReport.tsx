@@ -208,7 +208,12 @@ export function SalaryReport() {
 						</Button>
 						<Button
 							type="button"
-							variant="ghost"
+							variant={
+								inputStartDate === thisMonth.from &&
+								inputEndDate === thisMonth.to
+									? "default"
+									: "outline"
+							}
 							onClick={() => {
 								setInputStartDate(thisMonth.from);
 								setInputEndDate(thisMonth.to);
@@ -220,7 +225,12 @@ export function SalaryReport() {
 						</Button>
 						<Button
 							type="button"
-							variant="ghost"
+							variant={
+								inputStartDate === lastMonth.from &&
+								inputEndDate === lastMonth.to
+									? "default"
+									: "outline"
+							}
 							onClick={() => {
 								setInputStartDate(lastMonth.from);
 								setInputEndDate(lastMonth.to);
@@ -232,7 +242,11 @@ export function SalaryReport() {
 						</Button>
 						<Button
 							type="button"
-							variant="ghost"
+							variant={
+								inputStartDate === thisWeek.from && inputEndDate === thisWeek.to
+									? "default"
+									: "outline"
+							}
 							onClick={() => {
 								setInputStartDate(thisWeek.from);
 								setInputEndDate(thisWeek.to);
@@ -244,7 +258,11 @@ export function SalaryReport() {
 						</Button>
 						<Button
 							type="button"
-							variant="ghost"
+							variant={
+								inputStartDate === todayStr && inputEndDate === todayStr
+									? "default"
+									: "outline"
+							}
 							onClick={() => {
 								setInputStartDate(todayStr);
 								setInputEndDate(todayStr);
@@ -256,7 +274,11 @@ export function SalaryReport() {
 						</Button>
 						<Button
 							type="button"
-							variant="ghost"
+							variant={
+								inputStartDate === yesterdayStr && inputEndDate === yesterdayStr
+									? "default"
+									: "outline"
+							}
 							onClick={() => {
 								setInputStartDate(yesterdayStr);
 								setInputEndDate(yesterdayStr);

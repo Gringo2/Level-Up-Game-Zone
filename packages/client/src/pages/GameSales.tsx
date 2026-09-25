@@ -603,7 +603,11 @@ export function GameSales() {
 								</Button>
 								<Button
 									type="button"
-									variant="ghost"
+									variant={
+										rangeStart === todayStr && rangeEnd === todayStr
+											? "default"
+											: "outline"
+									}
 									onClick={() => {
 										setRangeStart(todayStr);
 										setRangeEnd(todayStr);
@@ -614,7 +618,11 @@ export function GameSales() {
 								</Button>
 								<Button
 									type="button"
-									variant="ghost"
+									variant={
+										rangeStart === yesterdayStr && rangeEnd === yesterdayStr
+											? "default"
+											: "outline"
+									}
 									onClick={() => {
 										setRangeStart(yesterdayStr);
 										setRangeEnd(yesterdayStr);
