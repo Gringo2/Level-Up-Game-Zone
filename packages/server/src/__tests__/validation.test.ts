@@ -58,9 +58,29 @@ describe("Domain-Driven Schema Validation Middleware", () => {
 
 		expect(res.status).toHaveBeenCalledWith(400);
 		expect(res.json).toHaveBeenCalledWith({
-			error: "Unit type must be 'Hour' or 'Game'",
+			error: "Unit type must be 'Game', 'Match', or 'Hour'",
 		});
 		expect(next).not.toHaveBeenCalled();
+	});
+
+	it("accepts valid unit_type Game and Match on game rate creation", () => {
+		const middleware = validateBody(CreateGameRateSchema);
+		for (const unit of ["Game", "Match", "Hour"]) {
+			const req = {
+				body: {
+					game_name: "Pool Table",
+					price_per_unit: 15,
+					unit_type: unit,
+				},
+			} as AuthRequest;
+			const res = makeRes();
+			const next = vi.fn() as unknown as NextFunction;
+
+			middleware(req, res, next);
+
+			expect(res.status).not.toHaveBeenCalled();
+			expect(next).toHaveBeenCalled();
+		}
 	});
 
 	it("rejects invalid role on user role update", () => {

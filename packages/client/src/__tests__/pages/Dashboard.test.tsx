@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useShift } from "../../contexts/ShiftContext.js";
-import { Dashboard } from "../../pages/Dashboard.js";
+import { Dashboard, formatUnitLabel } from "../../pages/Dashboard.js";
 
 vi.mock("../../firebase", () => ({
 	auth: {
@@ -827,5 +827,74 @@ describe("Dashboard", () => {
 		expect(
 			within(expensesCard as HTMLElement).getByText("$0.00"),
 		).not.toHaveClass("text-red-500");
+	});
+
+	it("ACP-036: renders game sales item breakdown with dynamic 'games' / 'matches' without hardcoding 'hrs'", async () => {
+		const slipLogs = [
+			{
+				id: "g1",
+				game_id: "rate1",
+				game_name: "PS5",
+				quantity_sold: 2,
+				rate_applied: 50,
+				calculated_total: 100,
+				// unit_type omitted to test default fallback to Game
+				user_id: "u1",
+				date: new Date().toISOString(),
+			},
+			{
+				id: "g2",
+				game_id: "rate2",
+				game_name: "FIFA",
+				quantity_sold: 2,
+				rate_applied: 25,
+				calculated_total: 50,
+				unit_type: "Match",
+				user_id: "u1",
+				date: new Date().toISOString(),
+			},
+		];
+		mockFetch.mockImplementation((url: string) => {
+			if (url.includes("/api/sales")) return jsonResponse(slipLogs);
+			return jsonResponse([]);
+		});
+		render(<Dashboard />);
+		await screen.findByText("Active Shift: Alice");
+
+		const safeSlip = document.querySelector(".print\\:block");
+		expect(safeSlip).toBeInTheDocument();
+		// Must display "2 games" for PS5 (not "2 hrs")
+		expect(safeSlip).toHaveTextContent("PS5 (2 games): $100.00");
+		expect(safeSlip).not.toHaveTextContent("PS5 (2 hrs)");
+		// Must display "2 matches" for FIFA (not "2 games" or "2 hrs")
+		expect(safeSlip).toHaveTextContent("FIFA (2 matches): $50.00");
+
+		// Top KPI card should also show "2 games" and "2 matches"
+		expect(screen.getByText("2 games")).toBeInTheDocument();
+		expect(screen.getByText("2 matches")).toBeInTheDocument();
+		expect(screen.queryByText("2 hrs")).not.toBeInTheDocument();
+	});
+
+	it("formatUnitLabel properly handles singular, plural, fallback, and legacy unit cases", () => {
+		expect(formatUnitLabel(1, "Game")).toBe("game");
+		expect(formatUnitLabel(2, "Game")).toBe("games");
+		expect(formatUnitLabel(0, "Game")).toBe("games");
+		expect(formatUnitLabel(1.5, "Game")).toBe("games");
+
+		expect(formatUnitLabel(1, "Match")).toBe("match");
+		expect(formatUnitLabel(2, "Match")).toBe("matches");
+		expect(formatUnitLabel(0, "Match")).toBe("matches");
+
+		expect(formatUnitLabel(1, "Hour")).toBe("hr");
+		expect(formatUnitLabel(2, "Hour")).toBe("hrs");
+
+		expect(formatUnitLabel(1, undefined)).toBe("game");
+		expect(formatUnitLabel(2, undefined)).toBe("games");
+
+		expect(formatUnitLabel(1, "")).toBe("game");
+		expect(formatUnitLabel(2, "")).toBe("games");
+
+		expect(formatUnitLabel(1, "Round")).toBe("Round");
+		expect(formatUnitLabel(2, "Round")).toBe("Rounds");
 	});
 });

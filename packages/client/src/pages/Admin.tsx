@@ -39,7 +39,7 @@ export function Admin() {
 	const [price, setPrice] = useState("");
 	const [unitType, setUnitType] = useState<
 		(typeof UNIT_TYPES)[keyof typeof UNIT_TYPES]
-	>(UNIT_TYPES.HOUR);
+	>(UNIT_TYPES.GAME);
 	const [loading, setLoading] = useState(false);
 
 	// Inline edit state — null means no row is being edited
@@ -180,7 +180,7 @@ export function Admin() {
 			setRates((prev) => [...prev, newRate]);
 			setGameName("");
 			setPrice("");
-			setUnitType(UNIT_TYPES.HOUR);
+			setUnitType(UNIT_TYPES.GAME);
 			toast.success("Game rate added successfully!");
 		} catch (err: unknown) {
 			console.error(err);
@@ -506,8 +506,8 @@ export function Admin() {
 										)
 									}
 								>
-									<option value={UNIT_TYPES.HOUR}>Per Hour</option>
 									<option value={UNIT_TYPES.GAME}>Per Game</option>
+									<option value={UNIT_TYPES.MATCH}>Per Match</option>
 								</select>
 							</div>
 						</div>
@@ -589,8 +589,11 @@ export function Admin() {
 														)
 													}
 												>
-													<option value={UNIT_TYPES.HOUR}>Per Hour</option>
 													<option value={UNIT_TYPES.GAME}>Per Game</option>
+													<option value={UNIT_TYPES.MATCH}>Per Match</option>
+													{editState.unitType === UNIT_TYPES.HOUR && (
+														<option value={UNIT_TYPES.HOUR}>Per Hour</option>
+													)}
 												</select>
 											</div>
 										</div>

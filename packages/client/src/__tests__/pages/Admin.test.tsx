@@ -1093,4 +1093,30 @@ describe("Admin", () => {
 			expect(categoriesCard).not.toContainElement(employeeHeading);
 		});
 	});
+
+	describe("ACP-036: Game Sales Unit Decoupling", () => {
+		it("defaults rate creation unit to Game and includes Per Match option", async () => {
+			const fetchMock = vi.fn().mockImplementation((url: string) => {
+				if (url.includes("/api/rates")) return jsonResponse([]);
+				if (url.includes("/api/expense-categories")) return jsonResponse([]);
+				if (url.includes("/api/employees")) return jsonResponse([]);
+				if (url.includes("/api/users")) return jsonResponse([]);
+				return jsonResponse([]);
+			});
+			vi.stubGlobal("fetch", fetchMock);
+
+			render(<Admin />);
+			await screen.findByText("Add Game Rate");
+
+			const unitSelect = screen.getByLabelText("Unit") as HTMLSelectElement;
+			expect(unitSelect).toBeInTheDocument();
+			// Must default to Game, not Hour
+			expect(unitSelect.value).toBe("Game");
+
+			// Must provide Per Match option
+			const matchOption = screen.getByRole("option", { name: "Per Match" });
+			expect(matchOption).toBeInTheDocument();
+			expect(matchOption).toHaveValue("Match");
+		});
+	});
 });

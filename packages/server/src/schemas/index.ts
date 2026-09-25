@@ -248,8 +248,10 @@ export const UpdateExpenseCategorySchema = z.object({
 export const CreateGameRateSchema = z.object({
 	game_name: z.string().trim().min(1, "Game name is required"),
 	price_per_unit: positiveNumber("Price per unit"),
-	unit_type: z.enum([UNIT_TYPES.HOUR, UNIT_TYPES.GAME], {
-		errorMap: () => ({ message: "Unit type must be 'Hour' or 'Game'" }),
+	unit_type: z.enum([UNIT_TYPES.GAME, UNIT_TYPES.MATCH, UNIT_TYPES.HOUR], {
+		errorMap: () => ({
+			message: "Unit type must be 'Game', 'Match', or 'Hour'",
+		}),
 	}),
 	isActive: z.boolean().optional().default(true),
 });
@@ -258,8 +260,10 @@ export const UpdateGameRateSchema = z.object({
 	game_name: z.string().trim().min(1, "Game name is required").optional(),
 	price_per_unit: positiveNumber("Price per unit").optional(),
 	unit_type: z
-		.enum([UNIT_TYPES.HOUR, UNIT_TYPES.GAME], {
-			errorMap: () => ({ message: "Unit type must be 'Hour' or 'Game'" }),
+		.enum([UNIT_TYPES.GAME, UNIT_TYPES.MATCH, UNIT_TYPES.HOUR], {
+			errorMap: () => ({
+				message: "Unit type must be 'Game', 'Match', or 'Hour'",
+			}),
 		})
 		.optional(),
 	isActive: z.boolean().optional(),

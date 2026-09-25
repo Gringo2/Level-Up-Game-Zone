@@ -34,6 +34,23 @@ import { useShift } from "../contexts/ShiftContext";
 import { API_BASE, authFetch, safeJson } from "../lib/api";
 import { formatSafeDate, getShopStartOfDay } from "../lib/dateUtils";
 
+export const formatUnitLabel = (
+	quantity: number,
+	unitType?: string,
+): string => {
+	const normalized = (unitType || "Game").toLowerCase().trim();
+	if (normalized === "match") {
+		return quantity === 1 ? "match" : "matches";
+	}
+	if (normalized === "game") {
+		return quantity === 1 ? "game" : "games";
+	}
+	if (normalized === "hour") {
+		return quantity === 1 ? "hr" : "hrs";
+	}
+	return quantity === 1 ? unitType || "game" : `${unitType || "game"}s`;
+};
+
 export function Dashboard() {
 	const { user } = useAuth();
 	const { activeShift, loadingShift, refetchShift } = useShift();
@@ -148,7 +165,7 @@ export function Dashboard() {
 						gameName: key,
 						totalQuantity: 0,
 						totalRevenue: 0,
-						unitType: log.unit_type || "Hour",
+						unitType: log.unit_type || "Game",
 						count: 0,
 					};
 				}
@@ -341,14 +358,10 @@ export function Dashboard() {
 				{gameSalesByItem.length > 0 && (
 					<ul className="ml-4 text-sm list-disc">
 						{gameSalesByItem.map((item) => {
-							const unitLabel =
-								item.unitType.toLowerCase() === "hour"
-									? item.totalQuantity === 1
-										? "hr"
-										: "hrs"
-									: item.totalQuantity === 1
-										? "game"
-										: "games";
+							const unitLabel = formatUnitLabel(
+								item.totalQuantity,
+								item.unitType,
+							);
 							return (
 								<li key={item.gameName}>
 									{item.gameName} ({item.totalQuantity} {unitLabel}): $
@@ -398,14 +411,10 @@ export function Dashboard() {
 								<>
 									<div className="space-y-1.5 pt-1">
 										{gameSalesByItem.slice(0, 3).map((item) => {
-											const unitLabel =
-												item.unitType.toLowerCase() === "hour"
-													? item.totalQuantity === 1
-														? "hr"
-														: "hrs"
-													: item.totalQuantity === 1
-														? "game"
-														: "games";
+											const unitLabel = formatUnitLabel(
+												item.totalQuantity,
+												item.unitType,
+											);
 											return (
 												<div
 													key={item.gameName}

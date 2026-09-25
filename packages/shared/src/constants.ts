@@ -21,8 +21,9 @@ export const SHIFT_STATUSES = {
 
 // ── Game Rate Unit Types ─────────────────────────────────────────────────────
 export const UNIT_TYPES = {
-	HOUR: "Hour",
 	GAME: "Game",
+	MATCH: "Match",
+	HOUR: "Hour",
 } as const;
 
 // ── Missed Day Resolution Statuses ───────────────────────────────────────────
@@ -81,6 +82,6 @@ export const SYSTEM_IDENTITY = {
 
 // ── Default Game Rates (seeded client-side when no rates exist) ──────────────
 export const DEFAULT_GAME_RATES = [
-	{ game_name: "PS4", price_per_unit: 5, unit_type: UNIT_TYPES.HOUR },
+	{ game_name: "PS4", price_per_unit: 5, unit_type: UNIT_TYPES.GAME },
 	{ game_name: "Pool", price_per_unit: 2, unit_type: UNIT_TYPES.GAME },
 ] as const;

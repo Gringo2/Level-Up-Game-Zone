@@ -91,6 +91,20 @@ describe("Game Rates Integration Tests", () => {
 			expect(response.body.price_per_unit).toBe(15);
 		});
 
+		it("should successfully create a game rate with unit_type Match", async () => {
+			const response = await request(app)
+				.post("/api/rates")
+				.set("Authorization", authHeader)
+				.send({
+					game_name: "FIFA 24",
+					price_per_unit: 25,
+					unit_type: "Match",
+				});
+
+			expect(response.status).toBe(201);
+			expect(response.body.unit_type).toBe("Match");
+		});
+
 		it("should successfully update a game rate", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
 				if (path === "users") {
@@ -241,7 +255,7 @@ describe("Game Rates Integration Tests", () => {
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain(
-				"Unit type must be 'Hour' or 'Game'",
+				"Unit type must be 'Game', 'Match', or 'Hour'",
 			);
 		});
 
@@ -273,7 +287,7 @@ describe("Game Rates Integration Tests", () => {
 
 			expect(response.status).toBe(400);
 			expect(response.body.error).toContain(
-				"Unit type must be 'Hour' or 'Game'",
+				"Unit type must be 'Game', 'Match', or 'Hour'",
 			);
 		});
 

@@ -37,7 +37,7 @@ export interface GameRate {
 	id: string;
 	game_name: string;
 	price_per_unit: number;
-	unit_type: "Hour" | "Game";
+	unit_type: "Hour" | "Game" | "Match";
 	isActive: boolean;
 }
 

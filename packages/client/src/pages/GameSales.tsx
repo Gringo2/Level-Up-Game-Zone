@@ -488,7 +488,12 @@ export function GameSales() {
 							<div className="space-y-2">
 								<Label htmlFor="quantity">
 									Quantity (
-									{selectedRate ? `${selectedRate.unit_type}s` : "Units"})
+									{selectedRate
+										? selectedRate.unit_type.toLowerCase() === "match"
+											? "Matches"
+											: `${selectedRate.unit_type}s`
+										: "Units"}
+									)
 								</Label>
 								<Input
 									id="quantity"
@@ -691,8 +696,16 @@ export function GameSales() {
 														</span>
 														<span className="text-zinc-500">
 															{log.quantity_sold}{" "}
-															{log.unit_type ? `${log.unit_type}s` : "units"} @
-															${log.rate_applied.toFixed(2)}
+															{log.unit_type
+																? log.unit_type.toLowerCase() === "match"
+																	? log.quantity_sold === 1
+																		? "Match"
+																		: "Matches"
+																	: log.quantity_sold === 1
+																		? log.unit_type
+																		: `${log.unit_type}s`
+																: "units"}{" "}
+															@ ${log.rate_applied.toFixed(2)}
 														</span>
 														<span className="text-zinc-400 tabular-nums w-16 shrink-0">
 															{format(d, "h:mm a")}
