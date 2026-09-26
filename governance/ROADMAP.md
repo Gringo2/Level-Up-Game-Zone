@@ -110,6 +110,7 @@
 *   [x] **Mission 128:** Game Sales Unit Decoupling & Elimination of Hardcoded "Hour" — decouple game sales unit from hours to games and matches, dynamic pluralization on Safe Slip and Dashboard without hardcoding "hrs" (2026-09-25, Locked; ACP-036).
 *   [x] **Mission 129:** Preset Filter Active State Highlighting across Entry Pages & Salary Report — replace static variant="ghost" with dynamic active-state variant={isActive ? "default" : "outline"} across GameSales, Keno, SportsBetting, Expenses, Credits, and SalaryReport to match Reports.tsx standard (2026-09-26, Locked; ACP-037).
 *   [x] **Mission 130:** Preset Filter Accessibility & ARIA State Attributes across All Pages — add aria-pressed={isActive} and role="group" with aria-label="Date range presets" across Reports, GameSales, Keno, SportsBetting, Expenses, Credits, and SalaryReport (2026-09-26, Locked; ACP-038). Red-Green proven (727/727 vitest green, 26/26 playwright green).
+*   [x] **Mission 131:** WCAG 2.1 AA Contrast Hardening for Secondary Metadata — elevate low-contrast secondary metadata on light backgrounds from text-zinc-400 (2.43:1) to text-zinc-500 (4.61:1) across Reports, SalaryReport, AuditLogs, Credits, Admin, Dashboard, and entry page rows (2026-09-26, Locked; ACP-039). Red-Green proven (729/729 vitest green, 26/26 playwright green).
 
 
 

@@ -546,7 +546,7 @@ export function Keno() {
 														>
 															Net: ${log.net_profit.toFixed(2)}
 														</span>
-														<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+														<span className="text-zinc-500 tabular-nums w-16 shrink-0">
 															{format(d, "h:mm a")}
 														</span>
 														{log.user_name && (
@@ -555,7 +555,7 @@ export function Keno() {
 															</span>
 														)}
 														{log.sales != null && log.payouts != null && (
-															<span className="text-xs text-zinc-400 hidden md:inline">
+															<span className="text-xs text-zinc-500 hidden md:inline">
 																Sales ${log.sales.toFixed(2)} &middot; Payouts $
 																{log.payouts.toFixed(2)}
 															</span>

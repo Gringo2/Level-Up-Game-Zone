@@ -547,7 +547,7 @@ export function SportsBetting() {
 														>
 															Net: ${log.net_profit.toFixed(2)}
 														</span>
-														<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+														<span className="text-zinc-500 tabular-nums w-16 shrink-0">
 															{format(d, "h:mm a")}
 														</span>
 														{log.user_name && (

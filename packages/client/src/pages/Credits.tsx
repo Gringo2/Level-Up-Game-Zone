@@ -616,7 +616,7 @@ export function Credits() {
 											<div className="text-sm text-zinc-500">
 												${credit.amount.toFixed(2)}
 											</div>
-											<div className="text-xs text-zinc-400 mt-1">
+											<div className="text-xs text-zinc-500 mt-1">
 												{format(new Date(credit.date), "MMM d, h:mm a")}
 												{credit.user_name && <> &bull; {credit.user_name}</>}
 											</div>
@@ -636,7 +636,7 @@ export function Credits() {
 													{credit.status}
 												</span>
 												{credit.resolved_date && (
-													<span className="text-xs text-zinc-400">
+													<span className="text-xs text-zinc-500">
 														{format(
 															new Date(credit.resolved_date),
 															"MMM d, h:mm a",

@@ -304,7 +304,7 @@ export function AuditLogs() {
 												<p className="text-sm font-medium text-zinc-700">
 													No activity logs match the selected filters.
 												</p>
-												<p className="text-xs text-zinc-400 max-w-sm">
+												<p className="text-xs text-zinc-500 max-w-sm">
 													Try adjusting your search terms, action type, or
 													collection filter.
 												</p>
@@ -359,7 +359,7 @@ export function AuditLogs() {
 													{log.reason_for_change || "N/A"}
 												</td>
 												<td
-													className="px-4 py-3 text-xs text-zinc-400 font-mono max-w-xs truncate cursor-help"
+													className="px-4 py-3 text-xs text-zinc-500 font-mono max-w-xs truncate cursor-help"
 													title={JSON.stringify(
 														{ old: log.old_value, new: log.new_value },
 														null,

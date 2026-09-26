@@ -730,11 +730,11 @@ export function Expenses() {
 														)}
 													</span>
 													{expense.item_name && expense.description && (
-														<span className="text-xs text-zinc-400 truncate max-w-[12rem] hidden md:inline">
+														<span className="text-xs text-zinc-500 truncate max-w-[12rem] hidden md:inline">
 															{expense.description}
 														</span>
 													)}
-													<span className="text-zinc-400 tabular-nums w-16 shrink-0">
+													<span className="text-zinc-500 tabular-nums w-16 shrink-0">
 														{format(d, "h:mm a")}
 													</span>
 													{expense.user_name && (

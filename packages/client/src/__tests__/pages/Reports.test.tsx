@@ -680,4 +680,24 @@ describe("Reports", () => {
 		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
 		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
 	});
+
+	it("ACP-039: secondary metadata and card subtitles use WCAG AA compliant text-zinc-500", async () => {
+		const fetchMock = vi
+			.fn()
+			.mockImplementation(() => Promise.resolve(jsonResponse([])));
+		vi.stubGlobal("fetch", fetchMock);
+
+		render(<Reports />);
+		await waitFor(() => {
+			expect(screen.getByText("Historical Reports")).toBeDefined();
+		});
+
+		const discrepancyNote = screen.getByText("Cumulative shift discrepancy");
+		expect(discrepancyNote).toHaveClass("text-zinc-500");
+		expect(discrepancyNote).not.toHaveClass("text-zinc-400");
+
+		const countNote = screen.getByText("Counted at shift closeouts");
+		expect(countNote).toHaveClass("text-zinc-500");
+		expect(countNote).not.toHaveClass("text-zinc-400");
+	});
 });

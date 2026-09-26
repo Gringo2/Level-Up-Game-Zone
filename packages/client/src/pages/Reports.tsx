@@ -475,7 +475,7 @@ export function Reports() {
 								>
 									${avgVariance.toFixed(2)}
 								</div>
-								<p className="text-xs text-zinc-400 mt-1">
+								<p className="text-xs text-zinc-500 mt-1">
 									Across {closedShifts.length} closed shifts
 								</p>
 							</CardContent>
@@ -497,7 +497,7 @@ export function Reports() {
 									{totalVariance < 0 ? "-" : ""}$
 									{Math.abs(totalVariance).toFixed(2)}
 								</div>
-								<p className="text-xs text-zinc-400 mt-1">
+								<p className="text-xs text-zinc-500 mt-1">
 									Cumulative shift discrepancy
 								</p>
 							</CardContent>
@@ -512,7 +512,7 @@ export function Reports() {
 								<div className="text-2xl font-bold">
 									{balancedShiftsCount} / {closedShifts.length} Balanced
 								</div>
-								<p className="text-xs text-zinc-400 mt-1">
+								<p className="text-xs text-zinc-500 mt-1">
 									{shortageShiftsCount} shortage
 									{shortageShiftsCount !== 1 ? "s" : ""}, {overageShiftsCount}{" "}
 									overage{overageShiftsCount !== 1 ? "s" : ""}
@@ -529,7 +529,7 @@ export function Reports() {
 								<div className="text-2xl font-bold">
 									${totalActualCash.toFixed(2)}
 								</div>
-								<p className="text-xs text-zinc-400 mt-1">
+								<p className="text-xs text-zinc-500 mt-1">
 									Counted at shift closeouts
 								</p>
 							</CardContent>
@@ -776,7 +776,7 @@ export function Reports() {
 																		"MMM d, yyyy",
 																	)}
 																</div>
-																<div className="text-zinc-400">
+																<div className="text-zinc-500">
 																	{format(new Date(s.start_time), "h:mm a")} –{" "}
 																	{s.end_time
 																		? format(new Date(s.end_time), "h:mm a")

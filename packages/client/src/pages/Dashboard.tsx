@@ -435,7 +435,7 @@ export function Dashboard() {
 											);
 										})}
 										{gameSalesByItem.length > 3 && (
-											<p className="text-[11px] text-zinc-400 text-right">
+											<p className="text-[11px] text-zinc-500 text-right">
 												+{gameSalesByItem.length - 3} more games
 											</p>
 										)}

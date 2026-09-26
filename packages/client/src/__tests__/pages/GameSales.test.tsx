@@ -999,4 +999,20 @@ describe("GameSales", () => {
 		expect(todayBtn).toHaveAttribute("aria-pressed", "false");
 		expect(yesterdayBtn).toHaveAttribute("aria-pressed", "false");
 	});
+
+	it("ACP-039: sales row timestamp uses WCAG AA compliant text-zinc-500", async () => {
+		mockFetch.mockImplementation((url: string) => {
+			if (String(url).endsWith("/api/rates")) {
+				return Promise.resolve(jsonResponse(rates));
+			}
+			return Promise.resolve(jsonResponse([salesLog]));
+		});
+
+		render(<GameSales />);
+		const row = await screen.findByTestId("gamesale-history-row");
+		const timeEl = row.querySelector(".tabular-nums");
+		expect(timeEl).not.toBeNull();
+		expect(timeEl).toHaveClass("text-zinc-500");
+		expect(timeEl).not.toHaveClass("text-zinc-400");
+	});
 });

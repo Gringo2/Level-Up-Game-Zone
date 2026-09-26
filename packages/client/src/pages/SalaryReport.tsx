@@ -367,7 +367,7 @@ export function SalaryReport() {
 														: "Flexible Rest"}
 												</span>
 											</div>
-											<div className="text-xs text-zinc-400 mt-2">
+											<div className="text-xs text-zinc-500 mt-2">
 												Hired:{" "}
 												{emp.hired_date
 													? format(new Date(emp.hired_date), "MMM d, yyyy")
@@ -411,7 +411,7 @@ export function SalaryReport() {
 													({empCredits.length})
 												</div>
 												{empCredits.length === 0 ? (
-													<div className="text-xs text-zinc-400 italic py-1">
+													<div className="text-xs text-zinc-500 italic py-1">
 														No IOUs deducted this period.
 													</div>
 												) : (
@@ -431,7 +431,7 @@ export function SalaryReport() {
 																		{format(new Date(c.date), "MMM d, yyyy")}
 																	</span>
 																	{c.reason && (
-																		<span className="text-zinc-400 truncate px-1">
+																		<span className="text-zinc-500 truncate px-1">
 																			{c.reason}
 																		</span>
 																	)}

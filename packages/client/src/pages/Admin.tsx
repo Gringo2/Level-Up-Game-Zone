@@ -760,7 +760,7 @@ export function Admin() {
 												{cat.name}
 											</span>
 											{cat.created_at && (
-												<span className="text-xs text-zinc-400">
+												<span className="text-xs text-zinc-500">
 													{format(new Date(cat.created_at), "MMM d, yyyy")}
 												</span>
 											)}
