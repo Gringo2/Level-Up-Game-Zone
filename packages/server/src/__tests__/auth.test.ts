@@ -7,7 +7,7 @@ vi.mock("../firebase.js", () => ({
 }));
 
 import type { AuthRequest } from "../middleware/auth.js";
-import { makeRequireAuth } from "../middleware/auth.js";
+import { makeRequireToken } from "../middleware/auth.js";
 
 function makeRes() {
 	const res = {
@@ -21,7 +21,7 @@ function makeRes() {
 describe("requireAuth middleware", () => {
 	it("returns 401 when Authorization header is missing", async () => {
 		const verifier = vi.fn();
-		const middleware = makeRequireAuth(verifier);
+		const middleware = makeRequireToken(verifier);
 		const req = { headers: {} } as AuthRequest;
 		const res = makeRes();
 		const next = vi.fn() as unknown as NextFunction;
@@ -38,7 +38,7 @@ describe("requireAuth middleware", () => {
 
 	it("returns 401 when Authorization header does not start with Bearer", async () => {
 		const verifier = vi.fn();
-		const middleware = makeRequireAuth(verifier);
+		const middleware = makeRequireToken(verifier);
 		const req = {
 			headers: { authorization: "Basic abc123" },
 		} as AuthRequest;
@@ -58,7 +58,7 @@ describe("requireAuth middleware", () => {
 		const verifier = vi
 			.fn()
 			.mockRejectedValue(new Error("Token verification failed"));
-		const middleware = makeRequireAuth(verifier);
+		const middleware = makeRequireToken(verifier);
 		const req = {
 			headers: { authorization: "Bearer bad-token" },
 		} as AuthRequest;
@@ -77,7 +77,7 @@ describe("requireAuth middleware", () => {
 	it("calls next() and attaches decoded user when token is valid", async () => {
 		const fakeDecodedToken = { uid: "user123", email: "user@example.com" };
 		const verifier = vi.fn().mockResolvedValue(fakeDecodedToken);
-		const middleware = makeRequireAuth(verifier);
+		const middleware = makeRequireToken(verifier);
 		const req = {
 			headers: { authorization: "Bearer valid-token" },
 		} as AuthRequest;

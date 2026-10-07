@@ -51,3 +51,14 @@ vi.mock("../firebase.js", () => {
 		auth: mockAuth,
 	};
 });
+
+// M-132 / ACP-040: requireAuth now resolves users/{uid} membership. Suites
+// that mock db.collection per test return this stub for the "users" path so
+// the caller is a registered member with the given role.
+export const memberUsersCollection = (role = "admin") =>
+	({
+		doc: vi.fn().mockReturnValue({
+			get: vi.fn().mockResolvedValue({ exists: true, data: () => ({ role }) }),
+		}),
+		// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+	}) as any;

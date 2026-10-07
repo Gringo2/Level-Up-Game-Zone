@@ -9,6 +9,9 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Security
+- **API Membership Authorization Gate (M-132 / ACP-040):** the API now rejects valid Firebase tokens that have no registered `users` record (`403 Forbidden: Account not registered`), closing access for uninvited Google accounts and for users removed by an admin. Self-registration (`GET /api/users/me`, `POST /api/users`) stays token-only. Resolves TD-058.
+
 ---
 
 ## [1.0.0] — 2026-09-22

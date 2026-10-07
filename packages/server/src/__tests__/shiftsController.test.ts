@@ -2,6 +2,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { memberUsersCollection } from "./setupTests.js";
 
 const { db } = await import("../firebase.js");
 
@@ -15,6 +16,7 @@ describe("Shifts Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully open a new shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -53,6 +55,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should successfully close a shift with valid variance calculation", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -90,6 +93,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should successfully close a shift with dependent data reducing into expected cash", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -173,6 +177,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should include sports betting net profit in expected cash calculation on shift close", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -261,6 +266,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should handle negative sports betting net (losing day) reducing expected cash", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -349,6 +355,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should successfully list shifts", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
@@ -385,6 +392,7 @@ describe("Shifts Integration Tests", () => {
 			const yesterday = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
@@ -426,6 +434,7 @@ describe("Shifts Integration Tests", () => {
 			// Even with no gaps and no missed shifts, the response must NOT contain
 			// newlyOpenedShift and runTransaction must NOT be called.
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -468,6 +477,7 @@ describe("Shifts Integration Tests", () => {
 			}
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi
@@ -564,6 +574,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 400 if an active shift is already open", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -591,6 +602,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 400 if closing a shift with > $2 variance without a reason", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -639,6 +651,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 404 when closing a non-existent shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -667,6 +680,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 400 when closing an already-closed shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -698,6 +712,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 404 when shift document exists but data is empty", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -729,6 +744,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 404 when updating float on a non-existent shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: vi.fn().mockReturnValue({ id: "missing-shift" }),
@@ -762,6 +778,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("should return 400 when updating float on a non-OPEN shift", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: vi.fn().mockReturnValue({ id: "closed-shift" }),
@@ -802,6 +819,7 @@ describe("Shifts Integration Tests", () => {
 	describe("Database Crash (500 fallback)", () => {
 		it("returns 500 when listing shifts crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
@@ -830,6 +848,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 500 when closing a shift crashes on DB read", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -858,6 +877,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 500 when updateFloat crashes inside the transaction", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					return { doc: vi.fn().mockReturnValue({ id: "shift-1" }) } as any;
@@ -882,6 +902,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 500 when getMissedData crashes on DB read", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -910,6 +931,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 500 when starting a shift crashes on the open-shift query", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -939,6 +961,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 500 when starting a shift crashes inside the transaction", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -992,6 +1015,7 @@ describe("Shifts Integration Tests", () => {
 	describe("Auto-Open Shift (ACP-011 Option B)", () => {
 		it("returns 201 and creates a shift when state is clean", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -1036,6 +1060,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("returns 409 when an open shift already exists (D5 no-op path)", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -1078,6 +1103,7 @@ describe("Shifts Integration Tests", () => {
 		it("returns 409 when a shift was already closed today (D4 guard)", async () => {
 			const todayIso = new Date().toISOString();
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -1131,6 +1157,7 @@ describe("Shifts Integration Tests", () => {
 			const mockUpdate = vi.fn();
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -1206,6 +1233,7 @@ describe("Shifts Integration Tests", () => {
 			const mockUpdate = vi.fn();
 
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						doc: () => ({
@@ -1271,6 +1299,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("attaches employee_id when starting a shift and user matches an active employee (TD-040)", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -1315,6 +1344,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("leaves employee_id undefined when user does not match any active employee (backward compatibility)", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -1354,6 +1384,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("leaves employee_id undefined when employee record exists but isActive is false", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -1403,6 +1434,7 @@ describe("Shifts Integration Tests", () => {
 
 		it("attaches employee_id when auto-opening a shift and user matches an active employee (TD-040)", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "shifts") {
 					return {
 						where: vi.fn().mockReturnThis(),

@@ -6,19 +6,25 @@ import { logger } from "../utils/logger.js";
 
 export interface AuthRequest extends Request {
 	user: DecodedIdToken;
+	// M-132: role of the registered member, resolved once by requireAuth.
+	appRole?: string;
 }
 
 declare global {
 	namespace Express {
 		interface Request {
 			user: DecodedIdToken;
+			appRole?: string;
 		}
 	}
 }
 
 export type TokenVerifier = (token: string) => Promise<DecodedIdToken>;
 
-export const makeRequireAuth =
+// Resolves a registered member by uid; null when no users/{uid} document exists.
+export type MemberLookup = (uid: string) => Promise<{ role?: string } | null>;
+
+export const makeRequireToken =
 	(verifier: TokenVerifier) =>
 	async (
 		req: AuthRequest,
@@ -43,9 +49,46 @@ export const makeRequireAuth =
 		}
 	};
 
-export const requireAuth = makeRequireAuth((token) =>
-	auth.verifyIdToken(token),
-);
+// M-132 / ACP-040: a valid token is not membership. Only callers with a
+// users/{uid} document pass; the resolved role is cached on req.appRole.
+export const makeRequireMember =
+	(verifier: TokenVerifier, lookup: MemberLookup) =>
+	async (
+		req: AuthRequest,
+		res: Response,
+		next: NextFunction,
+	): Promise<void> => {
+		let tokenVerified = false;
+		await makeRequireToken(verifier)(req, res, () => {
+			tokenVerified = true;
+		});
+		if (!tokenVerified) return;
+
+		try {
+			const member = await lookup(req.user.uid);
+			if (!member) {
+				res.status(403).json({ error: "Forbidden: Account not registered" });
+				return;
+			}
+			req.appRole = member.role;
+			next();
+		} catch (error) {
+			logger.error({ err: error }, "Error checking account membership");
+			res.status(500).json({ error: "Internal server error" });
+		}
+	};
+
+const verifyFirebaseToken: TokenVerifier = (token) => auth.verifyIdToken(token);
+
+const lookupMember: MemberLookup = async (uid) => {
+	const userDoc = await db.collection(COLLECTIONS.USERS).doc(uid).get();
+	return userDoc.exists ? { role: userDoc.data()?.role } : null;
+};
+
+// Token-only: reserved for self-registration (GET /api/users/me, POST /api/users).
+export const requireToken = makeRequireToken(verifyFirebaseToken);
+
+export const requireAuth = makeRequireMember(verifyFirebaseToken, lookupMember);
 
 export const requireRole = (allowedRoles: string[]) => {
 	return async (
@@ -60,11 +103,14 @@ export const requireRole = (allowedRoles: string[]) => {
 		}
 
 		try {
-			const userDoc = await db
-				.collection(COLLECTIONS.USERS)
-				.doc(req.user.uid)
-				.get();
-			const userRole = userDoc.exists ? userDoc.data()?.role : undefined;
+			let userRole = req.appRole;
+			if (userRole === undefined) {
+				const userDoc = await db
+					.collection(COLLECTIONS.USERS)
+					.doc(req.user.uid)
+					.get();
+				userRole = userDoc.exists ? userDoc.data()?.role : undefined;
+			}
 			if (!userRole || !allowedRoles.includes(userRole)) {
 				res
 					.status(403)

@@ -4,6 +4,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { memberUsersCollection } from "./setupTests.js";
 
 const { db } = await import("../firebase.js");
 
@@ -17,6 +18,7 @@ describe("Sales Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list sales", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "game_sales_logs") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 					const chainable: any = {
@@ -109,6 +111,7 @@ describe("Sales Integration Tests", () => {
 		it("filters sales server-side when a date range is provided", async () => {
 			const range: { start?: string; end?: string } = {};
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path !== COLLECTIONS.GAME_SALES_LOGS) {
 					return {
 						doc: () => ({
@@ -529,6 +532,7 @@ describe("Sales Integration Tests", () => {
 
 		it("returns 500 when listing sales crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "game_sales_logs") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 					const chainable: any = {
@@ -557,6 +561,7 @@ describe("Sales Integration Tests", () => {
 
 		it("does not leak internal error details to clients", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "game_sales_logs") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore query chains requires any
 					const chainable: any = {

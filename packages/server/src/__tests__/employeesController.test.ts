@@ -2,6 +2,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { memberUsersCollection } from "./setupTests.js";
 
 const { db } = await import("../firebase.js");
 
@@ -15,6 +16,7 @@ describe("Employees Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list employees", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "employees") {
 					return {
 						get: vi.fn().mockResolvedValue({
@@ -821,6 +823,7 @@ describe("Employees Integration Tests", () => {
 
 		it("returns 500 when listing employees crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "employees") {
 					return {
 						get: vi.fn().mockRejectedValue(new Error("DB crashed")),

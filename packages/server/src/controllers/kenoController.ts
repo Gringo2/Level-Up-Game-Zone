@@ -52,7 +52,7 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 
 	try {
 		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
-		const role = userDoc.exists ? userDoc.data()?.role : ROLES.STAFF;
+		const role = req.appRole;
 		const displayName = userDoc.exists
 			? userDoc.data()?.displayName
 			: undefined;

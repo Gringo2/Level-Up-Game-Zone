@@ -8,7 +8,7 @@ import {
 	listUsers,
 	updateRole,
 } from "../controllers/usersController.js";
-import { requireAuth, requireRole } from "../middleware/auth.js";
+import { requireAuth, requireRole, requireToken } from "../middleware/auth.js";
 import { validateBody } from "../middleware/validate.js";
 import {
 	CreateUserSchema,
@@ -19,7 +19,8 @@ import {
 
 const router = Router();
 
-router.get("/me", requireAuth as RequestHandler, getMe as RequestHandler);
+// M-132: self-registration routes are token-only; all others require membership.
+router.get("/me", requireToken as RequestHandler, getMe as RequestHandler);
 router.get(
 	"/",
 	requireAuth as RequestHandler,
@@ -28,7 +29,7 @@ router.get(
 );
 router.post(
 	"/",
-	requireAuth as RequestHandler,
+	requireToken as RequestHandler,
 	validateBody(CreateUserSchema) as RequestHandler,
 	createUser as RequestHandler,
 );

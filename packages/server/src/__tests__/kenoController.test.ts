@@ -4,6 +4,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { memberUsersCollection } from "./setupTests.js";
 
 const { db } = await import("../firebase.js");
 
@@ -65,6 +66,7 @@ describe("Keno Integration Tests", () => {
 		it("filters keno logs server-side when a date range is provided", async () => {
 			const range: { start?: string; end?: string } = {};
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path !== "keno_logs") {
 					return {
 						doc: () => ({
@@ -291,8 +293,8 @@ describe("Keno Integration Tests", () => {
 					return {
 						doc: () => ({
 							get: vi.fn().mockResolvedValue({
-								exists: false,
-								data: () => undefined,
+								exists: true,
+								data: () => ({ role: "staff" }),
 							}),
 						}),
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

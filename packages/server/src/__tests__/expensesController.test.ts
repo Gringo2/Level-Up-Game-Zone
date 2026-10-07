@@ -185,8 +185,8 @@ describe("Expenses Integration Tests", () => {
 					return {
 						doc: () => ({
 							get: vi.fn().mockResolvedValue({
-								exists: false,
-								data: () => undefined,
+								exists: true,
+								data: () => ({ role: "staff" }),
 							}),
 						}),
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

@@ -2,6 +2,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { memberUsersCollection } from "./setupTests.js";
 
 const { db } = await import("../firebase.js");
 
@@ -15,6 +16,7 @@ describe("Expense Categories Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list expense categories", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "expense_categories") {
 					return {
 						get: vi.fn().mockResolvedValue({
@@ -46,7 +48,8 @@ describe("Expense Categories Integration Tests", () => {
 		});
 
 		it("should successfully create an expense category", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-cat-123" }),
 					where: vi.fn().mockReturnThis(),
@@ -66,7 +69,8 @@ describe("Expense Categories Integration Tests", () => {
 		});
 
 		it("should successfully update an expense category", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				return {
 					doc: vi.fn().mockReturnValue({ id: "cat-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -99,7 +103,8 @@ describe("Expense Categories Integration Tests", () => {
 		});
 
 		it("should deactivate an expense category", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				return {
 					doc: vi.fn().mockReturnValue({ id: "cat-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -144,6 +149,7 @@ describe("Expense Categories Integration Tests", () => {
 
 		it("should return 409 when creating a category with a duplicate name", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "expense_categories") {
 					return {
 						where: vi.fn().mockReturnThis(),
@@ -172,7 +178,8 @@ describe("Expense Categories Integration Tests", () => {
 		});
 
 		it("should return 400 when updating without editReason", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				return {
 					doc: vi.fn().mockReturnValue({ id: "cat-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
@@ -193,7 +200,8 @@ describe("Expense Categories Integration Tests", () => {
 		});
 
 		it("should return 404 when updating a non-existent category", async () => {
-			vi.mocked(db.collection).mockImplementation((_path: string) => {
+			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				return {
 					doc: vi.fn().mockReturnValue({ id: "nonexistent" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

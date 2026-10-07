@@ -2,6 +2,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./setupTests.js";
 import app from "../app.js";
+import { memberUsersCollection } from "./setupTests.js";
 
 const { db } = await import("../firebase.js");
 
@@ -15,6 +16,7 @@ describe("Credits Integration Tests", () => {
 	describe("Golden Path (Success Scenarios)", () => {
 		it("should successfully list credits", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "credits") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
@@ -355,6 +357,7 @@ describe("Credits Integration Tests", () => {
 
 		it("returns 500 when listing credits crashes", async () => {
 			vi.mocked(db.collection).mockImplementation((path: string) => {
+				if (path === "users") return memberUsersCollection();
 				if (path === "credits") {
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					const chainable: any = {
