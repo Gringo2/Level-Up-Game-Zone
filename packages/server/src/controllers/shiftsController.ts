@@ -11,6 +11,11 @@ import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { logger } from "../utils/logger.js";
 import { safeErrorMessage } from "../utils/safeError.js";
+import {
+	addDaysToShopDate,
+	shopDateString,
+	shopDayEnd,
+} from "../utils/shopTime.js";
 
 export const listShifts = async (req: AuthRequest, res: Response) => {
 	try {
@@ -49,15 +54,12 @@ const autoLabelStaleShifts = async () => {
 			.collection(COLLECTIONS.SHIFTS)
 			.where("status", "==", SHIFT_STATUSES.OPEN)
 			.get();
-		const now = new Date();
-		// Local calendar date (YYYY-MM-DD)
-		const todayDateString = now.toLocaleDateString("en-CA");
+		// TD-065: the business day is the shop's (UTC+3), never the host's.
+		const todayDateString = shopDateString(new Date());
 
 		for (const doc of openShiftsSnap.docs) {
 			const shift = doc.data();
-			const shiftStartDateString = new Date(
-				shift.start_time,
-			).toLocaleDateString("en-CA");
+			const shiftStartDateString = shopDateString(new Date(shift.start_time));
 			if (shiftStartDateString !== todayDateString) {
 				await doc.ref.update({ status: SHIFT_STATUSES.MISSED });
 			}
@@ -152,6 +154,21 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 		}
 
 		const startTime = initialShiftData.start_time;
+		// TD-066: a MISSED shift is closed late, so its totals stop at the end of
+		// its own shop day instead of swallowing every later day's entries.
+		const windowEnd =
+			initialShiftData.status === SHIFT_STATUSES.MISSED
+				? shopDayEnd(shopDateString(new Date(startTime)))
+				: null;
+		const inShiftWindow = (collection: string) => {
+			let query: FirebaseFirestore.Query = db
+				.collection(collection)
+				.where("date", ">=", startTime);
+			if (windowEnd) {
+				query = query.where("date", "<=", windowEnd.toISOString());
+			}
+			return query.get();
+		};
 
 		// Fetch dependent data securely on the backend
 		const [
@@ -161,17 +178,11 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 			expensesSnap,
 			sportsBettingSnap,
 		] = await Promise.all([
-			db
-				.collection(COLLECTIONS.GAME_SALES_LOGS)
-				.where("date", ">=", startTime)
-				.get(),
-			db.collection(COLLECTIONS.KENO_LOGS).where("date", ">=", startTime).get(),
-			db.collection(COLLECTIONS.CREDITS).where("date", ">=", startTime).get(),
-			db.collection(COLLECTIONS.EXPENSES).where("date", ">=", startTime).get(),
-			db
-				.collection(COLLECTIONS.SPORTS_BETTING_LOGS)
-				.where("date", ">=", startTime)
-				.get(),
+			inShiftWindow(COLLECTIONS.GAME_SALES_LOGS),
+			inShiftWindow(COLLECTIONS.KENO_LOGS),
+			inShiftWindow(COLLECTIONS.CREDITS),
+			inShiftWindow(COLLECTIONS.EXPENSES),
+			inShiftWindow(COLLECTIONS.SPORTS_BETTING_LOGS),
 		]);
 
 		const totalGameSales = gameSalesSnap.docs.reduce(
@@ -243,7 +254,9 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 				}
 
 				updateData = {
-					end_time: new Date().toISOString(),
+					end_time: windowEnd
+						? windowEnd.toISOString()
+						: new Date().toISOString(),
 					actual_cash_counted: Number(actualCashCounted),
 					expected_cash_calculated: expectedCash,
 					variance: variance,
@@ -264,9 +277,7 @@ export const closeShift = async (req: AuthRequest, res: Response) => {
 						opening_float: shiftData.opening_float,
 					},
 					new_value: updateData,
-					reason_for_change: shortageReason
-						? `Closed shift (${shortageReason})`
-						: "Closed shift",
+					reason_for_change: `${windowEnd ? "Resolved missed shift" : "Closed shift"}${shortageReason ? ` (${shortageReason})` : ""}`,
 					user_id: user?.uid || SYSTEM_IDENTITY.USER_ID,
 					timestamp: new Date().toISOString(),
 				});
@@ -376,18 +387,15 @@ export const getMissedData = async (_req: AuthRequest, res: Response) => {
 		const gapDates: string[] = [];
 		if (!lastShiftSnap.empty) {
 			const lastShift = lastShiftSnap.docs[0].data();
-			const lastShiftDate = new Date(lastShift.start_time);
-			const today = new Date();
+			const todayShopDate = shopDateString(new Date());
+			let checkDate = addDaysToShopDate(
+				shopDateString(new Date(lastShift.start_time)),
+				1,
+			);
 
-			const checkDate = new Date(lastShiftDate);
-			checkDate.setDate(checkDate.getDate() + 1);
-
-			while (
-				checkDate.toLocaleDateString("en-CA") <
-				today.toLocaleDateString("en-CA")
-			) {
-				gapDates.push(checkDate.toLocaleDateString("en-CA"));
-				checkDate.setDate(checkDate.getDate() + 1);
+			while (checkDate < todayShopDate) {
+				gapDates.push(checkDate);
+				checkDate = addDaysToShopDate(checkDate, 1);
 			}
 		}
 
@@ -438,7 +446,7 @@ export const autoOpenShift = async (req: AuthRequest, res: Response) => {
 
 	try {
 		// D4: same-business-day guard — query closed shifts from the last 24 h
-		// and compare local calendar dates (matching the pattern in autoLabelStaleShifts).
+		// and compare shop calendar dates (matching autoLabelStaleShifts).
 		const oneDayAgo = new Date();
 		oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
@@ -448,13 +456,10 @@ export const autoOpenShift = async (req: AuthRequest, res: Response) => {
 			.where("start_time", ">=", oneDayAgo.toISOString())
 			.get();
 
-		const todayDateString = new Date().toLocaleDateString("en-CA");
+		const todayDateString = shopDateString(new Date());
 		const closedToday = recentClosedSnap.docs.some((doc) => {
 			const shift = doc.data() as { start_time: string };
-			return (
-				new Date(shift.start_time).toLocaleDateString("en-CA") ===
-				todayDateString
-			);
+			return shopDateString(new Date(shift.start_time)) === todayDateString;
 		});
 
 		if (closedToday) {

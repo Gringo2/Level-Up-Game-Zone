@@ -468,3 +468,73 @@ describe("ShiftContext - skipAutoOpen (refetchShift path)", () => {
 		expect(autoOpenCalls).toHaveLength(0);
 	});
 });
+
+describe("ShiftContext - missed shifts (M-133 / TD-066)", () => {
+	const MissedProbe = () => {
+		const { missedShifts, loadingShift } = useShift();
+		if (loadingShift) return <div>Loading...</div>;
+		return <div data-testid="missed-count">{missedShifts.length}</div>;
+	};
+	const respond = (missedShifts: unknown[]) =>
+		vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+			const body = url.includes("/missed")
+				? { missedShifts, gapDates: [] }
+				: init?.method === "POST"
+					? {
+							id: "auto",
+							status: "OPEN",
+							start_time: "2026-10-08T05:00:00.000Z",
+						}
+					: [];
+			return Promise.resolve(
+				new Response(JSON.stringify(body), {
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				}),
+			);
+		});
+
+	beforeEach(() => {
+		vi.mocked(useAuth).mockReturnValue({
+			user: {
+				uid: "123",
+				email: "manager@example.com",
+				displayName: "Manager",
+				role: "manager",
+			},
+			loading: false,
+		});
+	});
+
+	it("exposes the missed shifts from /api/shifts/missed and does not auto-open", async () => {
+		global.fetch = respond([
+			{ id: "m1", status: "MISSED", start_time: "2026-10-05T06:00:00.000Z" },
+		]);
+		render(
+			<ShiftProvider>
+				<MissedProbe />
+			</ShiftProvider>,
+		);
+		await waitFor(() =>
+			expect(screen.getByTestId("missed-count")).toHaveTextContent("1"),
+		);
+		const posts = vi
+			.mocked(global.fetch)
+			.mock.calls.filter(
+				([, init]) => (init as RequestInit | undefined)?.method === "POST",
+			);
+		expect(posts).toHaveLength(0);
+	});
+
+	it("exposes none (and may auto-open) when nothing is missed", async () => {
+		global.fetch = respond([]);
+		render(
+			<ShiftProvider>
+				<MissedProbe />
+			</ShiftProvider>,
+		);
+		await waitFor(() =>
+			expect(screen.getByTestId("missed-count")).toHaveTextContent("0"),
+		);
+	});
+});

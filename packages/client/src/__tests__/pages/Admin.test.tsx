@@ -65,10 +65,19 @@ const rate2 = {
 
 const rates = [rate, rate2];
 
+const adminUser = {
+	uid: "u-admin",
+	displayName: "Admin User",
+	role: "admin" as const,
+	email: "admin@gamezone.com",
+};
+
 describe("Admin", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		window.scrollTo = vi.fn();
+		// M-133 / TD-059: rate and employee controls are admin-only.
+		vi.mocked(useAuth).mockReturnValue({ user: adminUser, loading: false });
 	});
 
 	afterEach(() => {
@@ -479,7 +488,11 @@ describe("Admin", () => {
 		fireEvent.click(screen.getByText("Add Rate"));
 
 		await waitFor(() => {
-			expect(fetchMock).toHaveBeenCalledTimes(2);
+			expect(
+				fetchMock.mock.calls.some(
+					([, init]) => (init as RequestInit)?.method === "POST",
+				),
+			).toBe(true);
 		});
 
 		const postInit = fetchMock.mock.calls.find(
@@ -526,7 +539,11 @@ describe("Admin", () => {
 		fireEvent.click(screen.getByText("Save Changes"));
 
 		await waitFor(() => {
-			expect(fetchMock).toHaveBeenCalledTimes(2);
+			expect(
+				fetchMock.mock.calls.some(
+					([, init]) => (init as RequestInit)?.method === "PUT",
+				),
+			).toBe(true);
 		});
 
 		const putInit = fetchMock.mock.calls.find(
@@ -1117,6 +1134,56 @@ describe("Admin", () => {
 			const matchOption = screen.getByRole("option", { name: "Per Match" });
 			expect(matchOption).toBeInTheDocument();
 			expect(matchOption).toHaveValue("Match");
+		});
+	});
+	describe("role gating (M-133 / TD-059)", () => {
+		const stubRates = () =>
+			vi.stubGlobal(
+				"fetch",
+				vi.fn((url: string) =>
+					String(url).includes("expense-categories")
+						? jsonResponse([])
+						: jsonResponse(rates),
+				),
+			);
+
+		it("a manager sees categories and rates read-only, with no admin-only controls", async () => {
+			vi.mocked(useAuth).mockReturnValue({
+				user: { ...adminUser, uid: "u-mgr", role: "manager" as const },
+				loading: false,
+			});
+			stubRates();
+			render(<Admin />);
+			await waitFor(() => expect(screen.getByText("PS4")).toBeInTheDocument());
+
+			expect(screen.getByText("Manage Categories")).toBeInTheDocument();
+			expect(screen.getByText("Current Rates")).toBeInTheDocument();
+			expect(screen.queryByText("Add Game Rate")).not.toBeInTheDocument();
+			expect(screen.queryByText("Add Store Employee")).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: "Edit" }),
+			).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: "Deactivate" }),
+			).not.toBeInTheDocument();
+			expect(
+				screen.queryByRole("button", { name: "Activate" }),
+			).not.toBeInTheDocument();
+		});
+
+		it("an admin sees every control", async () => {
+			stubRates();
+			render(<Admin />);
+			await waitFor(() => expect(screen.getByText("PS4")).toBeInTheDocument());
+
+			expect(screen.getByText("Add Game Rate")).toBeInTheDocument();
+			expect(screen.getByText("Add Store Employee")).toBeInTheDocument();
+			expect(
+				screen.getAllByRole("button", { name: "Edit" }).length,
+			).toBeGreaterThan(0);
+			expect(
+				screen.getByRole("button", { name: "Deactivate" }),
+			).toBeInTheDocument();
 		});
 	});
 });

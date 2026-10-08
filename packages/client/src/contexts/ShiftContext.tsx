@@ -13,12 +13,15 @@ import { useAuth } from "./AuthContext";
 
 interface ShiftContextType {
 	activeShift: Shift | null;
+	// TD-066: shifts left open past their shop day, waiting to be closed.
+	missedShifts: Shift[];
 	loadingShift: boolean;
 	refetchShift: () => Promise<void>;
 }
 
 const ShiftContext = createContext<ShiftContextType>({
 	activeShift: null,
+	missedShifts: [],
 	loadingShift: true,
 	refetchShift: async () => {},
 });
@@ -26,12 +29,14 @@ const ShiftContext = createContext<ShiftContextType>({
 export function ShiftProvider({ children }: { children: React.ReactNode }) {
 	const { user } = useAuth();
 	const [activeShift, setActiveShift] = useState<Shift | null>(null);
+	const [missedShifts, setMissedShifts] = useState<Shift[]>([]);
 	const [loadingShift, setLoadingShift] = useState(true);
 
 	const loadActiveShift = useCallback(
 		async (skipAutoOpen = false) => {
 			if (!user) {
 				setActiveShift(null);
+				setMissedShifts([]);
 				setLoadingShift(false);
 				return;
 			}
@@ -50,7 +55,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 				// ACP-011: getMissedData is now read-only.
 				// Consume missedShifts and gapDates to guard the auto-open call below.
 				const missedPayload = (await safeJson(missedRes)) as {
-					missedShifts: unknown[];
+					missedShifts: Shift[];
 					gapDates: string[];
 				};
 				const hasGaps = (missedPayload.gapDates ?? []).length > 0;
@@ -85,10 +90,12 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 				}
 
 				setActiveShift(openShift);
+				setMissedShifts(missedPayload.missedShifts ?? []);
 				setLoadingShift(false);
 			} catch (err) {
 				console.error("Error fetching shift:", err);
 				setActiveShift(null);
+				setMissedShifts([]);
 				setLoadingShift(false);
 			}
 		},
@@ -103,6 +110,7 @@ export function ShiftProvider({ children }: { children: React.ReactNode }) {
 		<ShiftContext.Provider
 			value={{
 				activeShift,
+				missedShifts,
 				loadingShift,
 				refetchShift: () => loadActiveShift(true),
 			}}

@@ -1,33 +1,38 @@
 import { COLLECTIONS, CREDIT_STATUSES } from "@level-up/shared";
 import type { Response } from "express";
+import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../firebase.js";
 import type { AuthRequest } from "../middleware/auth.js";
 import { resolvePagination, sendList } from "../utils/list.js";
 import { logger } from "../utils/logger.js";
 import { safeErrorMessage } from "../utils/safeError.js";
+import { resolveEntryDate } from "../utils/shopTime.js";
 
 export const listCredits = async (req: AuthRequest, res: Response) => {
 	try {
-		const { startDate, endDate, employee_id } = req.query as {
+		const { startDate, endDate, employee_id, dateField } = req.query as {
 			startDate?: string;
 			endDate?: string;
 			employee_id?: string;
+			dateField?: "date" | "resolved_date";
 		};
+		// TD-067: payroll asks for credits by the date they were deducted.
+		const rangeField = dateField === "resolved_date" ? "resolved_date" : "date";
 
 		let query: FirebaseFirestore.Query = db.collection(COLLECTIONS.CREDITS);
 
 		if (startDate) {
-			query = query.where("date", ">=", startDate);
+			query = query.where(rangeField, ">=", startDate);
 		}
 		if (endDate) {
-			query = query.where("date", "<=", endDate);
+			query = query.where(rangeField, "<=", endDate);
 		}
 		if (employee_id) {
 			query = query.where("employee_id", "==", employee_id);
 		}
 
 		const pagination = resolvePagination(req.query);
-		let ordered = query.orderBy("date", "desc");
+		let ordered = query.orderBy(rangeField, "desc");
 		if (pagination.limit !== undefined) {
 			if (pagination.cursor) {
 				const cursorDoc = await db
@@ -54,6 +59,15 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 	const { employee_id, employee_name, amount, reason, date } = req.body;
 
 	try {
+		// TD-069: a credit must belong to an existing, active employee.
+		const employeeSnap = await db
+			.collection(COLLECTIONS.EMPLOYEES)
+			.doc(employee_id)
+			.get();
+		if (!employeeSnap.exists || employeeSnap.data()?.isActive === false) {
+			return res.status(400).json({ error: "Invalid employee" });
+		}
+
 		const userDoc = await db.collection(COLLECTIONS.USERS).doc(user.uid).get();
 		const displayName = userDoc.exists
 			? userDoc.data()?.displayName
@@ -66,11 +80,12 @@ export const createCredit = async (req: AuthRequest, res: Response) => {
 			employee_id,
 			employee_name,
 			amount: parseFloat(amount),
-			reason,
+			// TD-064: Firestore rejects undefined values; omit the key instead.
+			...(reason !== undefined && { reason }),
 			status: CREDIT_STATUSES.PENDING,
 			user_id: user.uid,
 			...(displayName && { user_name: displayName }),
-			date: date ? new Date(date).toISOString() : new Date().toISOString(),
+			date: resolveEntryDate(date),
 		};
 
 		await db.runTransaction(
@@ -125,17 +140,31 @@ export const updateCredit = async (req: AuthRequest, res: Response) => {
 				if (reason !== undefined) newValues.reason = reason;
 				if (status !== undefined) {
 					newValues.status = status;
-					newValues.resolved_date = new Date().toISOString();
+					// TD-069: only settled credits carry a resolved date.
+					newValues.resolved_date =
+						status === CREDIT_STATUSES.PENDING
+							? FieldValue.delete()
+							: new Date().toISOString();
 				}
 
 				transaction.update(docRef, newValues);
+
+				// A delete sentinel is illegal inside set() (M-66 precedent): record
+				// the converged post-edit shape instead.
+				const newValueForAudit: Record<string, unknown> = {
+					...oldDoc,
+					...newValues,
+				};
+				if (newValues.resolved_date instanceof FieldValue) {
+					delete newValueForAudit.resolved_date;
+				}
 
 				transaction.set(auditRef, {
 					action: "UPDATE",
 					table_affected: "credits",
 					record_id: id,
 					old_value: oldDoc,
-					new_value: { ...oldDoc, ...newValues },
+					new_value: newValueForAudit,
 					reason_for_change: editReason,
 					user_id: user.uid,
 					timestamp: new Date().toISOString(),

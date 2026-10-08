@@ -68,6 +68,17 @@ describe("Credits Integration Tests", () => {
 						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
 					} as any;
 				}
+				if (path === "employees") {
+					return {
+						doc: vi.fn().mockReturnValue({
+							get: vi.fn().mockResolvedValue({
+								exists: true,
+								data: () => ({ name: "John Doe", isActive: true }),
+							}),
+						}),
+						// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any
+					} as any;
+				}
 				return {
 					doc: vi.fn().mockReturnValue({ id: "new-credit-123" }),
 					// biome-ignore lint/suspicious/noExplicitAny: Mocking firestore objects requires any

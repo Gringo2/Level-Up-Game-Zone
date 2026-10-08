@@ -274,6 +274,10 @@ export function GameSales() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!entryDate) {
+			toast.error("Please choose a date.");
+			return;
+		}
 		if (!selectedRate || !quantity || !user) return;
 
 		const parsedQuantityValue = parseSalesQuantityInput(quantity);
@@ -379,67 +383,73 @@ export function GameSales() {
 							Please add your PS4 and Pool rates before logging sales.
 						</span>
 					</div>
-					<Button
-						size="sm"
-						variant="outline"
-						className="bg-white whitespace-nowrap"
-						disabled={loadingDefaults}
-						onClick={async () => {
-							try {
-								setLoadingDefaults(true);
+					{user?.role === ROLES.ADMIN ? (
+						<Button
+							size="sm"
+							variant="outline"
+							className="bg-white whitespace-nowrap"
+							disabled={loadingDefaults}
+							onClick={async () => {
+								try {
+									setLoadingDefaults(true);
 
-								const [res1, res2] = await Promise.all([
-									authFetch(`${API_BASE}/api/rates`, {
-										method: "POST",
-										headers: {
-											"Content-Type": "application/json",
-										},
-										body: JSON.stringify({
-											game_name: DEFAULT_GAME_RATES[0].game_name,
-											price_per_unit: DEFAULT_GAME_RATES[0].price_per_unit,
-											unit_type: DEFAULT_GAME_RATES[0].unit_type,
-											isActive: true,
+									const [res1, res2] = await Promise.all([
+										authFetch(`${API_BASE}/api/rates`, {
+											method: "POST",
+											headers: {
+												"Content-Type": "application/json",
+											},
+											body: JSON.stringify({
+												game_name: DEFAULT_GAME_RATES[0].game_name,
+												price_per_unit: DEFAULT_GAME_RATES[0].price_per_unit,
+												unit_type: DEFAULT_GAME_RATES[0].unit_type,
+												isActive: true,
+											}),
 										}),
-									}),
-									authFetch(`${API_BASE}/api/rates`, {
-										method: "POST",
-										headers: {
-											"Content-Type": "application/json",
-										},
-										body: JSON.stringify({
-											game_name: DEFAULT_GAME_RATES[1].game_name,
-											price_per_unit: DEFAULT_GAME_RATES[1].price_per_unit,
-											unit_type: DEFAULT_GAME_RATES[1].unit_type,
-											isActive: true,
+										authFetch(`${API_BASE}/api/rates`, {
+											method: "POST",
+											headers: {
+												"Content-Type": "application/json",
+											},
+											body: JSON.stringify({
+												game_name: DEFAULT_GAME_RATES[1].game_name,
+												price_per_unit: DEFAULT_GAME_RATES[1].price_per_unit,
+												unit_type: DEFAULT_GAME_RATES[1].unit_type,
+												isActive: true,
+											}),
 										}),
-									}),
-								]);
+									]);
 
-								if (!res1.ok || !res2.ok) {
-									throw new Error("Failed to create rates");
+									if (!res1.ok || !res2.ok) {
+										throw new Error("Failed to create rates");
+									}
+
+									const [rate1, rate2] = await Promise.all([
+										safeJson<GameRate>(res1),
+										safeJson<GameRate>(res2),
+									]);
+
+									setRates((prev) => [...prev, rate1, rate2]);
+									toast.success("Default games configured!");
+								} catch (err: unknown) {
+									console.error(err);
+									toast.error(
+										err instanceof Error && err.message
+											? err.message
+											: "Failed to configure games",
+									);
+								} finally {
+									setLoadingDefaults(false);
 								}
-
-								const [rate1, rate2] = await Promise.all([
-									safeJson<GameRate>(res1),
-									safeJson<GameRate>(res2),
-								]);
-
-								setRates((prev) => [...prev, rate1, rate2]);
-								toast.success("Default games configured!");
-							} catch (err: unknown) {
-								console.error(err);
-								toast.error(
-									err instanceof Error && err.message
-										? err.message
-										: "Failed to configure games",
-								);
-							} finally {
-								setLoadingDefaults(false);
-							}
-						}}
-					>
-						+ Add Default Games
-					</Button>
+							}}
+						>
+							+ Add Default Games
+						</Button>
+					) : (
+						<span className="text-sm font-medium">
+							Ask an admin to add them.
+						</span>
+					)}
 				</div>
 			)}
 

@@ -6,6 +6,7 @@ import type { AuthRequest } from "../middleware/auth.js";
 import { resolvePagination, sendList } from "../utils/list.js";
 import { logger } from "../utils/logger.js";
 import { safeErrorMessage } from "../utils/safeError.js";
+import { resolveEntryDate } from "../utils/shopTime.js";
 
 export const listKenoLogs = async (req: AuthRequest, res: Response) => {
 	try {
@@ -64,7 +65,7 @@ export const createKeno = async (req: AuthRequest, res: Response) => {
 			net_profit: parseFloat(net_profit),
 			user_id: user.uid,
 			...(displayName && { user_name: displayName }),
-			date: date ? new Date(date).toISOString() : new Date().toISOString(),
+			date: resolveEntryDate(date),
 			verified: role === ROLES.MANAGER || role === ROLES.ADMIN,
 		};
 

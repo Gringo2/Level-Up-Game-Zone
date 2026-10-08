@@ -155,12 +155,14 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([shift]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([creditLog]))
 			.mockResolvedValueOnce(jsonResponse([expenseLog]))
-			.mockResolvedValueOnce(jsonResponse([]));
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([creditLog]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -197,13 +199,15 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(
 				jsonResponse([creditLog, pendingCreditLog, resolvedCreditLog]),
 			)
 			.mockResolvedValueOnce(jsonResponse([expenseLog]))
-			.mockResolvedValueOnce(jsonResponse([]));
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([creditLog]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -234,6 +238,7 @@ describe("Reports", () => {
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([])),
 		);
 
@@ -257,6 +262,7 @@ describe("Reports", () => {
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([])),
 		);
 
@@ -276,12 +282,14 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([shift]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([creditLog]))
 			.mockResolvedValueOnce(jsonResponse([expenseLog]))
-			.mockResolvedValueOnce(jsonResponse([]));
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([creditLog]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -298,7 +306,8 @@ describe("Reports", () => {
 		fireEvent.click(screen.getByText("Apply"));
 
 		await waitFor(() => {
-			expect(fetchMock).toHaveBeenCalledTimes(12);
+			// two loads x seven requests (six ranges + deductions by deduction date)
+			expect(fetchMock).toHaveBeenCalledTimes(14);
 		});
 	});
 
@@ -307,6 +316,7 @@ describe("Reports", () => {
 			"fetch",
 			vi
 				.fn()
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
@@ -346,7 +356,9 @@ describe("Reports", () => {
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([kenoLog, netOnlyKenoLog]))
+				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([]))
 				.mockResolvedValueOnce(jsonResponse([])),
@@ -412,7 +424,9 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([s1, s2, s3]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
@@ -474,6 +488,8 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
@@ -504,7 +520,8 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([creditLog]))
 			.mockResolvedValueOnce(jsonResponse([expenseLog]))
-			.mockResolvedValueOnce(jsonResponse([]));
+			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([creditLog]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -531,11 +548,13 @@ describe("Reports", () => {
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
+			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([salesLog]))
 			.mockResolvedValueOnce(jsonResponse([kenoLog]))
 			.mockResolvedValueOnce(jsonResponse([]))
 			.mockResolvedValueOnce(jsonResponse([]))
-			.mockResolvedValueOnce(jsonResponse([sportsBettingLog]));
+			.mockResolvedValueOnce(jsonResponse([sportsBettingLog]))
+			.mockResolvedValueOnce(jsonResponse([]));
 
 		vi.stubGlobal("fetch", fetchMock);
 
@@ -699,5 +718,87 @@ describe("Reports", () => {
 		const countNote = screen.getByText("Counted at shift closeouts");
 		expect(countNote).toHaveClass("text-zinc-500");
 		expect(countNote).not.toHaveClass("text-zinc-400");
+	});
+	describe("M-133 payroll attribution and presentation (TD-067, TD-069)", () => {
+		const route = (data: {
+			credits?: unknown[];
+			deducted?: unknown[];
+			keno?: unknown[];
+			shifts?: unknown[];
+		}) =>
+			vi.fn((url: string) => {
+				const u = String(url);
+				let body: unknown[] = [];
+				if (u.includes("/api/credits")) {
+					body = u.includes("dateField=resolved_date")
+						? (data.deducted ?? [])
+						: (data.credits ?? []);
+				} else if (u.includes("/api/shifts")) body = data.shifts ?? [];
+				else if (u.includes("/api/sales")) body = [salesLog];
+				else if (u.includes("/api/keno")) body = data.keno ?? [];
+				return Promise.resolve(jsonResponse(body));
+			});
+
+		it("fetches deducted credits by deduction date and pending credits by issue date", async () => {
+			const fetchMock = route({});
+			vi.stubGlobal("fetch", fetchMock);
+			render(<Reports />);
+			await screen.findAllByText("Net Profit");
+			const creditUrls = fetchMock.mock.calls
+				.map(([u]) => String(u))
+				.filter((u) => u.includes("/api/credits"));
+			expect(
+				creditUrls.filter((u) => u.includes("dateField=resolved_date")),
+			).toHaveLength(1);
+			expect(creditUrls.filter((u) => !u.includes("dateField"))).toHaveLength(
+				1,
+			);
+		});
+
+		it("counts deductions from the deduction-date list only, and pending from the issue-date list", async () => {
+			vi.stubGlobal(
+				"fetch",
+				route({
+					credits: [pendingCreditLog, { ...creditLog, id: "c9", amount: 60 }],
+					deducted: [{ ...creditLog, id: "c10", amount: 110 }],
+				}),
+			);
+			render(<Reports />);
+			await screen.findAllByText("Net Profit");
+			// payroll: 110 deducted in the period (the 60 was deducted outside it)
+			expect(screen.getAllByText("$110.00").length).toBeGreaterThan(0);
+			expect(screen.queryByText("$170.00")).not.toBeInTheDocument();
+			// net profit: sales 20 less the 10 pending credit
+			expect(screen.getAllByText("$10.00").length).toBeGreaterThan(0);
+		});
+
+		it("says which losing income is left out of the revenue mix", async () => {
+			vi.stubGlobal(
+				"fetch",
+				route({ keno: [{ ...kenoLog, net_profit: -23 }] }),
+			);
+			render(<Reports />);
+			await screen.findAllByText("Net Profit");
+			expect(screen.getByText(/not shown in the mix/i)).toHaveTextContent(
+				"Keno Net -$23.00",
+			);
+		});
+
+		it("shows no mix note when nothing is a net loss", async () => {
+			vi.stubGlobal("fetch", route({ keno: [kenoLog] }));
+			render(<Reports />);
+			await screen.findAllByText("Net Profit");
+			expect(
+				screen.queryByText(/not shown in the mix/i),
+			).not.toBeInTheDocument();
+		});
+
+		it("prints a negative average shift variance with the sign before the dollar", async () => {
+			vi.stubGlobal("fetch", route({ shifts: [{ ...shift, variance: -0.4 }] }));
+			render(<Reports />);
+			await screen.findByText("Avg Shift Variance");
+			expect(screen.getAllByText("-$0.40").length).toBeGreaterThan(0);
+			expect(screen.queryByText("$-0.40")).not.toBeInTheDocument();
+		});
 	});
 });

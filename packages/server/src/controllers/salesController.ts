@@ -6,6 +6,7 @@ import type { AuthRequest } from "../middleware/auth.js";
 import { resolvePagination, sendList } from "../utils/list.js";
 import { logger } from "../utils/logger.js";
 import { safeErrorMessage } from "../utils/safeError.js";
+import { resolveEntryDate } from "../utils/shopTime.js";
 
 export const listSales = async (req: AuthRequest, res: Response) => {
 	try {
@@ -81,7 +82,7 @@ export const createSale = async (req: AuthRequest, res: Response) => {
 			user_id: user.uid,
 			...(displayName && { user_name: displayName }),
 			...(rateData?.unit_type != null && { unit_type: rateData.unit_type }),
-			date: date ? new Date(date).toISOString() : new Date().toISOString(),
+			date: resolveEntryDate(date),
 		};
 
 		await db.runTransaction(
@@ -130,22 +131,35 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 					game_id?: string;
 					game_name?: string;
 					quantity_sold?: number;
+					rate_applied?: number;
 				};
 				const oldDoc = { id: docSnap.id, ...oldData };
 
-				// Server-authoritative math (TD-026 / M-76 A1): resolve the effective
-				// rate document and recompute — client-sent totals are ignored.
+				// Server-authoritative math (TD-026 / M-76 A1): client-sent totals and
+				// rates are ignored. TD-068: an edit keeps the rate the sale was made
+				// at; only choosing a different game applies that game's current rate.
 				const effectiveGameId =
 					(game_id !== undefined ? String(game_id) : oldDoc.game_id) ?? "";
-				const rateSnap = await db
-					.collection(COLLECTIONS.GAME_RATES)
-					.doc(effectiveGameId)
-					.get();
-				if (!rateSnap.exists) {
-					throw new Error("Invalid game");
+				const keepsStoredRate =
+					effectiveGameId === oldDoc.game_id &&
+					typeof oldDoc.rate_applied === "number" &&
+					Number.isFinite(oldDoc.rate_applied);
+
+				let price: number;
+				let rateData: Record<string, unknown> | undefined;
+				if (keepsStoredRate) {
+					price = oldDoc.rate_applied as number;
+				} else {
+					const rateSnap = await db
+						.collection(COLLECTIONS.GAME_RATES)
+						.doc(effectiveGameId)
+						.get();
+					if (!rateSnap.exists) {
+						throw new Error("Invalid game");
+					}
+					rateData = rateSnap.data();
+					price = parseFloat(String(rateData?.price_per_unit));
 				}
-				const rateData = rateSnap.data();
-				const price = parseFloat(rateData?.price_per_unit);
 				const quantity =
 					quantity_sold !== undefined
 						? parseFloat(quantity_sold)
@@ -154,14 +168,16 @@ export const updateSale = async (req: AuthRequest, res: Response) => {
 				// biome-ignore lint/suspicious/noExplicitAny: Firestore update payload
 				const newValues: Record<string, any> = {};
 				newValues.game_id = effectiveGameId;
-				newValues.game_name = rateData?.game_name ?? oldDoc.game_name;
 				if (quantity_sold !== undefined) newValues.quantity_sold = quantity;
 				newValues.rate_applied = price;
 				newValues.calculated_total = quantity * price;
-				newValues.unit_type =
-					rateData?.unit_type != null
-						? rateData.unit_type
-						: FieldValue.delete();
+				if (!keepsStoredRate) {
+					newValues.game_name = rateData?.game_name ?? oldDoc.game_name;
+					newValues.unit_type =
+						rateData?.unit_type != null
+							? rateData.unit_type
+							: FieldValue.delete();
+				}
 
 				transaction.update(docRef, newValues);
 

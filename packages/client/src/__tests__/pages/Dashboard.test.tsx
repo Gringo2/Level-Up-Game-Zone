@@ -113,6 +113,7 @@ describe("Dashboard", () => {
 			activeShift: shift,
 			loadingShift: false,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		window.print = vi.fn();
 		mockFetch.mockImplementation((url: string) => {
@@ -159,6 +160,7 @@ describe("Dashboard", () => {
 			activeShift: null,
 			loadingShift: true,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		render(<Dashboard />);
 		expect(document.querySelector(".animate-spin")).toBeInTheDocument();
@@ -170,6 +172,7 @@ describe("Dashboard", () => {
 			activeShift: null,
 			loadingShift: false,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		render(<Dashboard />);
 		expect(await screen.findByText("$60.00")).toBeInTheDocument();
@@ -443,6 +446,7 @@ describe("Dashboard", () => {
 			activeShift: null,
 			loadingShift: false,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		render(<Dashboard />);
 		expect(await screen.findByText("No Active Shift")).toBeInTheDocument();
@@ -456,6 +460,7 @@ describe("Dashboard", () => {
 			activeShift: null,
 			loadingShift: false,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/api/shifts") && !url.includes("/close")) {
@@ -499,6 +504,7 @@ describe("Dashboard", () => {
 			activeShift: null,
 			loadingShift: false,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		render(<Dashboard />);
 		await screen.findByText("No Active Shift");
@@ -522,6 +528,7 @@ describe("Dashboard", () => {
 			activeShift: null,
 			loadingShift: false,
 			refetchShift: refetchShiftMock,
+			missedShifts: [],
 		});
 		mockFetch.mockImplementation((url: string) => {
 			if (url.includes("/api/shifts")) {
@@ -896,5 +903,37 @@ describe("Dashboard", () => {
 
 		expect(formatUnitLabel(1, "Round")).toBe("Round");
 		expect(formatUnitLabel(2, "Round")).toBe("Rounds");
+	});
+	it("shows the missed-shift card when a forgotten shift exists (M-133 / TD-066)", async () => {
+		vi.mocked(useShift).mockReturnValue({
+			activeShift: null,
+			loadingShift: false,
+			refetchShift: refetchShiftMock,
+			missedShifts: [
+				{
+					id: "m1",
+					manager_id: "u1",
+					manager_name: "Mona Manager",
+					start_time: "2026-10-05T06:00:00.000Z",
+					opening_float: 100,
+					status: "MISSED",
+				},
+			],
+		});
+		render(<Dashboard />);
+		expect(
+			await screen.findByText(/missed shifts need closing/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Close missed shift" }),
+		).toBeInTheDocument();
+	});
+
+	it("does not show the missed-shift card when nothing is missed", async () => {
+		render(<Dashboard />);
+		await screen.findByText("Shift Management");
+		expect(
+			screen.queryByText(/missed shifts need closing/i),
+		).not.toBeInTheDocument();
 	});
 });

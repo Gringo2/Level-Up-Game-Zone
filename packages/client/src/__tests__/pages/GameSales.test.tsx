@@ -37,6 +37,19 @@ const managerUser = {
 	role: "manager" as const,
 };
 
+const adminUser = {
+	uid: "u0",
+	email: "admin@example.com",
+	displayName: "Admin",
+	role: "admin" as const,
+};
+const staffUser = {
+	uid: "u2",
+	email: "staff@example.com",
+	displayName: "Staff",
+	role: "staff" as const,
+};
+
 const rates = [
 	{
 		id: "rate-1",
@@ -184,6 +197,7 @@ describe("GameSales", () => {
 	});
 
 	it("shows the no-games banner and configures default games", async () => {
+		vi.mocked(useAuth).mockReturnValue({ user: adminUser, loading: false });
 		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
 			if (init?.method === "POST" && url.endsWith("/api/rates")) {
 				const body = JSON.parse(String(init.body || "{}"));
@@ -553,6 +567,7 @@ describe("GameSales", () => {
 	});
 
 	it("shows error toast when Add Default Games fails", async () => {
+		vi.mocked(useAuth).mockReturnValue({ user: adminUser, loading: false });
 		mockFetch.mockImplementation((url: string, init?: RequestInit) => {
 			if (url.endsWith("/api/rates")) {
 				if (init?.method === "POST") {
@@ -1014,5 +1029,37 @@ describe("GameSales", () => {
 		expect(timeEl).not.toBeNull();
 		expect(timeEl).toHaveClass("text-zinc-500");
 		expect(timeEl).not.toHaveClass("text-zinc-400");
+	});
+	describe("default-game seeding is admin-only (M-133 / TD-059)", () => {
+		const noRates = () =>
+			mockFetch.mockImplementation(() => Promise.resolve(jsonResponse([])));
+
+		it.each([
+			["manager", managerUser],
+			["staff", staffUser],
+		])(
+			"a %s is told to ask an admin instead of being offered the button",
+			async (_r, user) => {
+				vi.mocked(useAuth).mockReturnValue({ user, loading: false });
+				noRates();
+				render(<GameSales />);
+				expect(
+					await screen.findByText("No games configured!"),
+				).toBeInTheDocument();
+				expect(screen.getByText(/ask an admin/i)).toBeInTheDocument();
+				expect(
+					screen.queryByRole("button", { name: "+ Add Default Games" }),
+				).not.toBeInTheDocument();
+			},
+		);
+
+		it("an admin still gets the button", async () => {
+			vi.mocked(useAuth).mockReturnValue({ user: adminUser, loading: false });
+			noRates();
+			render(<GameSales />);
+			expect(
+				await screen.findByRole("button", { name: "+ Add Default Games" }),
+			).toBeInTheDocument();
+		});
 	});
 });

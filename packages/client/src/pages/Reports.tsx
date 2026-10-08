@@ -106,6 +106,8 @@ export function Reports() {
 	const [gameSales, setGameSales] = useState<GameSalesLog[]>([]);
 	const [kenoLogs, setKenoLogs] = useState<KenoLog[]>([]);
 	const [credits, setCredits] = useState<Credit[]>([]);
+	// TD-067: deductions are listed by the day they were deducted.
+	const [deductedCredits, setDeductedCredits] = useState<Credit[]>([]);
 	const [expenses, setExpenses] = useState<Expense[]>([]);
 	const [sportsBettingLogs, setSportsBettingLogs] = useState<
 		SportsBettingLog[]
@@ -135,6 +137,7 @@ export function Reports() {
 					creditsResponse,
 					expensesResponse,
 					bettingResponse,
+					deductedResponse,
 				] = await Promise.all([
 					authFetch(`${API_BASE}/api/shifts${queryParams}`),
 					authFetch(`${API_BASE}/api/sales${queryParams}`),
@@ -142,6 +145,9 @@ export function Reports() {
 					authFetch(`${API_BASE}/api/credits${queryParams}`),
 					authFetch(`${API_BASE}/api/expenses${queryParams}`),
 					authFetch(`${API_BASE}/api/sports-betting${queryParams}`),
+					authFetch(
+						`${API_BASE}/api/credits${queryParams}&dateField=resolved_date`,
+					),
 				]);
 
 				if (!shiftsResponse.ok) {
@@ -162,6 +168,9 @@ export function Reports() {
 				if (!bettingResponse.ok) {
 					throw new Error("Failed to fetch sports betting logs");
 				}
+				if (!deductedResponse.ok) {
+					throw new Error("Failed to fetch salary deductions");
+				}
 
 				const [
 					shiftsData,
@@ -170,6 +179,7 @@ export function Reports() {
 					creditsData,
 					expensesData,
 					bettingData,
+					deductedData,
 				] = await Promise.all([
 					safeJson<Shift[]>(shiftsResponse),
 					safeJson<GameSalesLog[]>(salesResponse),
@@ -177,6 +187,7 @@ export function Reports() {
 					safeJson<Credit[]>(creditsResponse),
 					safeJson<Expense[]>(expensesResponse),
 					safeJson<SportsBettingLog[]>(bettingResponse),
+					safeJson<Credit[]>(deductedResponse),
 				]);
 
 				if (!mounted) return;
@@ -185,6 +196,7 @@ export function Reports() {
 				setGameSales(salesData as GameSalesLog[]);
 				setKenoLogs(kenoData as KenoLog[]);
 				setCredits(creditsData as Credit[]);
+				setDeductedCredits(Array.isArray(deductedData) ? deductedData : []);
 				setExpenses(expensesData as Expense[]);
 				setSportsBettingLogs(Array.isArray(bettingData) ? bettingData : []);
 				setLoading(false);
@@ -270,6 +282,11 @@ export function Reports() {
 			value: totalSportsBettingNet > 0 ? totalSportsBettingNet : 0,
 		},
 	].filter((item) => item.value > 0);
+	// Losing days cannot be drawn in a pie, so say what is left out of it.
+	const excludedLosses = [
+		{ name: "Keno Net", value: totalKenoNet },
+		{ name: "Sports Betting", value: totalSportsBettingNet },
+	].filter((item) => item.value < 0);
 	const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
 	// Expense Breakdown
@@ -306,7 +323,7 @@ export function Reports() {
 		}
 	});
 
-	credits
+	deductedCredits
 		.filter((c) => c.status === CREDIT_STATUSES.DEDUCTED)
 		.forEach((c) => {
 			if (!staffData[c.employee_name])
@@ -473,7 +490,8 @@ export function Reports() {
 								<div
 									className={`text-2xl font-bold ${avgVariance < 0 ? "text-red-600" : avgVariance > 0 ? "text-emerald-600" : ""}`}
 								>
-									${avgVariance.toFixed(2)}
+									{avgVariance < 0 ? "-" : ""}$
+									{Math.abs(avgVariance).toFixed(2)}
 								</div>
 								<p className="text-xs text-zinc-500 mt-1">
 									Across {closedShifts.length} closed shifts
@@ -576,6 +594,14 @@ export function Reports() {
 									<div className="h-64 flex items-center justify-center text-zinc-500">
 										No revenue data
 									</div>
+								)}
+								{excludedLosses.length > 0 && (
+									<p className="text-xs text-zinc-500 mt-3 text-center">
+										Not shown in the mix (net loss):{" "}
+										{excludedLosses
+											.map((l) => `${l.name} -$${Math.abs(l.value).toFixed(2)}`)
+											.join(", ")}
+									</p>
 								)}
 								<div className="flex gap-4 mt-4 w-full justify-center">
 									{revenueMix.map((entry, index) => (
@@ -696,7 +722,8 @@ export function Reports() {
 														<td
 															className={`px-4 py-3 text-right ${data.variances < 0 ? "text-red-600 font-medium" : data.variances > 0 ? "text-emerald-600" : ""}`}
 														>
-															${data.variances.toFixed(2)}
+															{data.variances < 0 ? "-" : ""}$
+															{Math.abs(data.variances).toFixed(2)}
 															{data.shortageReasons.length > 0 && (
 																<div className="text-xs font-normal text-zinc-500 text-left mt-1">
 																	{data.shortageReasons.map((r) => (

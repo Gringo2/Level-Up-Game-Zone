@@ -279,6 +279,10 @@ export function Expenses() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!entryDate) {
+			toast.error("Please choose a date.");
+			return;
+		}
 		if (!itemName || !description || !amount || !user) return;
 
 		setLoading(true);

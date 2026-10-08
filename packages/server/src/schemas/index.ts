@@ -17,6 +17,17 @@ const nonNegativeNumber = (fieldName: string) =>
 			message: `${fieldName} cannot be negative`,
 		});
 
+// TD-069: a malformed business date is a client error (400), never a 500.
+const optionalDate = z
+	.string()
+	.optional()
+	.refine(
+		(value) => value === undefined || !Number.isNaN(new Date(value).getTime()),
+		{
+			message: "Date is not valid",
+		},
+	);
+
 const positiveNumber = (fieldName: string) =>
 	z.coerce
 		.number({ invalid_type_error: `${fieldName} must be a valid number` })
@@ -72,7 +83,7 @@ export const CreateSaleSchema = z.object({
 	game_name: z.string().trim().min(1, "Game name is required"),
 	quantity_sold: positiveNumber("Quantity sold"),
 	rate_applied: positiveNumber("Rate applied"),
-	date: z.string().optional(),
+	date: optionalDate,
 });
 
 export const UpdateSaleSchema = z
@@ -113,7 +124,7 @@ const rejectRetiredAndUnknownKeys = <T extends z.ZodRawShape>(shape: T) =>
 
 export const CreateKenoSchema = rejectRetiredAndUnknownKeys({
 	net_profit: finiteNumber("Net profit"),
-	date: z.string().optional(),
+	date: optionalDate,
 });
 
 export const UpdateKenoSchema = rejectRetiredAndUnknownKeys({
@@ -127,7 +138,7 @@ export const UpdateKenoSchema = rejectRetiredAndUnknownKeys({
 // Sports Betting Schemas
 export const CreateSportsBettingSchema = z.object({
 	net_profit: finiteNumber("Net profit"),
-	date: z.string().optional(),
+	date: optionalDate,
 });
 
 export const UpdateSportsBettingSchema = z.object({
@@ -145,6 +156,8 @@ export const DateRangeQuerySchema = z.object({
 
 export const CreditsQuerySchema = DateRangeQuerySchema.extend({
 	employee_id: z.string().optional(),
+	// TD-067: payroll filters deductions by when they were deducted.
+	dateField: z.enum(["date", "resolved_date"]).optional(),
 });
 
 export const CreateExpenseSchema = z
@@ -153,7 +166,7 @@ export const CreateExpenseSchema = z
 		description: z.string().trim().min(1, "Description is required"),
 		amount: positiveNumber("Amount").optional(),
 		category: z.string().trim().optional().default(DEFAULT_EXPENSE_CATEGORY),
-		date: z.string().optional(),
+		date: optionalDate,
 		quantity: z.coerce
 			.number()
 			.positive("Quantity must be greater than 0")
@@ -205,7 +218,7 @@ export const CreateCreditSchema = z.object({
 	employee_name: z.string().trim().min(1, "Employee name is required"),
 	amount: positiveNumber("Amount"),
 	reason: z.string().optional(),
-	date: z.string().optional(),
+	date: optionalDate,
 });
 
 export const UpdateCreditSchema = z.object({

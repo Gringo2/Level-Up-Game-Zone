@@ -184,6 +184,11 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 	const { id } = req.params;
 	const { role, editReason } = req.body;
 
+	// TD-069: nobody changes their own role (prevents locking out the last admin).
+	if (id === adminUser.uid) {
+		return res.status(400).json({ error: "You cannot change your own role" });
+	}
+
 	try {
 		const adminDoc = await db
 			.collection(COLLECTIONS.USERS)
@@ -205,6 +210,15 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 
 				const oldDoc = { uid: docSnap.id, ...docSnap.data() };
 
+				if (
+					role !== ROLES.ADMIN &&
+					ROOT_ADMIN_EMAILS.includes(
+						String(docSnap.data()?.email).toLowerCase(),
+					)
+				) {
+					throw new Error("Root admin accounts cannot be demoted");
+				}
+
 				transaction.update(docRef, { role });
 
 				transaction.set(auditRef, {
@@ -223,6 +237,9 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
 		return res.status(200).json({ message: "Role updated successfully" });
 	} catch (error: unknown) {
 		logger.error({ err: error }, "Error updating user role");
+		if ((error as Error).message === "Root admin accounts cannot be demoted") {
+			return res.status(400).json({ error: (error as Error).message });
+		}
 		return res.status(500).json({ error: safeErrorMessage(error) });
 	}
 };

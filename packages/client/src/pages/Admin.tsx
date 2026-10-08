@@ -66,6 +66,8 @@ export function Admin() {
 	const [submitLoading, setSubmitLoading] = useState(false);
 
 	const { user: currentUser } = useAuth();
+	// M-133 / TD-059: rates and employees are admin-only on the server.
+	const isAdmin = currentUser?.role === ROLES.ADMIN;
 	const [users, setUsers] = useState<AppUser[]>([]);
 	const [existingEmployees, setExistingEmployees] = useState<Employee[]>([]);
 	const [linkedUserUid, setLinkedUserUid] = useState<string>("");
@@ -461,67 +463,69 @@ export function Admin() {
 		<div className="space-y-6">
 			<h2 className="text-2xl font-bold tracking-tight">Admin Settings</h2>
 
-			<Card className="max-w-xl">
-				<form onSubmit={handleAddRate}>
-					<CardHeader>
-						<CardTitle>Add Game Rate</CardTitle>
-						<CardDescription>
-							Define pricing for games and tables.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="gameName">Game Name</Label>
-								<Input
-									id="gameName"
-									placeholder="e.g., PS4, Pool Table 1"
-									value={gameName}
-									onChange={(e) => setGameName(e.target.value)}
-									required
-								/>
+			{isAdmin && (
+				<Card className="max-w-xl">
+					<form onSubmit={handleAddRate}>
+						<CardHeader>
+							<CardTitle>Add Game Rate</CardTitle>
+							<CardDescription>
+								Define pricing for games and tables.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="gameName">Game Name</Label>
+									<Input
+										id="gameName"
+										placeholder="e.g., PS4, Pool Table 1"
+										value={gameName}
+										onChange={(e) => setGameName(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="price">Price ($)</Label>
+									<Input
+										id="price"
+										type="number"
+										step="0.01"
+										min="0"
+										value={price}
+										onChange={(e) => setPrice(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="unit">Unit</Label>
+									<select
+										id="unit"
+										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2"
+										value={unitType}
+										onChange={(e) =>
+											setUnitType(
+												e.target
+													.value as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
+											)
+										}
+									>
+										<option value={UNIT_TYPES.GAME}>Per Game</option>
+										<option value={UNIT_TYPES.MATCH}>Per Match</option>
+									</select>
+								</div>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="price">Price ($)</Label>
-								<Input
-									id="price"
-									type="number"
-									step="0.01"
-									min="0"
-									value={price}
-									onChange={(e) => setPrice(e.target.value)}
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="unit">Unit</Label>
-								<select
-									id="unit"
-									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2"
-									value={unitType}
-									onChange={(e) =>
-										setUnitType(
-											e.target
-												.value as (typeof UNIT_TYPES)[keyof typeof UNIT_TYPES],
-										)
-									}
-								>
-									<option value={UNIT_TYPES.GAME}>Per Game</option>
-									<option value={UNIT_TYPES.MATCH}>Per Match</option>
-								</select>
-							</div>
-						</div>
-					</CardContent>
-					<CardFooter>
-						<Button type="submit" disabled={loading || !gameName || !price}>
-							{loading ? (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							) : null}
-							Add Rate
-						</Button>
-					</CardFooter>
-				</form>
-			</Card>
+						</CardContent>
+						<CardFooter>
+							<Button type="submit" disabled={loading || !gameName || !price}>
+								{loading ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : null}
+								Add Rate
+							</Button>
+						</CardFooter>
+					</form>
+				</Card>
+			)}
 
 			<Card>
 				<CardHeader>
@@ -643,23 +647,25 @@ export function Admin() {
 												${rate.price_per_unit.toFixed(2)} / {rate.unit_type}
 											</div>
 										</div>
-										<div className="flex gap-2 shrink-0">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => startEdit(rate)}
-											>
-												<Pencil className="h-4 w-4 mr-1" />
-												Edit
-											</Button>
-											<Button
-												variant={rate.isActive ? "outline" : "secondary"}
-												size="sm"
-												onClick={() => toggleRateStatus(rate)}
-											>
-												{rate.isActive ? "Deactivate" : "Activate"}
-											</Button>
-										</div>
+										{isAdmin && (
+											<div className="flex gap-2 shrink-0">
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() => startEdit(rate)}
+												>
+													<Pencil className="h-4 w-4 mr-1" />
+													Edit
+												</Button>
+												<Button
+													variant={rate.isActive ? "outline" : "secondary"}
+													size="sm"
+													onClick={() => toggleRateStatus(rate)}
+												>
+													{rate.isActive ? "Deactivate" : "Activate"}
+												</Button>
+											</div>
+										)}
 									</div>
 								)}
 							</div>
@@ -819,127 +825,129 @@ export function Admin() {
 			</Card>
 
 			{/* Add Employee Form */}
-			<Card className="max-w-2xl">
-				<form onSubmit={handleAddEmployee}>
-					<CardHeader>
-						<CardTitle>Add Store Employee</CardTitle>
-						<CardDescription>
-							Register a staff member to enable clean credit logging and salary
-							deduction reporting.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="name">Full Name</Label>
-								<Input
-									id="name"
-									placeholder="e.g. John Doe"
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-									required
-								/>
+			{isAdmin && (
+				<Card className="max-w-2xl">
+					<form onSubmit={handleAddEmployee}>
+						<CardHeader>
+							<CardTitle>Add Store Employee</CardTitle>
+							<CardDescription>
+								Register a staff member to enable clean credit logging and
+								salary deduction reporting.
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="name">Full Name</Label>
+									<Input
+										id="name"
+										placeholder="e.g. John Doe"
+										value={name}
+										onChange={(e) => setName(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="position">Position / Role</Label>
+									<Input
+										id="position"
+										placeholder="e.g. Cashier, Floor Attendant"
+										value={position}
+										onChange={(e) => setPosition(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="baseSalary">Base Monthly Salary ($)</Label>
+									<Input
+										id="baseSalary"
+										type="number"
+										step="0.01"
+										min="0"
+										placeholder="e.g. 500.00"
+										value={baseSalary}
+										onChange={(e) => setBaseSalary(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="hiredDate">Date of Hiring</Label>
+									<Input
+										id="hiredDate"
+										type="date"
+										value={hiredDate}
+										onChange={(e) => setHiredDate(e.target.value)}
+										required
+									/>
+								</div>
+								<div className="space-y-2 md:col-span-2">
+									<Label htmlFor="breakDay">Break Day (Rest Day)</Label>
+									<select
+										id="breakDay"
+										value={breakDay || ""}
+										onChange={(e) =>
+											setBreakDay((e.target.value as BreakDay) || null)
+										}
+										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+									>
+										<option value="">None / Flexible</option>
+										<option value="Monday">Monday</option>
+										<option value="Tuesday">Tuesday</option>
+										<option value="Wednesday">Wednesday</option>
+										<option value="Thursday">Thursday</option>
+										<option value="Friday">Friday</option>
+										<option value="Saturday">Saturday</option>
+										<option value="Sunday">Sunday</option>
+									</select>
+								</div>
+								<div className="space-y-2 md:col-span-2">
+									<Label htmlFor="linkedUser">
+										Linked System Account (Optional)
+									</Label>
+									<select
+										id="linkedUser"
+										value={linkedUserUid}
+										onChange={(e) => setLinkedUserUid(e.target.value)}
+										className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
+									>
+										<option value="">None (Unlinked)</option>
+										{users.map((u) => {
+											const linkedEmp = existingEmployees.find(
+												(e) => e.isActive && e.user_uid === u.uid,
+											);
+											return (
+												<option
+													key={u.uid}
+													value={u.uid}
+													disabled={Boolean(linkedEmp)}
+												>
+													{u.displayName || u.email} ({u.role})
+													{linkedEmp
+														? ` — Already linked to ${linkedEmp.name}`
+														: ""}
+												</option>
+											);
+										})}
+									</select>
+									<p className="text-xs text-zinc-500">
+										Connecting a system login links active shift floats and
+										audit reporting directly to this store employee.
+									</p>
+								</div>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="position">Position / Role</Label>
-								<Input
-									id="position"
-									placeholder="e.g. Cashier, Floor Attendant"
-									value={position}
-									onChange={(e) => setPosition(e.target.value)}
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="baseSalary">Base Monthly Salary ($)</Label>
-								<Input
-									id="baseSalary"
-									type="number"
-									step="0.01"
-									min="0"
-									placeholder="e.g. 500.00"
-									value={baseSalary}
-									onChange={(e) => setBaseSalary(e.target.value)}
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="hiredDate">Date of Hiring</Label>
-								<Input
-									id="hiredDate"
-									type="date"
-									value={hiredDate}
-									onChange={(e) => setHiredDate(e.target.value)}
-									required
-								/>
-							</div>
-							<div className="space-y-2 md:col-span-2">
-								<Label htmlFor="breakDay">Break Day (Rest Day)</Label>
-								<select
-									id="breakDay"
-									value={breakDay || ""}
-									onChange={(e) =>
-										setBreakDay((e.target.value as BreakDay) || null)
-									}
-									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
-								>
-									<option value="">None / Flexible</option>
-									<option value="Monday">Monday</option>
-									<option value="Tuesday">Tuesday</option>
-									<option value="Wednesday">Wednesday</option>
-									<option value="Thursday">Thursday</option>
-									<option value="Friday">Friday</option>
-									<option value="Saturday">Saturday</option>
-									<option value="Sunday">Sunday</option>
-								</select>
-							</div>
-							<div className="space-y-2 md:col-span-2">
-								<Label htmlFor="linkedUser">
-									Linked System Account (Optional)
-								</Label>
-								<select
-									id="linkedUser"
-									value={linkedUserUid}
-									onChange={(e) => setLinkedUserUid(e.target.value)}
-									className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950"
-								>
-									<option value="">None (Unlinked)</option>
-									{users.map((u) => {
-										const linkedEmp = existingEmployees.find(
-											(e) => e.isActive && e.user_uid === u.uid,
-										);
-										return (
-											<option
-												key={u.uid}
-												value={u.uid}
-												disabled={Boolean(linkedEmp)}
-											>
-												{u.displayName || u.email} ({u.role})
-												{linkedEmp
-													? ` — Already linked to ${linkedEmp.name}`
-													: ""}
-											</option>
-										);
-									})}
-								</select>
-								<p className="text-xs text-zinc-500">
-									Connecting a system login links active shift floats and audit
-									reporting directly to this store employee.
-								</p>
-							</div>
-						</div>
-						<Button
-							type="submit"
-							disabled={submitLoading || !name || !position}
-						>
-							{submitLoading ? (
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-							) : null}
-							Add Employee
-						</Button>
-					</CardContent>
-				</form>
-			</Card>
+							<Button
+								type="submit"
+								disabled={submitLoading || !name || !position}
+							>
+								{submitLoading ? (
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								) : null}
+								Add Employee
+							</Button>
+						</CardContent>
+					</form>
+				</Card>
+			)}
 		</div>
 	);
 }

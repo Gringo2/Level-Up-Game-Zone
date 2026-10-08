@@ -72,6 +72,12 @@ export const ROOT_ADMIN_EMAILS: string[] = (() => {
 	return ["bezueyob3@gmail.com", "jobsbezu@gmail.com"];
 })();
 
+// ── Shop Time ────────────────────────────────────────────────────────────────
+// The shop's business day. Africa/Addis_Ababa is UTC+3 with no DST, so the
+// fixed offset is exact. Server and client must both use this, never the host timezone.
+export const SHOP_TIMEZONE = "Africa/Addis_Ababa";
+export const SHOP_UTC_OFFSET = "+03:00";
+
 // ── Server Constants ─────────────────────────────────────────────────────────
 export const VARIANCE_THRESHOLD_FOR_EXPLANATION = 2;
 

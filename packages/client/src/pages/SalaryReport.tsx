@@ -22,6 +22,23 @@ import {
 	getShopYesterdayString,
 } from "../lib/dateUtils";
 
+// TD-067: a credit counts in payroll on the day it was deducted. Older records
+// without a deduction date fall back to the day they were issued.
+const deductionDate = (credit: Credit): string =>
+	credit.resolved_date ?? credit.date;
+
+// Base salary is a monthly figure, so Net Payable only means something for a
+// whole calendar month (M-133 / ACP-041).
+const isFullMonth = (from: string, to: string): boolean => {
+	const [year, month, day] = from.split("-").map(Number);
+	if (day !== 1) return false;
+	const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+	return (
+		to ===
+		`${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
+	);
+};
+
 export function SalaryReport() {
 	const [credits, setCredits] = useState<Credit[]>([]);
 	const [employees, setEmployees] = useState<Employee[]>([]);
@@ -56,7 +73,10 @@ export function SalaryReport() {
 				const queryParams = `?startDate=${encodeURIComponent(startIso)}&endDate=${encodeURIComponent(endIso)}`;
 
 				const [creditsResponse, employeesResponse] = await Promise.all([
-					authFetch(`${API_BASE}/api/credits${queryParams}`),
+					// TD-067: payroll follows when a credit was deducted, not when it was issued.
+					authFetch(
+						`${API_BASE}/api/credits${queryParams}&dateField=resolved_date`,
+					),
 					authFetch(`${API_BASE}/api/employees`),
 				]);
 
@@ -185,6 +205,12 @@ export function SalaryReport() {
 											? "This week's net salary calculations and itemized IOU deductions for store staff."
 											: "Net salary calculations and itemized IOU deductions for store staff."}
 					</p>
+					{!isFullMonth(appliedStartDate, appliedEndDate) && (
+						<p className="text-xs text-zinc-500">
+							Base salary is a monthly figure. Net Payable is only meaningful
+							for a full calendar month.
+						</p>
+					)}
 				</div>
 				<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
 					<div className="flex items-center gap-2 w-full sm:w-auto flex-1 sm:flex-none">
@@ -419,8 +445,8 @@ export function SalaryReport() {
 														{empCredits
 															.sort(
 																(a, b) =>
-																	new Date(b.date).getTime() -
-																	new Date(a.date).getTime(),
+																	new Date(deductionDate(b)).getTime() -
+																	new Date(deductionDate(a)).getTime(),
 															)
 															.map((c) => (
 																<div
@@ -428,7 +454,10 @@ export function SalaryReport() {
 																	className="flex justify-between text-xs p-1.5 bg-red-50/50 rounded border border-red-100"
 																>
 																	<span className="text-zinc-600">
-																		{format(new Date(c.date), "MMM d, yyyy")}
+																		{format(
+																			new Date(deductionDate(c)),
+																			"MMM d, yyyy",
+																		)}
 																	</span>
 																	{c.reason && (
 																		<span className="text-zinc-500 truncate px-1">
@@ -490,7 +519,10 @@ export function SalaryReport() {
 														className="flex justify-between text-xs p-1.5 bg-white rounded border"
 													>
 														<span className="text-zinc-600">
-															{format(new Date(c.date), "MMM d, yyyy")}
+															{format(
+																new Date(deductionDate(c)),
+																"MMM d, yyyy",
+															)}
 														</span>
 														<span className="font-semibold text-red-600">
 															-${c.amount.toFixed(2)}
@@ -545,7 +577,10 @@ export function SalaryReport() {
 														className="flex justify-between text-xs p-1.5 bg-white rounded border"
 													>
 														<span className="text-zinc-600">
-															{format(new Date(c.date), "MMM d, yyyy")}
+															{format(
+																new Date(deductionDate(c)),
+																"MMM d, yyyy",
+															)}
 														</span>
 														<span className="font-semibold text-red-600">
 															-${c.amount.toFixed(2)}

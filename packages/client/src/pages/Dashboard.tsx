@@ -18,6 +18,7 @@ import {
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { MissedShiftsCard } from "../components/MissedShiftsCard";
 import { Button } from "../components/ui/button";
 import {
 	Card,
@@ -53,7 +54,7 @@ export const formatUnitLabel = (
 
 export function Dashboard() {
 	const { user } = useAuth();
-	const { activeShift, loadingShift, refetchShift } = useShift();
+	const { activeShift, loadingShift, refetchShift, missedShifts } = useShift();
 
 	const [closingCash, setClosingCash] = useState("");
 	const [shortageReason, setShortageReason] = useState("");
@@ -336,6 +337,7 @@ export function Dashboard() {
 
 	return (
 		<div className="space-y-6">
+			<MissedShiftsCard shifts={missedShifts ?? []} onResolved={refetchShift} />
 			{/* Safe Slip Print View (Hidden on screen) */}
 			<div className="hidden print:block absolute top-0 left-0 w-full bg-white text-black p-8">
 				<h1 className="text-2xl font-bold mb-4">Safe Slip (Z-Report)</h1>

@@ -536,4 +536,79 @@ describe("SalaryReport", () => {
 		expect(lastMonthBtn).toHaveAttribute("aria-pressed", "false");
 		expect(thisWeekBtn).toHaveAttribute("aria-pressed", "false");
 	});
+	describe("deductions follow the deduction date (M-133 / TD-067)", () => {
+		const route = (credits: unknown[]) =>
+			vi.fn((url: string) =>
+				Promise.resolve(
+					String(url).includes("/api/employees")
+						? jsonResponse([employee])
+						: jsonResponse(credits),
+				),
+			);
+
+		it("asks the server for credits by deduction date", async () => {
+			const fetchMock = route([]);
+			vi.stubGlobal("fetch", fetchMock);
+			render(<SalaryReport />);
+			await screen.findByText("Bob");
+			const creditUrls = fetchMock.mock.calls
+				.map(([u]) => String(u))
+				.filter((u) => u.includes("/api/credits"));
+			expect(creditUrls.length).toBeGreaterThan(0);
+			expect(
+				creditUrls.every((u) => u.includes("dateField=resolved_date")),
+			).toBe(true);
+		});
+
+		it("lists a deduction under the day it was deducted, not the day it was issued", async () => {
+			vi.stubGlobal(
+				"fetch",
+				route([
+					{
+						...deductedCredit,
+						id: "c9",
+						amount: 60,
+						date: "2026-09-28T10:00:00.000Z",
+						resolved_date: "2026-10-03T10:00:00.000Z",
+					},
+				]),
+			);
+			render(<SalaryReport />);
+			await screen.findByText("Oct 3, 2026");
+			expect(screen.queryByText("Sep 28, 2026")).not.toBeInTheDocument();
+		});
+
+		it("falls back to the issue date for older records without a deduction date", async () => {
+			vi.stubGlobal("fetch", route([deductedCredit]));
+			render(<SalaryReport />);
+			await screen.findByText("Aug 1, 2026");
+		});
+
+		it("explains that base salary is monthly when the range is not a full month", async () => {
+			vi.stubGlobal("fetch", route([]));
+			render(<SalaryReport />);
+			await screen.findByText("Bob");
+			fireEvent.click(screen.getByRole("button", { name: "This Week" }));
+			expect(
+				await screen.findByText(/base salary is a monthly figure/i),
+			).toBeInTheDocument();
+		});
+
+		it.each(["This Month", "Last Month"])(
+			"shows no monthly-salary note for %s",
+			async (label) => {
+				vi.stubGlobal("fetch", route([]));
+				render(<SalaryReport />);
+				await screen.findByText("Bob");
+				fireEvent.click(screen.getByRole("button", { name: "This Week" }));
+				await screen.findByText(/base salary is a monthly figure/i);
+				fireEvent.click(screen.getByRole("button", { name: label }));
+				await waitFor(() =>
+					expect(
+						screen.queryByText(/base salary is a monthly figure/i),
+					).not.toBeInTheDocument(),
+				);
+			},
+		);
+	});
 });

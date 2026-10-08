@@ -9,6 +9,9 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Fixed
+- **Operational defect remediation (M-133 / ACP-041):** entries logged for today now carry the current time, so the Dashboard, the shift close and Reports agree (previously a shift ignored its own day's entries); credits can be saved without a reason; shift days follow shop time on any host timezone; forgotten shifts can be closed from the Dashboard; payroll deductions are listed by the day they were deducted; editing an old sale keeps the rate it was sold at; rate and employee controls are shown to admins only; clearer validation (invalid dates, unknown employees, role changes, empty Date field).
+
 ### Security
 - **API Membership Authorization Gate (M-132 / ACP-040):** the API now rejects valid Firebase tokens that have no registered `users` record (`403 Forbidden: Account not registered`), closing access for uninvited Google accounts and for users removed by an admin. Self-registration (`GET /api/users/me`, `POST /api/users`) stays token-only. Resolves TD-058.
 
