@@ -1,6 +1,15 @@
 {
 	"ignoreDependencies": ["autoprefixer", "vite", "@ast-grep/cli"],
-	"ignore": [".agents/**", "packages/server/src/scripts/**", "api/**"],
+	"ignore": [
+		".agents/**",
+		"packages/server/src/scripts/**",
+		"api/**",
+		"tests/integration/fixed-clock.cjs",
+		"vitest.integration.config.ts"
+	],
 	"ignoreBinaries": ["semgrep"],
-	"ignoreExportsUsedInFile": true
+	"ignoreExportsUsedInFile": true,
+	"playwright": {
+		"config": ["playwright.config.ts"]
+	}
 }

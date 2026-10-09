@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
 	resolve: {
@@ -11,6 +11,9 @@ export default defineConfig({
 		environment: "node",
 		globals: true,
 		include: ["packages/**/*.{test,spec}.{ts,tsx}"],
+		// M-134: integration suites need the Firebase emulators; run them with
+		// `npm run test:integration`.
+		exclude: [...configDefaults.exclude, "**/*.int.test.ts"],
 		coverage: {
 			provider: "v8",
 			include: ["packages/client/src/**/*.{ts,tsx}"],

@@ -79,6 +79,22 @@ npx tsc -p packages/client/tsconfig.json --noEmit
 npx vitest run
 ```
 
+### Integration tests (real SDK, emulators, real browser)
+
+The unit tests mock Firestore and the browser tests mock the API. The integration layer runs the **real Express app with the real `firebase-admin` SDK** against the Firebase Firestore and Auth emulators, plus real-UI flows against the real server (ACP-042, M-134):
+
+```bash
+npm run test:integration
+```
+
+- **Needs Java 21 or newer** on your `PATH` (`java -version`). Current `firebase-tools` refuses Java 17. On Ubuntu: `sudo apt install openjdk-21-jdk-headless`. If an older Java is first on your `PATH`, put Java 21 first for the command, for example `PATH=/usr/lib/jvm/java-21-openjdk-amd64/bin:$PATH npm run test:integration`.
+- **First run downloads** the emulator tool (pinned `firebase-tools@15.33.0`, run through `npx`; it is not a project dependency) and a Firestore emulator jar of about 137 MB, cached afterwards.
+- **Safe by construction:** the suites refuse to run unless the emulator variables are set and the project id starts with `demo-`, and they never read real credentials. It uses its own ports (emulators 8085 and 9099, server 4011, client 3012).
+- **Time is pinned** (server preload and browser clock), so results do not depend on the hour. A pinned time must be earlier than the real clock, because emulator tokens expire an hour after they are issued.
+- It runs with `TZ=UTC` on purpose, so a non-Ethiopian host is the default case for the shop-day logic.
+- Server suites live in `packages/server/src/__tests__/integration/*.int.test.ts` and are excluded from `npx vitest run`; browser flows are in `tests/integration/`.
+- The emulator ran a multi-field query without any index during the M-134 spike, so a missing entry in `firestore.indexes.json` is **not reliably caught** here.
+
 ## Production Deployment (cPanel via Git)
 
 When the repository is linked to cPanel via Git™ Version Control, deploy and activate updates directly via the cPanel Terminal:

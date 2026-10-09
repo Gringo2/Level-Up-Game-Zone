@@ -19,6 +19,8 @@
 		"lint": "biome lint .",
 		"format": "biome format --write .",
 		"knip": "knip",
+		"pretest:integration": "npm run build --workspace=@level-up/shared && npm run build:server",
+		"test:integration": "TZ=UTC npx --yes firebase-tools@15.33.0 emulators:exec --only firestore,auth --project demo-levelup \"vitest run --config vitest.integration.config.ts && playwright test --config playwright.integration.config.ts\"",
 		"scan": "semgrep scan --config auto",
 		"prepare": "husky || true"
 	},

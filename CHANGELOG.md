@@ -9,6 +9,9 @@ and this project adheres to [Conventional Commits](https://www.conventionalcommi
 
 ## [Unreleased]
 
+### Added
+- **Real integration test layer (M-134 / ACP-042):** `npm run test:integration` runs the real Express app and the real `firebase-admin` SDK against the Firebase emulators (server flows plus real-UI browser flows) with pinned clocks and a demo-project safety guard. Needs Java 21; firebase-tools is run through a pinned `npx`, not added as a dependency. See the README.
+
 ### Fixed
 - **Operational defect remediation (M-133 / ACP-041):** entries logged for today now carry the current time, so the Dashboard, the shift close and Reports agree (previously a shift ignored its own day's entries); credits can be saved without a reason; shift days follow shop time on any host timezone; forgotten shifts can be closed from the Dashboard; payroll deductions are listed by the day they were deducted; editing an old sale keeps the rate it was sold at; rate and employee controls are shown to admins only; clearer validation (invalid dates, unknown employees, role changes, empty Date field).
 
